@@ -41,7 +41,7 @@ Ao finalizar um epic:
 
 ### PR process
 
-1. Branch a partir de `main`.
+1. Branch a partir de `develop` (a branch padrão), e o PR aponta para `develop`. A `main` só recebe promoção e release; ver "Fluxo `develop` → `main`" em `CLAUDE.md`.
 2. Implementar. Adicionar testes (E2E pra fluxos, unit pra lógica pura).
 3. **Definition of Done.** A lista está separada em duas por um motivo: até hoje ela misturava
    o que uma máquina reprova com o que só uma pessoa percebe, e contribuidor marcava o checklist

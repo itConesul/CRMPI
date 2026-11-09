@@ -94,6 +94,10 @@ Com o número derivado, a pergunta *"qual é a próxima versão?"* deixa de ter 
 ter **resposta**: é função do conjunto de fragmentos acumulados, e duas sessões que rodem o
 cálculo obtêm o mesmo resultado porque olham para o mesmo conjunto.
 
+### Onde o release roda: promoção antes do corte
+
+O repo tem duas branches longas: `develop` (integração, padrão) e `main` (produção). O corte **sempre roda na `main`**, depois de uma promoção `develop` → `main` por merge commit. A razão é o `cortar-tag`: ele só reconhece o corte por fragmentos de `.changes/` **apagados** no primeiro pai da `main`. Um release cortado da `develop` traria os fragmentos e os apagaria no mesmo merge, e a tag não nasceria. Depois da tag, um PR `main` → `develop` devolve o CHANGELOG e a remoção dos fragmentos; sem ele o corte seguinte reconta tudo. Passo a passo em `CLAUDE.md`, "Fluxo `develop` → `main`".
+
 ### A tag nasce no CI
 
 `git tag` na máquina de alguém é o ponto onde o número deixa de ser revisável. A tag é criada
