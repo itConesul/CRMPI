@@ -9,6 +9,7 @@
  * emite `message` E `message.any` para a mesma mensagem (corrida). Ver migration
  * 0027 para o modelo de identidade canônica.
  */
+import { corpoComNomeDoAtendente } from "@/lib/messaging/prefixo-do-atendente";
 import { createHmac, timingSafeEqual } from "node:crypto";
 
 import { audit } from "@/lib/audit";
@@ -71,7 +72,7 @@ async function ehEcoDeEnvioNosso(
   const desde = new Date(Date.now() - JANELA_DO_ECO_MS).toISOString();
   const { data, error } = await admin
     .from("messages")
-    .select("id, body, type")
+    .select("id, body, type, sent_by_user_name")
     .eq("organization_id", organizationId)
     .eq("conversation_id", conversationId)
     .eq("direction", "outbound")
@@ -94,7 +95,11 @@ async function ehEcoDeEnvioNosso(
 
   const corpo = (p.body ?? "").trim();
   for (const linha of data ?? []) {
-    const l = linha as { body: string | null; type?: string | null };
+    const l = linha as {
+      body: string | null;
+      type?: string | null;
+      sent_by_user_name?: string | null;
+    };
     if (p.type && p.type !== "chat") {
       // Mídia: sem corpo para comparar, a existência do envio em voo é a prova
       // possível. Mais fraco, e escrito para ninguém supor o contrário.
@@ -102,6 +107,16 @@ async function ehEcoDeEnvioNosso(
       continue;
     }
     if (corpo.length > 0 && (l.body ?? "").trim() === corpo) return true;
+    // O envio de uma PESSOA sai com o nome dela no fio (`*Maria:* + quebra de linha + texto`), então o
+    // eco chega com o corpo prefixado e o da linha não. A mesma função que monta
+    // o fio monta o esperado aqui — sem isto o eco viraria "humano digitou no
+    // celular": duplicata + IA pausada (#519).
+    if (
+      corpo.length > 0 &&
+      corpoComNomeDoAtendente(l.sent_by_user_name, (l.body ?? "").trim()).trim() === corpo
+    ) {
+      return true;
+    }
   }
   return false;
 }
