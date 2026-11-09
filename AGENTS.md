@@ -245,6 +245,12 @@ Lei completa em [`docs/doctrine/packaging.md`](docs/doctrine/packaging.md). O n�
 
 `pnpm test:shell` é o único gate que exercita o kit. Rode-o.
 
+## Branches e release
+
+- PR de feature/fix vai para **`develop`** (branch padrão). A `main` é produção: só recebe a promoção `develop` → `main` e o PR de release.
+- Release: (1) PR `develop` → `main` com **merge commit**; (2) `gh workflow run release.yml --ref main`; (3) mergear o PR `release/X.Y.Z` com **merge commit** (squash impede a tag); (4) PR `main` → `develop` para devolver o CHANGELOG e a remoção dos fragmentos.
+- Nunca faça push na branch `release/X.Y.Z` aberta pelo bot. Detalhes e o porquê em [`CLAUDE.md`](CLAUDE.md) (seção "Higiene de branches") e `docs/doctrine/versionamento.md`.
+
 ## Critério de conclusão
 
 Vale a **Definition of Done em [`CLAUDE.md`](CLAUDE.md)** — conte lá em vez de confiar num número aqui (`sed -n '/^## Definition of Done/,/^Um staff engineer/p' CLAUDE.md | grep -cE '^[0-9]+\. '`; esta linha já disse 15 e o DoD tem 16). A régua tem que DELIMITAR a seção: a primeira versão desta linha oferecia `grep -c '^[0-9]\+\. \*\*' CLAUDE.md`, que devolve **25** — casa toda linha numerada em negrito do arquivo (anti-patterns, packaging, higiene de branches, migrations) e perde os itens 1–10 do próprio DoD, que não são negrito. Trocar o número pelo comando só ajuda se o comando responder à pergunta. Não declare pronto
