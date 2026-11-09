@@ -1,4 +1,5 @@
 import { assertAgentOperationSupabase } from "@/lib/ai/agents/operation";
+import { corpoComNomeDoAtendente } from "@/lib/messaging/prefixo-do-atendente";
 import {
   assertApprovedReplySupabase,
   recordApprovedReplyReceiptSupabase,
@@ -790,7 +791,13 @@ export async function sendMessageHandler(
           to: chatId,
           providerConversationId: c.provider_conversation_id,
           kind: input.type,
-          body: input.body ?? "",
+          // O nome de quem escreveu vai NO FIO, em negrito, acima do texto — e só
+          // no fio: `messages.body` segue sendo o que a pessoa digitou (o Inbox já
+          // mostra o nome). Só texto de pessoa; IA, automação e mídia não levam.
+          body:
+            input.type === "text" && message.sent_via === "user"
+              ? corpoComNomeDoAtendente(message.sent_by_user_name, input.body ?? "")
+              : (input.body ?? ""),
           replyToExternalId: citada?.external_id ?? null,
         }));
       }
