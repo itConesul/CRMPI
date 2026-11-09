@@ -406,13 +406,23 @@ Ao mexer em schema, RLS, RBAC, atribuição, escopo, roteamento, follow-up, webh
 
 ## Higiene de branches — DOUTRINA (NÃO NEGOCIÁVEL)
 
-**`main` é produção e é a fonte da verdade. Toda branch começa e se mantém atualizada com a `main`.** Trabalho iniciado numa branch atrasada gera conflito e retrabalho — é a causa número um de "cagada" em ambiente multi-sessão. Regra:
+**`develop` é a branch de integração e a padrão do repo; `main` é produção e só recebe promoção + release (fluxo abaixo). Toda branch de trabalho começa e se mantém atualizada com a `develop`.** Trabalho iniciado numa branch atrasada gera conflito e retrabalho — é a causa número um de "cagada" em ambiente multi-sessão. Regra:
 
-1. **ANTES de começar QUALQUER trabalho numa branch, atualize-a com a `main`:** `git fetch origin && git merge origin/main` (traz produção pra dentro). Se a branch ainda não tem commits próprios, é fast-forward puro (`git merge --ff-only origin/main`). Não codar antes disso.
-2. **NUNCA `reset --hard`/force pra "atualizar"** — apaga trabalho. Só dois caminhos: **fast-forward** (branch sem commits próprios) ou **merge da `main` pra dentro** (preserva os dois lados). `main` nunca é reescrita.
+1. **ANTES de começar QUALQUER trabalho numa branch, atualize-a com a `develop`:** `git fetch origin && git merge origin/develop`. Se a branch ainda não tem commits próprios, é fast-forward puro (`git merge --ff-only origin/develop`). Não codar antes disso. **Exceção: `release/X.Y.Z`** (aberta pelo bot) nunca recebe push nem merge — ver `docs/doctrine/versionamento.md`.
+2. **NUNCA `reset --hard`/force pra "atualizar"** — apaga trabalho. Só dois caminhos: **fast-forward** (branch sem commits próprios) ou **merge da `develop` pra dentro** (preserva os dois lados). `develop` e `main` nunca são reescritas.
 3. **NUNCA toque numa branch/worktree com working tree sujo que não é seu.** Antes de atualizar qualquer branch, cheque `git status` e `git worktree list` — se está suja e é de outra sessão, **deixe quieto** e avise. Merge só entra em árvore limpa.
-4. **Quando uma feature entra na `main`, todas as outras branches ficam atrasadas na hora.** Quem for retomar qualquer uma delas aplica a regra 1 primeiro. Ao fim de uma feature, considere propagar a `main` para as branches vivas limpas (FF as sem trabalho próprio; merge nas divergentes limpas; pular as sujas/conflitantes e reportar).
+4. **Quando uma feature entra na `develop`, todas as outras branches ficam atrasadas na hora.** Quem for retomar qualquer uma delas aplica a regra 1 primeiro. Ao fim de uma feature, considere propagar a `develop` para as branches vivas limpas (FF as sem trabalho próprio; merge nas divergentes limpas; pular as sujas/conflitantes e reportar).
 5. **Conflito ao atualizar = pare e resolva com cabeça** (ou escale), nunca escolha um lado no automático numa branch que não é sua. Preservar trabalho > branch "verde rápido".
+
+### Fluxo `develop` → `main` (release)
+
+PR de feature/fix **vai para `develop`**. A `main` não recebe PR de trabalho. Para lançar:
+
+1. **Promover:** PR `develop` → `main`, mergeado com **merge commit** (nunca squash). Isso leva os fragmentos de `.changes/` para a `main`.
+2. **Cortar:** `gh workflow run release.yml --repo itConesul/CRMPI --ref main`. O workflow abre o PR `release/X.Y.Z` contra a `main`; mergeie com **merge commit**. O merge cria a tag `vX.Y.Z` e publica as três imagens.
+3. **Devolver:** PR `main` → `develop`, também com merge commit, para o CHANGELOG da release e a remoção dos fragmentos voltarem. **Sem esse passo o próximo release conta tudo de novo.**
+
+**Por que a promoção vem antes do corte:** o job `cortar-tag` só reconhece "corte de release" por fragmentos APAGADOS no primeiro pai da `main`. Um release cortado direto da `develop` traria os fragmentos e os apagaria no mesmo merge: o diff dá zero e a tag não nasce. Squash no PR de release tem o mesmo efeito (v1.22.3, 2026-11-05: a tag só saiu na 2ª tentativa).
 
 ---
 
