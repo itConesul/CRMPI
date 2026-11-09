@@ -8,6 +8,17 @@ Se você roda o DeskcommCRM numa VPS, **leia a seção da versão para a qual es
 
 ## [Não lançado]
 
+## [1.22.4] — 2026-11-09
+
+### Alterado
+
+- **O CI também roda nos PRs e nos pushes da branch develop** A `develop` passa a ser a branch de integração. O CI (`ci`, `e2e`, `perf`) agora
+  roda para PRs que a têm como destino e para os pushes nela. Não muda nada em
+  quem opera uma VPS.
+
+- **O fluxo de branches passa a ser develop para trabalho e main para release** Documentação de contribuição: os PRs de trabalho vão para a `develop`, e a `main`
+  só recebe a promoção e o release. Não muda nada em quem opera uma VPS.
+
 ## [1.22.3] — 2026-11-06
 
 ### Alterado
@@ -3436,7 +3447,8 @@ Primeira versão marcada do DeskcommCRM. O projeto vinha sendo desenvolvido publ
 
 - **Node 22 é obrigatório para desenvolvimento.** A suíte de invariantes instancia o cliente do Supabase, que exige o `WebSocket` global — nativo apenas a partir do Node 22. Isso não afeta quem apenas hospeda: a VPS roda a imagem pronta.
 
-[Não lançado]: https://github.com/itConesul/CRMPI/compare/v1.22.3...HEAD
+[Não lançado]: https://github.com/itConesul/CRMPI/compare/v1.22.4...HEAD
+[1.22.4]: https://github.com/itConesul/CRMPI/compare/v1.22.3...v1.22.4
 [1.22.3]: https://github.com/itConesul/CRMPI/compare/v1.22.2...v1.22.3
 [1.22.2]: https://github.com/Sciuba/CRMPI/compare/v1.22.1...v1.22.2
 [1.22.1]: https://github.com/Sciuba/CRMPI/compare/v1.22.0...v1.22.1
