@@ -224,6 +224,28 @@ describe("eco do próprio envio — a IA não se cala por ter falado", () => {
     ).toBeNull();
   });
 
+  it("⭐ envio de PESSOA em voo + eco com o nome dela no fio: o bot NÃO é silenciado", async () => {
+    // Texto de pessoa sai como `*Maria:* + quebra de linha + texto`; o eco volta com o corpo
+    // prefixado e a linha em voo guarda só o texto. Sem a conta do prefixo, o eco
+    // viraria "humano digitou no celular" — a IA se calaria por ter falado.
+    const { admin, conversa } = banco([emVoo({ sent_via: "user", sent_by_user_name: "Maria" })]);
+
+    await dispatchWahaEvent(admin as never, SESSION as never, envelope(eco(`*Maria:*
+${TEXTO}`)), "req-1");
+
+    expect(conversa.bot_silenced_until).toBeNull();
+  });
+
+  it("CONTROLE: o mesmo texto com o nome de OUTRA pessoa não é eco do nosso envio", async () => {
+    // Impede que o reconhecimento do prefixo vire "qualquer prefixo serve".
+    const { admin, conversa } = banco([emVoo({ sent_via: "user", sent_by_user_name: "Maria" })]);
+
+    await dispatchWahaEvent(admin as never, SESSION as never, envelope(eco(`*João:*
+${TEXTO}`)), "req-1");
+
+    expect(conversa.bot_silenced_until).not.toBeNull();
+  });
+
   it("⭐ CONTROLE POSITIVO: digitação real no celular AINDA silencia", async () => {
     // Sem este caso, um "conserto" que simplesmente removesse a chamada de
     // silêncio ficaria verde — e mataria a feature que o #371 pede.
