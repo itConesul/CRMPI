@@ -19,8 +19,8 @@
  * ── A armadilha que esta função existe para não armar ──────────────────────
  *
  * Todo envio do CRM volta do WhatsApp como eco `fromMe`, e o CRM só o reconhece
- * como seu comparando o CORPO com a linha ainda em voo (`ehEcoDeEnvioNosso`,
- * `lib/waha/ingest.ts`, issue #519). Com o prefixo, o eco traz o corpo PREFIXADO
+ * como seu comparando o CORPO com a linha ainda em voo (`ehEcoDeEnvioNosso`, no ingest do canal,
+ * issue #519). Com o prefixo, o eco traz o corpo PREFIXADO
  * e o da linha não: sem a conta abaixo, o eco viraria "humano digitou no
  * celular", duplicaria a mensagem e pausaria a IA. Por isso quem envia e quem
  * reconhece o eco usam ESTA mesma função — duas cópias da regra divergem.
