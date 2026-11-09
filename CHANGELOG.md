@@ -8,6 +8,17 @@ Se você roda o DeskcommCRM numa VPS, **leia a seção da versão para a qual es
 
 ## [Não lançado]
 
+## [1.23.0] — 2026-11-09
+
+### Alterado
+
+- **O cliente passa a ver o nome do atendente em cada mensagem de texto no WhatsApp** Toda mensagem de texto escrita por uma pessoa agora chega ao cliente com o nome de quem
+  a escreveu em negrito, numa linha acima do texto (por exemplo, `*Maria:*` e, na linha de
+  baixo, "Bom dia, tudo bem?"). Quando outra pessoa assume a conversa, a bolha traz o nome
+  dela. O histórico no Inbox continua mostrando só o texto digitado, com o nome acima da bolha.
+  Mídia (foto, áudio, documento) e mensagens do agente de IA não levam o nome. Não há
+  configuração para desligar: toda instalação que atualizar passa a enviar assim.
+
 ## [1.22.4] — 2026-11-09
 
 ### Alterado
@@ -3447,7 +3458,8 @@ Primeira versão marcada do DeskcommCRM. O projeto vinha sendo desenvolvido publ
 
 - **Node 22 é obrigatório para desenvolvimento.** A suíte de invariantes instancia o cliente do Supabase, que exige o `WebSocket` global — nativo apenas a partir do Node 22. Isso não afeta quem apenas hospeda: a VPS roda a imagem pronta.
 
-[Não lançado]: https://github.com/itConesul/CRMPI/compare/v1.22.4...HEAD
+[Não lançado]: https://github.com/itConesul/CRMPI/compare/v1.23.0...HEAD
+[1.23.0]: https://github.com/itConesul/CRMPI/compare/v1.22.4...v1.23.0
 [1.22.4]: https://github.com/itConesul/CRMPI/compare/v1.22.3...v1.22.4
 [1.22.3]: https://github.com/itConesul/CRMPI/compare/v1.22.2...v1.22.3
 [1.22.2]: https://github.com/Sciuba/CRMPI/compare/v1.22.1...v1.22.2
