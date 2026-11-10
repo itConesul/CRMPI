@@ -9,6 +9,7 @@ import { avatarUrlServivel } from "@/lib/notifications/avatar_url";
 import { entregarAviso } from "@/lib/notifications/deliver";
 import { shouldNotifyInbound } from "@/lib/notifications/policy";
 import { syncPushSubscription } from "@/lib/notifications/push_client";
+import { apiClient } from "@/lib/api/client";
 import { createClient } from "@/lib/supabase/browser";
 
 function tabFocused(): boolean {
@@ -37,21 +38,34 @@ function previewFromMessage(row: { type?: unknown; body?: unknown }): string {
   return body || "Nova mensagem";
 }
 
-async function contactNotifyBits(contactId: string): Promise<{ title: string; icon?: string }> {
-  const supabase = createClient();
-  const { data } = await supabase
-    .from("contacts")
-    .select("display_name, name")
-    .eq("id", contactId)
-    .maybeSingle();
-  const row = data as { display_name?: string | null; name?: string | null } | null;
-  const title = (row?.display_name || row?.name || "Nova mensagem").trim() || "Nova mensagem";
+/**
+ * Nome e foto do contato para o aviso de mensagem nova.
+ *
+ * ⚠️ O nome NÃO sai do Supabase do navegador. O cookie de sessão é httpOnly, então
+ * o `createClient()` do browser age como ANÔNIMO — `contacts` não dá permissão a
+ * esse papel e o PostgREST responde 401. O aviso caía em "Nova mensagem" sem ninguém
+ * ver o porquê. A leitura passa pela rota do app, que tem a sessão.
+ *
+ * ⚠️ A foto é buscada SEM `credentials: "include"`. A rota responde 302 para uma URL
+ * assinada do Storage, que devolve `Access-Control-Allow-Origin: *`; o navegador
+ * proíbe `*` quando a requisição leva credenciais e bloqueava o redirect por CORS.
+ * O padrão (`same-origin`) manda o cookie à nossa rota e segue o redirect sem ele.
+ */
+export async function contactNotifyBits(
+  contactId: string,
+): Promise<{ title: string; icon?: string }> {
+  let title = "Nova mensagem";
+  try {
+    const r = await apiClient.get<{
+      data?: { display_name?: string | null; name?: string | null };
+    }>(`/api/v1/contacts/${contactId}`);
+    title = (r.data?.display_name || r.data?.name || title).trim() || title;
+  } catch {
+    // sem nome: o aviso sai genérico, como sempre saiu quando a leitura falhava
+  }
   let icon: string | undefined;
   try {
-    const r = await fetch(`/api/v1/contacts/${contactId}/avatar`, {
-      credentials: "include",
-      redirect: "follow",
-    });
+    const r = await fetch(`/api/v1/contacts/${contactId}/avatar`, { redirect: "follow" });
     icon = r.ok ? avatarUrlServivel(r.url, window.location.origin) : undefined;
   } catch {
     // sem foto: badge da marca
