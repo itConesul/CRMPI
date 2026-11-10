@@ -8,6 +8,22 @@ Se você roda o DeskcommCRM numa VPS, **leia a seção da versão para a qual es
 
 ## [Não lançado]
 
+## [1.23.1] — 2026-11-10
+
+### Corrigido
+
+- **O aviso de mensagem nova volta a mostrar o nome e a foto do contato** O aviso de mensagem nova lia o nome do contato direto do Supabase pelo navegador, que não
+  enxerga a sessão e recebia 401, e buscava a foto de um jeito que o navegador bloqueava por
+  CORS. O resultado era um aviso sempre genérico ("Nova mensagem"), sem foto, e erros no
+  console. Agora o nome vem pela API do próprio app e a foto é buscada sem credenciais.
+
+- **A mesma mensagem não sai duas vezes para o cliente** O envio de mensagem pela tela podia chegar duplicado no WhatsApp do cliente. Agora a rota
+  reconhece o reenvio automático do navegador (mesmo `Idempotency-Key`) e o duplo-envio do
+  atendente (Enter duas vezes ou duplo clique com o mesmo texto): a segunda tentativa devolve
+  a mensagem já enviada, sem mandar outra. A janela do duplo-envio é de 15 segundos, por
+  usuário, conversa e texto; passado esse prazo o mesmo texto sai normalmente. Envio que falha
+  não bloqueia o reenvio. Se o Redis estiver fora do ar, o envio segue sem essa proteção.
+
 ## [1.23.0] — 2026-11-09
 
 ### Alterado
@@ -3458,7 +3474,8 @@ Primeira versão marcada do DeskcommCRM. O projeto vinha sendo desenvolvido publ
 
 - **Node 22 é obrigatório para desenvolvimento.** A suíte de invariantes instancia o cliente do Supabase, que exige o `WebSocket` global — nativo apenas a partir do Node 22. Isso não afeta quem apenas hospeda: a VPS roda a imagem pronta.
 
-[Não lançado]: https://github.com/itConesul/CRMPI/compare/v1.23.0...HEAD
+[Não lançado]: https://github.com/itConesul/CRMPI/compare/v1.23.1...HEAD
+[1.23.1]: https://github.com/itConesul/CRMPI/compare/v1.23.0...v1.23.1
 [1.23.0]: https://github.com/itConesul/CRMPI/compare/v1.22.4...v1.23.0
 [1.22.4]: https://github.com/itConesul/CRMPI/compare/v1.22.3...v1.22.4
 [1.22.3]: https://github.com/itConesul/CRMPI/compare/v1.22.2...v1.22.3
