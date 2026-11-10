@@ -11,6 +11,9 @@ import { requireRole } from "@/lib/auth/require-role";
 import { sendMessageSchema, validateRequest, type SendMessageInput } from "@/lib/schemas";
 import { createClient } from "@/lib/supabase/server";
 
+import { envioUnico } from "@/lib/messaging/envio-unico";
+import { armazemDeProducao } from "@/lib/messaging/envio-unico-armazem";
+
 import { sendMessageHandler } from "./_handler";
 
 export const dynamic = "force-dynamic";
@@ -42,16 +45,46 @@ export async function POST(req: NextRequest): Promise<Response> {
   }
 
   try {
-    const message = await sendMessageHandler(
-      supabase,
+    const dados = input as SendMessageInput;
+    // O mesmo envio não sai duas vezes (Idempotency-Key + janela anti-duplo-envio).
+    // Ver lib/messaging/envio-unico.ts.
+    const { replay, message } = await envioUnico(
       {
-        organization_id: activeOrg.orgId,
-        actor: { type: "user", id: user.id },
-        requestId,
-        idioma: user.idioma,
+        organizationId: activeOrg.orgId,
+        userId: user.id,
+        conversationId: dados.conversation_id,
+        type: dados.type ?? "text",
+        body: dados.body,
+        idempotencyKey: req.headers.get("Idempotency-Key"),
       },
-      input as SendMessageInput,
+      armazemDeProducao(),
+      () =>
+        sendMessageHandler(
+          supabase,
+          {
+            organization_id: activeOrg.orgId,
+            actor: { type: "user", id: user.id },
+            requestId,
+            idioma: user.idioma,
+          },
+          dados,
+        ),
+      async (id) => {
+        const { data } = await supabase
+          .from("messages")
+          .select("*")
+          .eq("id", id)
+          .eq("organization_id", activeOrg.orgId)
+          .maybeSingle();
+        return (data as unknown as Awaited<ReturnType<typeof sendMessageHandler>> | null) ?? null;
+      },
+      { requestId },
     );
+    if (replay) {
+      const res = ok(message, { status: 200, requestId });
+      res.headers.set("Idempotent-Replay", "true");
+      return res;
+    }
     return ok(message, { status: 201, requestId });
   } catch (err) {
     if (err instanceof ApiError) {
