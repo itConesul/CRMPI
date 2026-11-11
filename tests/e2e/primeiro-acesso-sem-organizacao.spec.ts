@@ -140,15 +140,14 @@ test.describe("conta confirmada e sem organização", () => {
     await expect(page).toHaveURL(/\/get-started/, { timeout: 20_000 });
   });
 
-  test("⭐ o estado vazio do Inbox oferece a porta, e ela funciona", async ({ page }) => {
-    // A frase antiga oferecia duas saídas que não existem para quem instalou o
-    // sistema. O link é a única saída real — e clicá-lo tem de chegar lá.
+  test("⭐ /app/inbox sem organização leva direto à saída, sem mostrar um app vazio", async ({ page }) => {
+    // Issue #52: não existe acesso ao /app sem organização. Antes o Inbox mostrava
+    // um estado vazio com o link "Configurar minha organização"; agora o layout
+    // do /app leva a pessoa à saída sem passar por tela vazia nenhuma.
     await entrar(page, emailOrfao);
     await page.goto("/app/inbox");
-    const porta = page.getByRole("link", { name: /Configurar minha organização/i });
-    await expect(porta).toBeVisible({ timeout: 20_000 });
-    await porta.click();
     await expect(page).toHaveURL(/\/get-started/, { timeout: 20_000 });
+    await expect(page.getByRole("heading", { name: /Configure sua organização/i })).toBeVisible();
   });
 
   test("⭐ a recuperação CONCLUI: informa o nome e sai para o onboarding", async ({ page }) => {
