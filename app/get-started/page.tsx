@@ -15,8 +15,8 @@ import { IdiomaProvider } from "@/lib/i18n/IdiomaProvider";
  * FORA de `app/app/**`, como `/login` e `/team/accept-invite` — por isso não
  * entra em `lib/navigation/registry.ts` nem na allowlist de
  * `tests/unit/navegacao-completude.test.ts`, cujo escopo é a navegação do
- * tenant. As portas são os três desvios que levam até aqui: os dois de
- * `app/onboarding/` e o estado vazio do Inbox.
+ * tenant. As portas são os desvios que levam até aqui: os dois de
+ * `app/onboarding/` e o layout de `app/app/` (sem organização não há `/app` — issue #52).
  */
 export const dynamic = "force-dynamic";
 
