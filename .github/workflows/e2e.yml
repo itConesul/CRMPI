@@ -752,8 +752,26 @@ jobs:
           # que é o org id do DEFAULT_SENTRY_DSN (lib/sentry/dsn.ts:17).
           SENTRY_DSN: "off"
 
+      # O browser e as bibliotecas do sistema são DUAS coisas, e `--with-deps` as
+      # juntava: o download do Chromium vem do CDN do Playwright, e as bibliotecas
+      # vêm do `apt` — que depende dos espelhos do Ubuntu. Em 2026-11-11 esses
+      # espelhos deixaram de resolver DENTRO do runner por mais de uma hora
+      # (`Temporary failure resolving 'archive.ubuntu.com'`), com o resto da rede
+      # funcionando e o status do GitHub verde. O `--with-deps` reprovava o passo
+      # depois de ~10 min de timeout do apt, e as TRÊS partes do `e2e` caíam antes
+      # de rodar uma spec — um check obrigatório vermelho sem dizer nada sobre o
+      # código (PR #54, duas rodadas).
+      #
+      # Separado, o Chromium instala sempre; as dependências têm teto de 3 min e
+      # NÃO derrubam o passo. Isso não afrouxa o gate: se faltar biblioteca de
+      # verdade, o Chromium não abre e TODA spec reprova, em voz alta, com a causa
+      # no log. O que deixa de acontecer é o job morrer por um espelho fora do ar.
       - name: Instalar o browser
-        run: pnpm exec playwright install --with-deps chromium
+        run: |
+          pnpm exec playwright install chromium
+          if ! timeout 180 pnpm exec playwright install-deps chromium; then
+            echo "::warning::bibliotecas do sistema NÃO instaladas (apt indisponível) — seguindo com o que a imagem do runner já traz; se faltar alguma, o Chromium não abre e as specs reprovam"
+          fi
 
       # `.env.local` é CÓPIA do `.env.e2e`, não uma terceira redação dele.
       #

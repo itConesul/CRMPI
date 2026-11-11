@@ -11,7 +11,7 @@
  *   6. Token expirado → "Convite inválido ou expirado"
  *   7. Token adulterado (HMAC quebrado) → idem
  *   8. Email não corresponde: logado com OUTRA conta → "Email não corresponde"
- *   9. Não autenticado → CTA "Fazer login", não o formulário de aceite
+ *   9. Não autenticado, e-mail com conta → login com o e-mail preenchido, não o formulário de aceite
  *
  * Pré-req: npx tsx scripts/seed-e2e-invite.ts (o spec roda sozinho se faltar).
  * Contra o Supabase do env (local recomendado — precisa das migrations de RLS
@@ -314,17 +314,22 @@ test.describe("ciclo de vida do convite (ponta a ponta + adversarial)", () => {
     await expect(page.getByRole("heading", { name: /não corresponde/i })).toBeVisible();
   });
 
-  test("9. não autenticado → CTA de login, não o formulário de aceite", async ({ page }) => {
+  test("9. não autenticado, e-mail COM conta → login que volta ao convite, e-mail preenchido", async ({ page }) => {
     const valid = signInviteToken({
       invite_id: randomUUID(),
-      email: inv.invitee_email,
+      email: inv.invitee_email, // o seed cria a conta do convidado
       organization_id: inv.org_id,
       role: "agent",
       exp: Math.floor(Date.now() / 1000) + 3600,
     });
     await page.goto(`/team/accept-invite/${valid}`);
-    await expect(page.getByRole("heading", { name: /Você foi convidado/i })).toBeVisible();
-    await expect(page.getByRole("link", { name: /Fazer login/i })).toBeVisible();
+    // Issue #52: o sistema sabe que há conta e leva ao login — sem a pessoa
+    // escolher entre "Fazer login" e "Ainda não tenho conta", e sem o formulário
+    // de aceite (que exige sessão).
+    await expect(page).toHaveURL(/\/login\?/);
+    expect(page.url()).toContain(encodeURIComponent(`/team/accept-invite/${valid}`));
+    await expect(page.getByLabel(/e-?mail/i)).toHaveValue(inv.invitee_email);
+    await expect(page.getByRole("button", { name: /aceitar convite/i })).toHaveCount(0);
   });
 
   /**
@@ -340,17 +345,20 @@ test.describe("ciclo de vida do convite (ponta a ponta + adversarial)", () => {
    * O suíte inteiro não exercitava esse estado: o seed CRIA a conta do
    * convidado de propósito, que é justamente o que esconde o defeito.
    */
-  test("10. sem conta → o caminho existe e leva o convite junto", async ({ page }) => {
+  test("10. sem conta → vai direto ao cadastro e leva o convite junto", async ({ page }) => {
+    // Um e-mail que NÃO tem conta: o seed cria a do convidado, que é justamente
+    // o que escondia este estado.
     const valid = signInviteToken({
       invite_id: randomUUID(),
-      email: inv.invitee_email,
+      email: `sem-conta-${randomUUID()}@example.test`,
       organization_id: inv.org_id,
       role: "agent",
       exp: Math.floor(Date.now() / 1000) + 3600,
     });
 
+    // Issue #52: o sistema vê que não há conta e abre o cadastro sozinho — sem
+    // clicar em "Ainda não tenho conta".
     await page.goto(`/team/accept-invite/${valid}`);
-    await page.getByRole("link", { name: /ainda não tenho conta/i }).click();
 
     // O token viaja: é ele que faz a conta nova nascer amarrada a este convite
     // em vez de ganhar uma organização própria.

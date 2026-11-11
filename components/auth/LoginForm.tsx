@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { signInWithPassword } from "@/app/actions/auth/signInWithPassword";
 
-export function LoginForm({ next }: { next?: string }) {
+export function LoginForm({ next, emailInicial }: { next?: string; emailInicial?: string }) {
   const t = useT();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -24,7 +24,7 @@ export function LoginForm({ next }: { next?: string }) {
     formState: { errors },
   } = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: "", password: "" },
+    defaultValues: { email: emailInicial ?? "", password: "" },
   });
 
   const onSubmit = (values: LoginInput) => {

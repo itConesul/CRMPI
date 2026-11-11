@@ -11,9 +11,14 @@ export const metadata = { title: "Entrar" };
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string; reset?: string; error?: string }>;
+  searchParams: Promise<{ next?: string; reset?: string; error?: string; email?: string }>;
 }) {
-  const { next, reset, error } = await searchParams;
+  const { next, reset, error, email } = await searchParams;
+  // O e-mail só vem preenchido quando a pessoa chega do link de um convite
+  // (`/team/accept-invite/…`): é o e-mail do convite, e digitá-lo de novo é um
+  // passo a mais que o sistema já resolveu. Fora desse caso, a tela segue vazia.
+  const emailDoConvite =
+    next?.startsWith("/team/accept-invite/") && email && email.length <= 254 ? email : undefined;
   // Fora da árvore de `app/app/layout.tsx` — sem `IdiomaProvider` do lado do
   // servidor (o cliente já tem o seu, montado em `app/(public)/layout.tsx`).
   // Quase nunca há sessão aqui (é a própria tela de entrar), mas resolve do
@@ -86,7 +91,7 @@ export default async function LoginPage({
           )}
         </div>
       )}
-      <LoginForm next={next} />
+      <LoginForm next={next} emailInicial={emailDoConvite} />
       <div className="space-y-2 text-center text-sm">
         <p>
           <Link
