@@ -8142,6 +8142,20 @@ export const DICIONARIO: Traducoes = {
   "Este ponto usa o modelo definido na versão publicada do agente; a escolha do painel não se aplica.": {
     es: "Este punto usa el modelo definido en la versión publicada del agente; la elección del panel no se aplica.",
   },
+  "Novas mensagens": { es: "Nuevos mensajes" },
+  "novas mensagens": { es: "nuevos mensajes" },
+  "novas mensagens em": { es: "nuevos mensajes en" },
+  "Ativar avisos": { es: "Activar avisos" },
+  "Agora não": { es: "Ahora no" },
+  "Ative os avisos para ser notificado de novas mensagens, mesmo com esta aba em segundo plano.": {
+    es: "Activa los avisos para recibir notificaciones de nuevos mensajes, incluso con esta pestaña en segundo plano.",
+  },
+  "Os avisos estão bloqueados neste navegador. Libere as notificações nas configurações do site (o cadeado ao lado do endereço).": {
+    es: "Los avisos están bloqueados en este navegador. Habilita las notificaciones en la configuración del sitio (el candado junto a la dirección).",
+  },
+  "Os avisos do sistema só funcionam em HTTPS ou em localhost. Neste endereço o navegador os bloqueia; o contador na aba e os avisos na tela continuam funcionando.": {
+    es: "Los avisos del sistema solo funcionan en HTTPS o en localhost. En esta dirección el navegador los bloquea; el contador en la pestaña y los avisos en pantalla siguen funcionando.",
+  },
 };
 
 /**

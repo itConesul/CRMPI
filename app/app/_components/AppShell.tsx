@@ -2,6 +2,8 @@
 import type { ReactNode } from "react";
 import { Sidebar } from "@/components/shell/Sidebar";
 import { TopBar } from "@/components/shell/TopBar";
+import { ContadorNaAba } from "@/components/app/ContadorNaAba";
+import { FaixaDeAvisos } from "@/components/app/FaixaDeAvisos";
 import { useInboundMessageAlerts } from "@/hooks/notifications/useInboundMessageAlerts";
 import { useCentralAlerts } from "@/hooks/notifications/useCentralAlerts";
 import { useCrmAlerts } from "@/hooks/notifications/useCrmAlerts";
@@ -43,6 +45,8 @@ export function AppShell({ sidebarCollapsed, children }: AppShellProps) {
       */}
       <div className="flex min-h-screen min-w-0 flex-1 flex-col">
         <TopBar />
+        <ContadorNaAba />
+        <FaixaDeAvisos />
         <main className="flex-1 overflow-auto p-6">{children}</main>
       </div>
     </div>
