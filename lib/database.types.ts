@@ -7761,6 +7761,8 @@ export type Database = {
         Returns: Json
       }
 
+      fn_conta_existe_por_email: { Args: { p_email: string }; Returns: boolean }
+
       fn_support_context: { Args: Record<PropertyKey, never>; Returns: Json }
       fn_support_write_allowed: { Args: { p_org: string }; Returns: boolean }
       fn_support_storage_write_allowed: { Args: { p_name: string }; Returns: boolean }

@@ -3,13 +3,18 @@
  *
  * Behavior matrix:
  *  - Invalid/expired token         → render error
- *  - Unauthenticated user          → render CTA → /login?next=...
+ *  - Unauthenticated user          → has account: redirect /login?next=...&email=...
+ *                                    no account: redirect /signup?invite=...
+ *                                    unknown (lookup failed): render both CTAs
  *  - Authenticated, email mismatch → render mismatch + sign-out CTA
  *  - Authenticated, email match    → form posts to Server Action which inserts
  *                                    membership and redirects to /app/inbox
  */
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
+import { contaExistePorEmail } from "@/lib/auth/conta-existe";
+import { destinoDoConvite } from "@/lib/auth/destino-do-convite";
 import { verifyInviteToken } from "@/lib/auth/invite-token";
 import { authRateLimited, AUTH_LIMITS } from "@/lib/auth/rate-limit";
 import { createClient } from "@/lib/supabase/server";
@@ -71,6 +76,13 @@ export default async function AcceptInvitePage({ params }: PageProps) {
   }
 
   if (!user) {
+    // O convite já diz o e-mail, e o servidor sabe se ele tem conta: quem decide
+    // o caminho é o sistema, não a pessoa. Tem conta → login (volta aqui depois);
+    // não tem → cadastro com o e-mail travado. Só mostra as duas portas se a
+    // consulta não soube responder (issue #52).
+    const destino = destinoDoConvite(token, payload.email, await contaExistePorEmail(payload.email));
+    if (destino.tipo !== "escolher") redirect(destino.href);
+
     const next = encodeURIComponent(`/team/accept-invite/${token}`);
     return (
       <Shell>

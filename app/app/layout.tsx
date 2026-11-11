@@ -11,7 +11,9 @@ import { cssDaMarca, ESCOPO_DA_ORGANIZACAO } from "@/lib/branding/css";
 import { marcaDaInstalacao } from "@/lib/branding/instalacao";
 import { resolverMarcaDaOrganizacao } from "@/lib/branding/organizacao";
 import { env } from "@/lib/env";
+import { portaSemOrganizacao } from "@/lib/auth/porta-sem-organizacao";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import {
   ImpersonateBanner,
 } from "@/components/app/ImpersonateBanner";
@@ -24,6 +26,19 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (!user) redirect("/login");
 
   let activeOrg = await resolveActiveOrg(user);
+
+  // Sem organização não há /app: o menu sairia vazio e a tela não diria o que
+  // fazer (issue #52). Quem tem convite vai ao aceite; quem não tem, a /get-started.
+  // O super-admin da plataforma fica de fora — a casa dele é /admin, e ele pode
+  // não pertencer a tenant algum.
+  if (!activeOrg && !user.is_platform_admin) {
+    const {
+      data: { user: authUser },
+    } = await (await createClient()).auth.getUser();
+    redirect(
+      portaSemOrganizacao({ email: user.email, user_metadata: authUser?.user_metadata }),
+    );
+  }
 
   /**
    * A cor desta organização, serializada, ou `null` quando ela não tem uma.

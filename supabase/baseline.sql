@@ -23528,6 +23528,29 @@ begin
   end if;
 end $$;
 
+-- ---- fn_conta_existe_por_email (migration 0238) ----
+-- "Este e-mail já tem conta confirmada?" — para a tela do convite escolher entre entrar e
+-- criar conta. Só lê. Conta não confirmada não conta. Só o service_role chama: aberta a
+-- anon seria um oráculo de cadastro. Idempotente por `create or replace` + revoke/grant.
+create or replace function public.fn_conta_existe_por_email(p_email text)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public, auth, pg_temp
+as $$
+  select exists (
+    select 1
+      from auth.users u
+     where lower(u.email) = lower(btrim(p_email))
+       and u.email_confirmed_at is not null
+       and u.deleted_at is null
+  );
+$$;
+
+revoke execute on function public.fn_conta_existe_por_email(text) from public, anon, authenticated;
+grant  execute on function public.fn_conta_existe_por_email(text) to service_role;
+
 -- ---- VARREDURA anon: função nova nasce exposta em quem ATUALIZA (migration 0116) ----
 --
 -- ⚠️ ESTE BLOCO É, DE PROPÓSITO, O ÚLTIMO DO ARQUIVO. Apêndice novo entra ANTES
