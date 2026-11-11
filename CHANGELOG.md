@@ -8,6 +8,18 @@ Se você roda o DeskcommCRM numa VPS, **leia a seção da versão para a qual es
 
 ## [Não lançado]
 
+## [1.23.2] — 2026-11-11
+
+### Alterado
+
+- **O convite leva a pessoa ao caminho certo, e sem organização não há /app** Quem abre o link do convite sem estar logado não escolhe mais entre "Fazer login" e "Ainda não
+  tenho conta": o sistema vê se o e-mail do convite já tem conta confirmada. Se tem, vai ao login
+  com o e-mail já preenchido e volta ao aceite; se não tem, vai ao cadastro com o e-mail travado.
+  O botão de aceitar continua, e o destino final é a Caixa de entrada. A confirmação de e-mail do
+  cadastro continua exigida. Quem está logado e não pertence a nenhuma organização deixa de ver um
+  `/app` vazio: com convite válido vai ao aceite, sem convite vai a `/get-started`. Há uma migration
+  nova (`fn_conta_existe_por_email`), aplicada pelo `update.sh`.
+
 ## [1.23.1] — 2026-11-10
 
 ### Corrigido
@@ -3474,7 +3486,8 @@ Primeira versão marcada do DeskcommCRM. O projeto vinha sendo desenvolvido publ
 
 - **Node 22 é obrigatório para desenvolvimento.** A suíte de invariantes instancia o cliente do Supabase, que exige o `WebSocket` global — nativo apenas a partir do Node 22. Isso não afeta quem apenas hospeda: a VPS roda a imagem pronta.
 
-[Não lançado]: https://github.com/itConesul/CRMPI/compare/v1.23.1...HEAD
+[Não lançado]: https://github.com/itConesul/CRMPI/compare/v1.23.2...HEAD
+[1.23.2]: https://github.com/itConesul/CRMPI/compare/v1.23.1...v1.23.2
 [1.23.1]: https://github.com/itConesul/CRMPI/compare/v1.23.0...v1.23.1
 [1.23.0]: https://github.com/itConesul/CRMPI/compare/v1.22.4...v1.23.0
 [1.22.4]: https://github.com/itConesul/CRMPI/compare/v1.22.3...v1.22.4
