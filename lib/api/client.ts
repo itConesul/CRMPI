@@ -1,5 +1,6 @@
 import type { ZodSchema } from "zod";
 
+import { caminhoSemQuery, classificarFalha, FalhaDeRede } from "@/lib/api/falha-de-rede";
 import { ApiError, type ApiErrorBody } from "@/lib/api/types";
 import { randomId } from "@/lib/random-id";
 
@@ -122,6 +123,7 @@ async function request<T>(
   const timeoutMs = opts.timeoutMs ?? DEFAULT_TIMEOUT_MS;
 
   let lastError: unknown;
+  const inicio = Date.now();
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     const timeoutController = new AbortController();
@@ -191,7 +193,20 @@ async function request<T>(
         await sleep(backoffMs(attempt), opts.signal);
         continue;
       }
-      throw err;
+      // Sem resposta nenhuma em todas as tentativas: o erro cru do navegador
+      // não diz por quê nem leva o id. Ver `falha-de-rede.ts`.
+      throw new FalhaDeRede(
+        classificarFalha({
+          estourouPrazo: timeoutController.signal.aborted,
+          online: typeof navigator === "undefined" ? true : navigator.onLine,
+        }),
+        requestId,
+        method,
+        caminhoSemQuery(path),
+        attempt,
+        Date.now() - inicio,
+        err,
+      );
     } finally {
       clearTimeout(timer);
     }

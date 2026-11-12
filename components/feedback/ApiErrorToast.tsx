@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { useT } from "@/hooks/i18n/useT";
 import { traduzir } from "@/lib/i18n/dicionario";
 import { idiomaAtual } from "@/lib/i18n/IdiomaProvider";
+import { FalhaDeRede, type CausaDaFalha } from "@/lib/api/falha-de-rede";
 import { ApiError } from "@/lib/api/types";
 
 type Variant = "error" | "warning" | "info";
@@ -112,7 +113,26 @@ const COPY: Record<string, { variant: Variant; msg?: string }> = {
  * `variables` no lugar (foi exatamente o que aconteceu e quebrou o typecheck
  * em cadeia da primeira tentativa).
  */
+const FRASE_DA_FALHA: Record<CausaDaFalha, string> = {
+  timeout: "O servidor não respondeu a tempo. Tente de novo.",
+  offline: "Sem conexão com a internet. Confira a rede e tente de novo.",
+  rede: "Não foi possível falar com o servidor. Confira a conexão e tente de novo.",
+};
+
+/**
+ * A descrição é a PISTA: o servidor não viu esta chamada, então não há log nem
+ * audit para cruzar — o id e o caminho vivem só aqui.
+ */
+export function descricaoDaFalha(f: FalhaDeRede): string {
+  const segundos = (f.duracaoMs / 1000).toFixed(1);
+  return `${f.metodo} ${f.caminho} · ${segundos} s · ID: ${f.requestId}`;
+}
+
 function toastFor(err: unknown, t: (texto: string) => string): void {
+  if (err instanceof FalhaDeRede) {
+    toast.error(t(FRASE_DA_FALHA[err.causa]), { description: descricaoDaFalha(err) });
+    return;
+  }
   if (err instanceof ApiError) {
     const entry = COPY[err.code];
     const description = err.requestId ? `ID: ${err.requestId}` : undefined;
