@@ -1,4 +1,5 @@
 import { apiClient } from "@/lib/api/client";
+import { rotuloDoContato, SEM_NOME, type ContatoNomeavel } from "@/lib/contacts/rotulo-do-contato";
 
 import { avatarUrlServivel } from "./avatar_url";
 import { TITULO_GENERICO, type BitsDoContato } from "./cache-de-contato";
@@ -22,10 +23,12 @@ import { TITULO_GENERICO, type BitsDoContato } from "./cache-de-contato";
 export async function contactNotifyBits(contactId: string): Promise<BitsDoContato> {
   let title = TITULO_GENERICO;
   try {
-    const r = await apiClient.get<{
-      data?: { display_name?: string | null; name?: string | null };
-    }>(`/api/v1/contacts/${contactId}`);
-    title = (r.data?.display_name || r.data?.name || title).trim() || title;
+    const r = await apiClient.get<{ data?: ContatoNomeavel }>(`/api/v1/contacts/${contactId}`);
+    // A cadeia de nome é UMA só no produto (`rotuloDoContato`): ela não deixa
+    // identificador técnico (`@lid`) virar nome e usa o telefone antes de desistir.
+    // Remontá-la aqui seria a sétima cópia — o que `rotulo-do-contato.test.ts` proíbe.
+    const rotulo = rotuloDoContato(r.data);
+    if (rotulo !== SEM_NOME) title = rotulo;
   } catch {
     // sem nome: o aviso sai genérico, como sempre saiu quando a leitura falhava
   }
