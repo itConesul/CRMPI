@@ -12,11 +12,17 @@ export interface EntregarAvisoInput {
   tag?: string;
   href?: string;
   icon?: string;
+  /**
+   * Identifica o toast: um aviso novo com o MESMO id substitui o anterior em vez
+   * de empilhar. É o que faz "3 novas mensagens" de uma conversa ocupar um lugar
+   * só na tela.
+   */
+  id?: string;
 }
 
 export function entregarAviso(input: EntregarAvisoInput): void {
   if (canalLigado(input.category, "in_app")) {
-    toast(input.title, { description: input.body });
+    toast(input.title, { description: input.body, ...(input.id ? { id: input.id } : {}) });
   }
   if (canalLigado(input.category, "push")) {
     emitNotification({
