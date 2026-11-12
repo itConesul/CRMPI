@@ -5,12 +5,15 @@ import { useCallback, useEffect } from "react";
 import { useActiveOrg } from "@/hooks/auth/AuthProvider";
 import { getOpenConversationId } from "@/hooks/notifications/OpenConversationContext";
 import { useRealtimeChannel } from "@/hooks/realtime/useRealtimeChannel";
-import { avatarUrlServivel } from "@/lib/notifications/avatar_url";
-import { entregarAviso } from "@/lib/notifications/deliver";
+import { avisarMensagem, zerarAvisosDaConversa } from "@/lib/notifications/avisos-de-mensagem";
+import { somarNaoVistas } from "@/lib/notifications/contador-na-aba";
 import { shouldNotifyInbound } from "@/lib/notifications/policy";
 import { syncPushSubscription } from "@/lib/notifications/push_client";
-import { apiClient } from "@/lib/api/client";
 import { createClient } from "@/lib/supabase/browser";
+
+// A leitura de nome e foto mora em `lib/notifications/contato-do-aviso.ts`; o nome
+// continua exportado daqui porque é por aqui que os testes e o resto o importam.
+export { contactNotifyBits } from "@/lib/notifications/contato-do-aviso";
 
 function tabFocused(): boolean {
   if (typeof document === "undefined") return false;
@@ -36,41 +39,6 @@ function previewFromMessage(row: { type?: unknown; body?: unknown }): string {
   if (row.type !== "text") return "Mídia";
   const body = typeof row.body === "string" ? row.body.trim() : "";
   return body || "Nova mensagem";
-}
-
-/**
- * Nome e foto do contato para o aviso de mensagem nova.
- *
- * ⚠️ O nome NÃO sai do Supabase do navegador. O cookie de sessão é httpOnly, então
- * o `createClient()` do browser age como ANÔNIMO — `contacts` não dá permissão a
- * esse papel e o PostgREST responde 401. O aviso caía em "Nova mensagem" sem ninguém
- * ver o porquê. A leitura passa pela rota do app, que tem a sessão.
- *
- * ⚠️ A foto é buscada SEM `credentials: "include"`. A rota responde 302 para uma URL
- * assinada do Storage, que devolve `Access-Control-Allow-Origin: *`; o navegador
- * proíbe `*` quando a requisição leva credenciais e bloqueava o redirect por CORS.
- * O padrão (`same-origin`) manda o cookie à nossa rota e segue o redirect sem ele.
- */
-export async function contactNotifyBits(
-  contactId: string,
-): Promise<{ title: string; icon?: string }> {
-  let title = "Nova mensagem";
-  try {
-    const r = await apiClient.get<{
-      data?: { display_name?: string | null; name?: string | null };
-    }>(`/api/v1/contacts/${contactId}`);
-    title = (r.data?.display_name || r.data?.name || title).trim() || title;
-  } catch {
-    // sem nome: o aviso sai genérico, como sempre saiu quando a leitura falhava
-  }
-  let icon: string | undefined;
-  try {
-    const r = await fetch(`/api/v1/contacts/${contactId}/avatar`, { redirect: "follow" });
-    icon = r.ok ? avatarUrlServivel(r.url, window.location.origin) : undefined;
-  } catch {
-    // sem foto: badge da marca
-  }
-  return { title, icon };
 }
 
 async function contactIdFromRow(
@@ -112,22 +80,26 @@ export function useInboundMessageAlerts(): void {
         historica: row.is_historical === true,
       })
     ) {
+      // O atendente está olhando esta conversa: o que estava acumulado dela foi visto.
+      if (
+        direction === "inbound" &&
+        conversationId &&
+        getOpenConversationId() === conversationId &&
+        tabFocused()
+      ) {
+        zerarAvisosDaConversa(conversationId);
+      }
       return;
     }
+    // `shouldNotifyInbound` só devolve true com `conversationId`; o guarda é do tipo.
+    if (!conversationId) return;
+    // Fora da aba, a mensagem entra no contador do título ("(3) CRM").
+    if (!tabFocused()) somarNaoVistas();
     void (async () => {
       const contactId = await contactIdFromRow(row, conversationId);
-      const bits = contactId
-        ? await contactNotifyBits(contactId)
-        : { title: "Nova mensagem" as const, icon: undefined };
-      entregarAviso({
-        category: "message",
-        kind: "message_inbound",
-        title: bits.title,
-        body: previewFromMessage(row),
-        tag: conversationId ?? undefined,
-        href: conversationId ? `/app/inbox?id=${conversationId}` : undefined,
-        icon: bits.icon,
-      });
+      // Quem decide se sai agora, se vira "N novas mensagens" e se entra no resumo
+      // de uma rajada é o agrupador — o hook só avisa que chegou.
+      avisarMensagem({ conversationId, contactId, preview: previewFromMessage(row) });
     })();
   }, []);
 

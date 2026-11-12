@@ -61,4 +61,24 @@ describe("aviso de mensagem nova: nome e foto do contato", () => {
 
     expect(bits.title).toBe("Nova mensagem");
   });
+
+  it("identificador técnico NUNCA vira o título do aviso: usa o telefone", async () => {
+    apiGet.mockResolvedValue({
+      data: { display_name: "Contato 543134@lid", name: null, phone_number: "+5531988887777" },
+    });
+    fetchSpy.mockResolvedValue({ ok: false, url: "" });
+
+    const bits = await contactNotifyBits(ID);
+
+    expect(bits.title).toBe("+5531988887777");
+    expect(bits.title).not.toMatch(/@lid/);
+  });
+
+  it("sem nome e sem telefone, o aviso sai genérico (não 'Sem nome')", async () => {
+    apiGet.mockResolvedValue({ data: { display_name: null, name: null, phone_number: null } });
+    fetchSpy.mockResolvedValue({ ok: false, url: "" });
+
+    expect((await contactNotifyBits(ID)).title).toBe("Nova mensagem");
+  });
+
 });
