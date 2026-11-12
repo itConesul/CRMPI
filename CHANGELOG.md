@@ -8,6 +8,17 @@ Se você roda o DeskcommCRM numa VPS, **leia a seção da versão para a qual es
 
 ## [Não lançado]
 
+## [1.23.4] — 2026-11-12
+
+### Alterado
+
+- **Quando o servidor não responde, o aviso na tela diz o motivo e o código para localizar** Antes, uma chamada que não obtinha resposta (prazo de 10 s esgotado, rede caída, conexão
+  recusada) aparecia só como "Erro inesperado. Tente novamente.", sem causa e sem
+  identificador. Agora o aviso diz se foi falta de resposta a tempo, falta de internet ou
+  falha de conexão, e mostra o método, o caminho (sem o que foi digitado em buscas), o tempo
+  gasto e o `ID` da requisição. O servidor não registra uma chamada que não chegou a ele, então
+  esse `ID` e o caminho são a única pista para investigar.
+
 ## [1.23.3] — 2026-11-12
 
 ### Alterado
@@ -3499,7 +3510,8 @@ Primeira versão marcada do DeskcommCRM. O projeto vinha sendo desenvolvido publ
 
 - **Node 22 é obrigatório para desenvolvimento.** A suíte de invariantes instancia o cliente do Supabase, que exige o `WebSocket` global — nativo apenas a partir do Node 22. Isso não afeta quem apenas hospeda: a VPS roda a imagem pronta.
 
-[Não lançado]: https://github.com/itConesul/CRMPI/compare/v1.23.3...HEAD
+[Não lançado]: https://github.com/itConesul/CRMPI/compare/v1.23.4...HEAD
+[1.23.4]: https://github.com/itConesul/CRMPI/compare/v1.23.3...v1.23.4
 [1.23.3]: https://github.com/itConesul/CRMPI/compare/v1.23.2...v1.23.3
 [1.23.2]: https://github.com/itConesul/CRMPI/compare/v1.23.1...v1.23.2
 [1.23.1]: https://github.com/itConesul/CRMPI/compare/v1.23.0...v1.23.1
