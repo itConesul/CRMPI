@@ -8,6 +8,19 @@ Se você roda o DeskcommCRM numa VPS, **leia a seção da versão para a qual es
 
 ## [Não lançado]
 
+## [1.23.3] — 2026-11-12
+
+### Alterado
+
+- **Os avisos de mensagem nova agrupam por conversa e a aba mostra o contador** Numa rajada de mensagens do WhatsApp, cada conversa passa a gerar UM aviso (toast e
+  notificação do sistema), que vira "N novas mensagens" em vez de um aviso por mensagem; uma
+  rajada em muitas conversas vira um resumo só. O nome e a foto do contato são consultados uma
+  vez e guardados por alguns minutos, em vez de duas chamadas por mensagem. O título da aba
+  mostra `(N)` enquanto ela está em segundo plano, e o selo do app instalado também, onde o
+  navegador o oferece. Uma faixa no app pede a permissão dos avisos do sistema; em endereço sem
+  HTTPS (fora de `localhost`), onde o navegador bloqueia as notificações, ela explica o motivo
+  em vez de oferecer um botão que não funciona.
+
 ## [1.23.2] — 2026-11-11
 
 ### Alterado
@@ -3486,7 +3499,8 @@ Primeira versão marcada do DeskcommCRM. O projeto vinha sendo desenvolvido publ
 
 - **Node 22 é obrigatório para desenvolvimento.** A suíte de invariantes instancia o cliente do Supabase, que exige o `WebSocket` global — nativo apenas a partir do Node 22. Isso não afeta quem apenas hospeda: a VPS roda a imagem pronta.
 
-[Não lançado]: https://github.com/itConesul/CRMPI/compare/v1.23.2...HEAD
+[Não lançado]: https://github.com/itConesul/CRMPI/compare/v1.23.3...HEAD
+[1.23.3]: https://github.com/itConesul/CRMPI/compare/v1.23.2...v1.23.3
 [1.23.2]: https://github.com/itConesul/CRMPI/compare/v1.23.1...v1.23.2
 [1.23.1]: https://github.com/itConesul/CRMPI/compare/v1.23.0...v1.23.1
 [1.23.0]: https://github.com/itConesul/CRMPI/compare/v1.22.4...v1.23.0
