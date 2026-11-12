@@ -5922,6 +5922,15 @@ export const DICIONARIO: Traducoes = {
   "Já tem conta?": { es: "¿Ya tienes cuenta?" },
   "Email ou senha incorretos.": { es: "Correo o contraseña incorrectos." },
   "Erro inesperado. Tente novamente.": { es: "Error inesperado. Intenta de nuevo." },
+  "O servidor não respondeu a tempo. Tente de novo.": {
+    es: "El servidor no respondió a tiempo. Intenta de nuevo.",
+  },
+  "Sem conexão com a internet. Confira a rede e tente de novo.": {
+    es: "Sin conexión a internet. Revisa la red e intenta de nuevo.",
+  },
+  "Não foi possível falar com o servidor. Confira a conexão e tente de novo.": {
+    es: "No fue posible comunicarse con el servidor. Revisa la conexión e intenta de nuevo.",
+  },
   "Entrando...": { es: "Entrando..." },
   "Configurando autenticação em duas etapas...": {
     es: "Configurando autenticación en dos pasos...",
