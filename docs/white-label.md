@@ -10,7 +10,7 @@ A licença é MIT: você pode modificar, hospedar para terceiros, revender e cob
 
 ## Trocar a marca
 
-**Pela tela, e sem reiniciar nada.** Em `/admin/marca` você troca o **nome do sistema** e a **cor da marca**. Salvou, recarregou, a interface inteira já está repintada — a barra lateral, os botões, o anel de foco, o título da aba e o ícone do navegador.
+**Pela tela, e sem reiniciar nada.** Em `/admin/marca` você troca o **nome do sistema** e a **cor da marca**. Salvou, recarregou, a interface inteira já está repintada — a barra lateral, os botões, o anel de foco, o título da aba. O **ícone da aba é o cone da Cone Sul** em toda instalação — não acompanha a cor nem o nome da marca.
 
 A cor é **derivada**, não aplicada crua: de um hex saem onze tons nos dois temas (claro e escuro), com um piso de contraste calculado por papel e por superfície. Se a cor que você escolheu ficaria ilegível como texto de botão no tema escuro, o sistema anda os degraus necessários e a tela **te mostra** em qual tom cada coisa vai pousar, antes de salvar. Nada de "escolhi amarelo e o botão ficou branco no branco".
 
