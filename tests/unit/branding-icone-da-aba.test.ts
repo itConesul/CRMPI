@@ -74,16 +74,15 @@ describe("o ícone carrega para quem NÃO entrou", () => {
     expect(PUBLIC_PATHS.some((re) => re.source === String.raw`^\/icon$`)).toBe(true);
   });
 
-  it("o ícone é gerado em runtime, nunca congelado no build", () => {
-    // Sem `force-dynamic` o `next build` resolve o ícone UMA vez e a marca de
-    // quem buildou vai dentro da imagem — que é uma só para todos os clones.
-    // O defeito é invisível em dev, em teste e na Vercel: só aparece na VPS do
-    // revendedor. Por isso a asserção é sobre o TEXTO: é uma linha que some num
-    // refactor sem nada mais quebrar.
+  it("o ícone desenha o cone embutido — sem rede, sem arquivo em public/", () => {
+    // Decisão do dono (2026-11-16): o cone vale para toda instalação. A guarda é
+    // sobre o TEXTO: o ícone usa a constante embutida e não busca imagem de fora.
     const icone = fs.readFileSync(path.join(RAIZ, "app/icon.tsx"), "utf8");
-    expect(icone).toMatch(/export const dynamic\s*=\s*"force-dynamic"/);
-    // E a marca tem de vir do resolvedor, não de literal.
-    expect(icone).toMatch(/marcaDaSaida\(null\)/);
+    expect(icone).toMatch(/CONE_SUL_PNG_DATA_URI/);
+    expect(icone).not.toMatch(/\bfetch\(/);
+    expect(fs.existsSync(path.join(RAIZ, "public/favicon.ico"))).toBe(false);
+    const cone = fs.readFileSync(path.join(RAIZ, "lib/branding/cone-sul.ts"), "utf8");
+    expect(cone).toMatch(/data:image\/png;base64,/);
   });
 
   it("o layout declara o ícone — é o que mata o pedido a /favicon.ico", () => {
