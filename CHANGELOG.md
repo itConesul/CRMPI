@@ -8,6 +8,19 @@ Se você roda o DeskcommCRM numa VPS, **leia a seção da versão para a qual es
 
 ## [Não lançado]
 
+## [1.23.5] — 2026-11-16
+
+### Alterado
+
+- **O ícone da aba do navegador agora é o cone da Cone Sul** O ícone da aba deixou de ser um quadrado com a cor e a inicial do nome da marca e passou a
+  ser o cone da Cone Sul, igual em toda instalação. Nada a fazer ao atualizar: o ícone novo
+  aparece sozinho (o navegador pode levar até um dia para trocar o antigo, por causa do cache).
+
+- **O código mostrado no aviso de falha agora é o mesmo que o servidor registra na lista de conversas** O aviso "o servidor não respondeu a tempo" mostra um `ID`. Na listagem de conversas, o
+  servidor gerava um código próprio e ignorava o enviado pelo navegador, então o `ID` do aviso
+  não aparecia em nenhum registro. Agora a rota aproveita o código do navegador (só se for um
+  UUID válido), e ele serve para localizar a chamada.
+
 ## [1.23.4] — 2026-11-12
 
 ### Alterado
@@ -3510,7 +3523,8 @@ Primeira versão marcada do DeskcommCRM. O projeto vinha sendo desenvolvido publ
 
 - **Node 22 é obrigatório para desenvolvimento.** A suíte de invariantes instancia o cliente do Supabase, que exige o `WebSocket` global — nativo apenas a partir do Node 22. Isso não afeta quem apenas hospeda: a VPS roda a imagem pronta.
 
-[Não lançado]: https://github.com/itConesul/CRMPI/compare/v1.23.4...HEAD
+[Não lançado]: https://github.com/itConesul/CRMPI/compare/v1.23.5...HEAD
+[1.23.5]: https://github.com/itConesul/CRMPI/compare/v1.23.4...v1.23.5
 [1.23.4]: https://github.com/itConesul/CRMPI/compare/v1.23.3...v1.23.4
 [1.23.3]: https://github.com/itConesul/CRMPI/compare/v1.23.2...v1.23.3
 [1.23.2]: https://github.com/itConesul/CRMPI/compare/v1.23.1...v1.23.2
