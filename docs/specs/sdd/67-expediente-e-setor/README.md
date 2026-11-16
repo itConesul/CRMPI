@@ -28,13 +28,14 @@ Enquanto o item 2 não estiver registrado em [`05-revisao.md`](05-revisao.md), a
 | [`04-tarefas.md`](04-tarefas.md) | Ordem de implementação, com o que está travado pela aprovação |
 | [`05-revisao.md`](05-revisao.md) | Decisões e aprovação |
 
-## Decisões que precisam do dono do produto
-1. **Bloqueio total (403 em tudo) ou só da ação** (assumir, responder, receber distribuição)? O texto
-   pede total; a issue sugere ação. (Q1)
-2. **Onde mora o expediente**: `organizations.settings.business_hours` (proposta) ou reaproveitar
-   `attendant_availability.schedule`? (Q2)
-3. **Departamento**: tabela nova (proposta) ou reaproveitar `channel_routing_*`? (Q3)
-4. **Um operador em um setor ou em vários?** (Q4)
+## Decisões (Q1–Q8)
+Em 2026-11-16 o autor adotou as recomendações da spec; o dono do produto ainda precisa **confirmar**
+(registro em [`05-revisao.md`](05-revisao.md)). As quatro que mais pesam no schema:
+1. **Q1 — só a ação é bloqueada** (assumir, responder, transferir…); a leitura fica liberada. O texto
+   pedia bloqueio total, então RF-4 e RF-5 foram adaptados.
+2. **Q2 — expediente em** `organizations.settings.business_hours`.
+3. **Q3 — departamento em tabela nova**, sem reaproveitar `channel_routing_*`.
+4. **Q4 — operador em vários setores** (vínculo N:N).
 
 ## Checklist de aprovação
 - [x] Cada requisito rastreia para um trecho da issue

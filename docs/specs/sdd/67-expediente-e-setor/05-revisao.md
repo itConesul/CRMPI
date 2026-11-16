@@ -1,16 +1,20 @@
 # 05 — Revisão e aprovação
 
 ## Decisões
-| Data | Pergunta / mudança | Decisão | Quem |
-|---|---|---|---|
-| — | Q1: bloqueio total ou só da ação? (recomendado: só a ação) | _pendente_ | dono do produto |
-| — | Q2: expediente em `organizations.settings.business_hours` (recomendado) ou em `attendant_availability.schedule`? | _pendente_ | dono do produto |
-| — | Q3: tabela `departments` nova (recomendado) ou `channel_routing_*`? | _pendente_ | dono do produto |
-| — | Q4: operador em vários setores (recomendado)? | _pendente_ | dono do produto |
-| — | Q5: dono da conversa sempre a vê, mesmo em outro setor (recomendado)? | _pendente_ | dono do produto |
-| — | Q6: leads e contatos ficam fora do isolamento por setor neste PRD (recomendado)? | _pendente_ | dono do produto |
-| — | Q7: conversa que chega com todos barrados fica sem dono até a abertura, e o aviso ao cliente é do PRD-07? | _pendente_ | dono do produto |
-| — | Q8: expediente por dia da semana, sem feriado? | _pendente_ | dono do produto |
+Em 2026-11-16 o autor da spec (cMoreiraSul) **adotou todas as recomendações** abaixo. Elas são a
+base do design atual, mas a issue #67 exige a aprovação do **dono do produto**: a coluna "Confirmado
+pelo dono do produto" fica vazia até essa confirmação.
+
+| Data | Pergunta | Decisão adotada | Efeito no design | Confirmado pelo dono do produto |
+|---|---|---|---|---|
+| 2026-11-16 | Q1: bloqueio total ou só da ação? | **Só a ação.** A leitura fica liberada | O `agent` fora do expediente lê, mas não assume, responde, transfere, anota, solta, adia nem encerra. Gate por `exigeExpediente` nas rotas de ação; faixa na tela em vez de redirecionamento. RF-4 e RF-5 reescritos | _pendente_ |
+| 2026-11-16 | Q2: onde mora o expediente? | `organizations.settings.business_hours` | Sem coluna nova; reusa o formato e as funções do horário por atendente | _pendente_ |
+| 2026-11-16 | Q3: departamento | Tabela `departments` nova | `channel_routing_*` fica como está (por número) | _pendente_ |
+| 2026-11-16 | Q4: operador em quantos setores? | Vários | Tabela de vínculo `department_members` (N:N) | _pendente_ |
+| 2026-11-16 | Q5: dono vê a conversa de outro setor? | Sim | A regra de dono vem antes da de setor em `fn_can_view_conversation` | _pendente_ |
+| 2026-11-16 | Q6: leads e contatos no isolamento? | Não neste PRD | Fora de escopo; issue própria se o dono quiser | _pendente_ |
+| 2026-11-16 | Q7: conversa com todos barrados | Fica sem dono até a abertura; o aviso ao cliente é do PRD-07 | Registrado como risco, sem solução neste PRD | _pendente_ |
+| 2026-11-16 | Q8: granularidade do expediente | Por dia da semana, sem feriado | `windows` com `dow`, como no horário por atendente | _pendente_ |
 
 ## Comentários de review
 | Data | Revisor | Comentário | Resolução |

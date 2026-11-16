@@ -13,8 +13,8 @@ departamentos e do expediente definidos aqui.
 | RF-1 | O admin cadastra departamentos (ex.: Comercial, Financeiro, Suporte) | "O que o texto pede" 1 |
 | RF-2 | O admin vincula operadores a um setor | "O que o texto pede" 1 |
 | RF-3 | O admin define início, fim e fuso do expediente da organização | "O que o texto pede" 2 |
-| RF-4 | Fora do expediente, o papel `agent` é barrado: a API responde `403 OUT_OF_WORK_HOURS` | "O que o texto pede" 2 |
-| RF-5 | Fora do expediente, a tela do `agent` redireciona para `/fora-de-expediente` | "O que o texto pede" 2 |
+| RF-4 | Fora do expediente, o papel `agent` é barrado **nas ações** (assumir, responder, receber distribuição e demais escritas de conversa): a API responde `403 OUT_OF_WORK_HOURS`. A leitura continua liberada (decisão Q1) | "O que o texto pede" 2 + "Melhorias propostas" 2 |
+| RF-5 | Fora do expediente, a tela do `agent` mostra uma faixa com a janela da empresa e desabilita as ações; a faixa leva a `/fora-de-expediente`, página informativa. *(Adaptado pela Q1: o texto pedia redirecionar a tela inteira)* | "O que o texto pede" 2 + "Melhorias propostas" 2 |
 | RF-6 | `admin` e `manager` **nunca** são barrados pelo expediente | "O que o texto pede" 2 |
 | RF-7 | `agent` vê só conversas do **seu departamento ou sem setor** | "O que o texto pede" 3 |
 | RF-8 | `admin` e `manager` veem tudo da organização | "O que o texto pede" 3 |
@@ -44,10 +44,11 @@ Acréscimos desta spec (deixados implícitos pela issue):
 - **Visibilidade de leads/contatos por setor**: o texto fala só de conversas. Ver Q6.
 
 ## Perguntas em aberto
-Não decididas pela issue. Cada uma tem recomendação em [`02-design.md`](02-design.md) e vira
-decisão em [`05-revisao.md`](05-revisao.md).
+Não decididas pela issue. **Em 2026-11-16 todas as recomendações abaixo foram adotadas** pelo autor
+da spec; seguem **pendentes da confirmação do dono do produto**, que a issue exige. Decisões
+registradas em [`05-revisao.md`](05-revisao.md).
 
-1. **Q1 — Bloqueio total ou da ação?** O texto pede 403 em tudo e redirecionamento de tela; a issue
+1. **Q1 — Bloqueio total ou da ação?** *(decidida: só a ação)* O texto pede 403 em tudo e redirecionamento de tela; a issue
    propõe barrar só assumir/responder/receber e deixar a leitura. Recomendação: só a ação (§2).
 2. **Q2 — Onde mora o expediente?** `organizations.settings.business_hours` com schema Zod central,
    ou reaproveitar `attendant_availability.schedule`. Recomendação: o primeiro (§2).

@@ -5,7 +5,9 @@
 |---|---|---|---|---|
 | CA-1 | `dentroDoExpediente` com expediente 08–18 e `agora` = 22h no fuso da org devolve `false`; 12h devolve `true`; dia fora das `windows` devolve `false` | unit | `tests/unit/expediente.test.ts` | — |
 | CA-1 | `requireRole("agent")` fora do expediente devolve 403 `OUT_OF_WORK_HOURS` com `details.opens_at`; dentro, passa | unit | `lib/auth/require-role.test.ts` (acrescentar) | — |
-| CA-1 | `agent` barrado abre `/app/...` e cai em `/fora-de-expediente`, que mostra a janela da empresa e o botão de sair; sem laço | e2e (pela tela) | `tests/e2e/expediente-e-setor.spec.ts` | — |
+| CA-1 | `agent` fora do expediente abre a conversa e **lê**, vê a faixa com a janela da empresa, o campo de resposta desabilitado com o motivo, e tentar enviar pela API devolve 403; o link da faixa abre `/fora-de-expediente` | e2e (pela tela) |
+| RNF-1 / Q1 | Toda rota de escrita em `app/api/v1/conversations/**` declara `exigeExpediente: true` ou uma justificativa; `GET` nunca é barrado | unit (varredura de AST) | `tests/unit/expediente-rotas-de-acao.test.ts` | — |
+| CA-1 | (continuação do e2e acima) o spec: `agent` fora do expediente lê, vê a faixa e não consegue enviar | e2e (pela tela) | `tests/e2e/expediente-e-setor.spec.ts` | — |
 | CA-1 | Para não depender do relógio do servidor, o spec configura o expediente com `windows` **só em dias que não são hoje** (fora do expediente garantido) e depois com a janela de hoje (dentro) | e2e | idem | — |
 | RF-6 / RNF-1 | `manager`, `admin`, platform admin e sessão de suporte **nunca** são barrados, mesmo fora do expediente | unit | `tests/unit/expediente.test.ts` | — |
 | RNF-1 | Nenhuma rota de `app/api/v1/cron/` ou `webhooks/` chama `requireRole` com gate de expediente (varredura de AST, como `cron-audita-so-quando-ha-efeito.test.ts`) | unit | `tests/unit/expediente-isencoes.test.ts` | — |
@@ -32,7 +34,8 @@ prioridade:
 1. **[P0]** Admin recém-instalado abre Configurações › Atendimento: a seção Expediente aparece
    **sem restrição** e nada o barra (instalação fresca não pode nascer trancada).
 2. Admin cria 2 departamentos, vincula 2 operadores, define expediente.
-3. `agent` fora do expediente → `/fora-de-expediente` → sai.
+3. `agent` fora do expediente: lê a conversa, vê a faixa e o campo de resposta desabilitado, abre
+   `/fora-de-expediente` pelo link da faixa e sai.
 4. `agent` de Suporte não vê a conversa de Comercial; o de Comercial vê.
 
 Evidência (screenshot/trace) em `.superpowers/evidence/`; jornadas registradas em

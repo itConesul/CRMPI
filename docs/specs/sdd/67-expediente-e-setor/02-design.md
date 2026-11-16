@@ -3,6 +3,8 @@
 **Verificado em:** `59c76a3` · **Comando:** `git rev-parse --short HEAD`
 **Natureza:** proposta. Nada aqui foi implementado. O §4 é a **proposta de schema** que a issue exige
 antes de qualquer migration.
+**Q1–Q8:** as recomendações foram adotadas em 2026-11-16 e este documento já as reflete; seguem
+pendentes da confirmação do dono do produto (`05-revisao.md`).
 
 ## 1. O que existe hoje (verificado lendo cada arquivo)
 
@@ -50,14 +52,22 @@ Dois mecanismos independentes, cada um com uma **função pura** testável sem b
   quebrada não pode trancar a equipe fora do próprio sistema; é o mesmo princípio de
   `janela-de-atendimento.ts`.
 - **Função pura** `dentroDoExpediente(config, agora)` e `expedienteBarra({papel, config, agora, isenções})`.
-- **Onde aplicar:** no servidor, em `requireRole`. É o ponto por onde toda rota de `agent`+ já passa,
-  e é onde o 403 padrão e o audit `authz.denied` já vivem. O `proxy.ts` **não** é o lugar: roda no
-  Edge sem banco. A tela redireciona por um `layout` de servidor de `app/app/` que chama a mesma função.
+- **Bloqueia a ação, não a leitura (Q1).** Fora do expediente o `agent` ainda abre e lê conversas;
+  não pode assumir, responder, transferir, anotar, soltar, adiar nem encerrar.
+- **Onde aplicar:** no servidor, em `requireRole`, por uma opção explícita `exigeExpediente: true`
+  passada pelas rotas de **ação** de conversa (`claim`, `messages`, `transfer`, `notes`, `release`,
+  `snooze`, `close`…). É o ponto por onde a rota já passa, e é onde o 403 padrão e o audit
+  `authz.denied` já vivem. O `proxy.ts` **não** é o lugar: roda no Edge sem banco. Um teste varre
+  `app/api/v1/conversations/**` e reprova rota de escrita que não declare a opção **nem** uma
+  justificativa escrita — para a lista de rotas protegidas não envelhecer em silêncio.
+- **Na tela:** uma faixa no shell do app (mesmo lugar de `FaixaDeAvisos`) mostra a janela da empresa
+  e a próxima abertura, e os controles de ação ficam desabilitados com o motivo. Calculado no
+  servidor pela mesma função pura, para cliente e servidor não divergirem.
 - **Isenções** (RNF-1), todas testadas: papéis `manager` e `admin`; platform admin; sessão de
   suporte/impersonação; rotas `cron/*` e `webhooks/*` (não chamam `requireRole`, autenticam por
   segredo — **NÃO VERIFICADO** para todas, vira teste que varre as rotas).
-- **Rota de saída sempre alcançável:** `/fora-de-expediente`, logout e troca de organização não podem
-  ser barrados, senão o redirecionamento vira laço.
+- **Leitura e saída sempre alcançáveis:** `GET`, `/fora-de-expediente`, logout e troca de
+  organização nunca são barrados. Como não há redirecionamento forçado, não existe laço a evitar.
 
 ### 2.2 Setor (RF-1, RF-2, RF-7 a RF-9)
 - Tabela `departments` e tabela de vínculo `department_members` (§4). Conversa ganha
@@ -82,7 +92,7 @@ Dois mecanismos independentes, cada um com uma **função pura** testável sem b
 | Reaproveitar `channel_routing_*` como departamento | É "quem responde por este **número**". Setor atravessa canais (um departamento atende vários números) e vice-versa |
 | `department_id` em `crm_leads` (do texto original) | A conversa é `conversations`; o lead é o funil. O isolamento pedido é de atendimento |
 | Restringir a policy de **escrita** por setor | A issue pede só leitura. Escrita por setor muda `fn_conversation_assign` e a transferência (PRD-02) |
-| Bloquear a tela inteira fora do expediente | Perde rascunho e impede consulta. Ver Q1 |
+| Bloquear a tela inteira fora do expediente (o que o texto pedia) | Perde rascunho e impede consulta. Decidido na Q1: barra-se a ação, não a leitura |
 
 ## 3. Contratos
 
@@ -105,8 +115,8 @@ nunca do body):
 | `PATCH/DELETE` | `/departments/[id]` | `admin` | Excluir **não** apaga conversas (§4) |
 | `PUT` | `/departments/[id]/members` | `admin` | Substitui a lista de operadores do setor |
 
-**Tela:** `/fora-de-expediente` (RF-5), com a janela da empresa, o horário de reabertura e o botão de
-sair. Configuração em **Configurações › Atendimento**: seção "Expediente" e seção "Departamentos".
+**Tela:** faixa no shell do app + página informativa `/fora-de-expediente` (RF-5), com a janela da
+empresa, o horário de reabertura e o botão de sair. Configuração em **Configurações › Atendimento**: seção "Expediente" e seção "Departamentos".
 
 ## 4. Dados — PROPOSTA DE SCHEMA (aguarda aprovação)
 
@@ -209,7 +219,7 @@ RLS correta no banco coexiste com uma API que vaza.
 | RF-1, RF-2 | §3 (rotas `/departments`), §4.2 |
 | RF-3 | §2.1, §3 (`PATCH /settings/expediente`), §4.1 |
 | RF-4 | §2.1 (`requireRole`), §3 (`OUT_OF_WORK_HOURS`) |
-| RF-5 | §2.1 (layout de servidor), §3 (tela) |
+| RF-5 | §2.1 (faixa no shell do app), §3 (tela) |
 | RF-6, RNF-1 | §2.1 (isenções) |
 | RF-7, RF-8 | §4.3 |
 | RF-9 | §2.2 (Realtime herda a RLS) + NÃO VERIFICADO do §1 |
@@ -229,7 +239,7 @@ RLS correta no banco coexiste com uma API que vaza.
 ## 7. Living System Checklist
 (`docs/doctrine/sistema-vivo.md`) — cada resposta nomeia o artefato concreto.
 - **Entrada e saída:** entrada = `PATCH /settings/expediente` e `/departments*` (admin); saída = 403
-  `OUT_OF_WORK_HOURS` em `requireRole`, redirecionamento para `/fora-de-expediente`, e a RLS de
+  `OUT_OF_WORK_HOURS` em `requireRole` (rotas de ação), faixa na tela com link para `/fora-de-expediente`, e a RLS de
   `conversations`.
 - **Emite atividade/log:** audit `expediente.config_changed`, `department.created/updated/deleted`,
   `department.member_set` em `api_audit_log`; tentativa barrada reaproveita `authz.denied` de
@@ -239,7 +249,7 @@ RLS correta no banco coexiste com uma API que vaza.
   `/fora-de-expediente`. Quantas tentativas foram barradas hoje aparece no cabeçalho da seção
   Expediente (dado para o admin enxergar se a regra está pegando).
 - **Porta na navegação (`lib/navigation/registry.ts`):** as seções ficam dentro de Configurações ›
-  Atendimento, que já tem porta. `/fora-de-expediente` é destino de redirecionamento, não item de
+  Atendimento, que já tem porta. `/fora-de-expediente` é destino do link da faixa, não item de
   menu: entra na allowlist de `tests/unit/navegacao-completude.test.ts` **com justificativa escrita**.
 - **Mecanismo anti-morte:** falha aberta (§2.1); `admin`/`manager` nunca barrados, então sempre há
   quem corrija um expediente mal configurado; `/fora-de-expediente` sempre alcançável.
@@ -257,7 +267,8 @@ RLS correta no banco coexiste com uma API que vaza.
 | **Vazamento entre setores** pela RLS ou por rota com client admin | Invariante `test:db` com 2 organizações **e** 2 setores; auditoria das rotas admin (T3) |
 | **Esconder conversa da organização inteira** por erro na função | Setor nulo = visível a todos; função `stable` testada contra `viewer/manager/admin/platform admin` |
 | **Trancar a equipe fora** por expediente mal configurado ou fuso inválido | Falha aberta; `admin`/`manager` isentos; validação Zod do fuso |
-| **Laço de redirecionamento** em `/fora-de-expediente` | A rota de saída, o logout e a troca de organização ficam fora do gate; teste dedicado |
+| **Rota de escrita de conversa esquecida** sem `exigeExpediente` | Teste de varredura em `app/api/v1/conversations/**` (§2.1); o 403 só existe onde a opção está declarada |
+| **Ação barrada sem explicação** | Faixa com a janela e a próxima abertura; controles desabilitados com o motivo |
 | **Cliente escreve às 22h e ninguém é barrado nem avisado** | Fora deste PRD: o que o cliente recebe é PRD-07 (#73). Até lá a conversa fica sem dono até a abertura — a IA, se ativa, mantém a própria janela |
 | **Realtime não remover da tela** a conversa que saiu do escopo por transferência | Medir (§1, NÃO VERIFICADO); o cliente refaz a consulta ao receber `UPDATE` e filtra |
 | **Fuso/horário de verão** | `localMoment` usa `Intl` com o fuso IANA; teste com data de virada |
