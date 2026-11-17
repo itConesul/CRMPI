@@ -29,7 +29,7 @@ final pelo revisor.
 | Roteamento por canal | `channel_routing_policies` + `channel_routing_responsibles` (`lib/routing/channel-policies.ts`) | Quem responde por **cada número** (canal). Não é setor |
 
 **Não existe:** tabela de departamentos; vínculo operador↔setor; `department_id` em `conversations`;
-expediente da organização; rota ou tela `/fora-de-expediente`; erro `OUT_OF_WORK_HOURS`.
+expediente da organização; rota ou tela `/app/fora-de-expediente`; erro `OUT_OF_WORK_HOURS`.
 
 **NÃO VERIFICADO** (medir antes de implementar — viram a tarefa T0):
 - Se `loadAuthUser()` já carrega `organizations.settings` (decide se o gate custa uma consulta a mais
@@ -129,18 +129,42 @@ Dois mecanismos independentes, cada um com uma **função pura** testável sem b
   - **T0(a):** `loadAuthUser` **não** carrega `organizations.settings` (seleciona `display_name,
     locale`), então o gate faz a própria leitura (`carregarExpediente`, falha aberta, service role não
     usado: é o client do usuário, sob RLS).
-  - **Isenções implementadas (2), cada uma com motivo escrito:** `attendants/availability/[user_id]`
-    ("o atendente gerencia a própria disponibilidade", senão ele ficaria "disponível" no roteamento sem
-    como sair) e `notifications/push` (`PUT`/`DELETE`: "inscrição de push do próprio navegador").
-    Qualquer outra rota de escrita de `agent` — incluindo `leads/*`, `contacts/*`, `tasks/*`,
-    `agenda/*` e `ai/*/reply` — fica **barrada** até alguém justificar. A lista é fixada por teste
-    (`tests/unit/expediente-rotas-de-acao.test.ts`): adicionar uma exige editar o teste.
+  - **Isenções FIXAS (decisão do dono do produto, 2026-11-17).** Fora do expediente, o `agent` em
+    sessão humana continua podendo: **ler**; **login e logout**; **trocar de organização**;
+    **perfil**; **preferências**; **cadastro e verificação de MFA**; **marcar notificação como lida**;
+    **presença** e `attendants/availability`. Nenhuma dispara mensagem ao cliente nem assume
+    atendimento. **Barrado:** tudo que fala com o cliente ou assume atendimento — assumir, responder,
+    transferir, encerrar, `messages`, aprovar resposta da IA, agent-inbox.
+  - **Medido na T0(f), o que a implementação já encontrou:** perfil, idioma e MFA são **Server
+    Actions** que autenticam só por `loadAuthUser`/`getUser`, e **nenhuma** Server Action chama
+    `requireRole` — então o gate **não as alcança** e o cadastro de MFA nunca é barrado (era a
+    preocupação do review: trancar quem a organização obriga a ter MFA). Das rotas de API, as duas
+    isenções que existem hoje são `attendants/availability/[user_id]` ("o atendente gerencia a
+    própria disponibilidade", senão ficaria "disponível" no roteamento sem como sair) e
+    `notifications/push` (`PUT`/`DELETE`, "inscrição de push do próprio navegador"). A T0(f)
+    confirma, **rota a rota**, "marcar notificação como lida" e "presença": se forem rotas de API que
+    passam por `requireRole`, entram na lista fixa com o motivo escrito.
+  - **CRM interno (leads, contatos, tarefas, agenda): barrado POR PADRÃO e liberado rota a rota**
+    (decisão do dono do produto), com o **motivo escrito** e um único critério: **"esta rota dispara
+    mensagem ao cliente?"** Se dispara, continua barrada. A lista de liberações sai da T0(f), gerada
+    por script a partir das rotas reais, e entra no teste. Hoje está **vazia de propósito**: nada do
+    CRM interno é liberado sem essa justificativa.
+  - **FORA do gate — por escrito e com teste de varredura:** token **Bearer**, **MCP**, **agente de
+    IA**, **webhooks**, **cron** e a **ingestão de mensagens**. A IA cobre a noite e a mensagem do
+    cliente tem de entrar na fila (RF-11). O motivo: o expediente é uma regra para **atendente
+    humano em sessão**. MCP e tokens Bearer (`dsk_…`, papel padrão `agent`, escrevem com
+    `mcp:write`) autenticam por `lib/mcp/auth.ts` (`ensureRole`) e nunca chamam `requireRole`; o
+    agente de IA tem a própria janela (`janela-de-atendimento.ts`); webhooks e cron autenticam por
+    segredo. O teste `tests/unit/expediente-rotas-de-acao.test.ts` fixa isto: `lib/mcp` e
+    `app/api/mcp` não podem chamar `requireRole`, `cron/*` e `webhooks/*` também não, e **nenhuma
+    Server Action** o chama. Consequência a ter à vista: uma Server Action de **atendimento**
+    escaparia do gate; hoje nenhuma existe, e quem criar uma deve chamar o gate explicitamente.
   - **Limite do fail-closed (T0(f), inventário):** o gate só alcança rotas que chamam `requireRole`.
     Das **140** rotas de escrita fora de `cron/*` e `webhooks/*`, **17 não o chamam** (`admin/*`,
     `system/*`, `marca/logo`, `team/[user_id]*`, `channels/partner/templates*`,
-    `agenda/agendamentos/[id]/google/*`). Ficam numa lista **fixa** em teste (rota nova de escrita sem
-    `requireRole` reprova), mas as de organização (`team`, `channels`, `agenda/google`, `marca`)
-    **precisam de decisão do dono do produto** sobre se um `agent` as alcança.
+    `agenda/agendamentos/[id]/google/*`). Ficam numa lista **fixa** em teste (rota nova de escrita
+    sem `requireRole` reprova), mas as de organização (`team`, `channels`, `agenda/google`,
+    `marca`) ainda precisam da decisão "um `agent` as alcança?" na T0(f).
   - **A varredura de AST cobre `app/api/v1/**`** (e não só `conversations/**`) e reprova: isenção sem
     motivo; rota `cron/*` ou `webhooks/*` ligada ao gate. O que o teste protege deixa de ser "a lista
     de rotas protegidas" (que envelhecia) e passa a ser "a lista de isenções" (que é curta e tem
@@ -173,9 +197,10 @@ Dois mecanismos independentes, cada um com uma **função pura** testável sem b
   expediente: a mensagem do cliente entra sempre. O teste de isenções varre `webhooks/*` para
   garantir que ninguém ligue o gate ali sem querer.
 - **Isenções** (RNF-1), todas testadas: papéis `manager` e `admin`; platform admin; sessão de
-  suporte/impersonação; rotas `cron/*` e `webhooks/*` (não chamam `requireRole`, autenticam por
-  segredo — **NÃO VERIFICADO** para todas, vira teste que varre as rotas).
-- **Leitura e saída sempre alcançáveis:** `GET`, `/fora-de-expediente`, logout e troca de
+  suporte/impersonação; e o que fica **fora do gate** (Bearer, MCP, IA, webhooks, cron, ingestão; ver
+  §2.1 acima). `cron/*` e `webhooks/*` não chamam `requireRole`: o teste de varredura reprova quem
+  ligar o gate ali.
+- **Leitura e saída sempre alcançáveis:** `GET`, `/app/fora-de-expediente`, logout e troca de
   organização nunca são barrados. Como não há redirecionamento forçado, não existe laço a evitar.
 
 ### 2.2 Setor (RF-1, RF-2, RF-7 a RF-9)
@@ -241,7 +266,7 @@ nunca do body):
 | `POST` | `/departments/[id]/reassign` | `admin` | Corpo `{ to_department_id: uuid }` (outro setor da **mesma** organização) ou `{ sem_setor: true }` — a volta a "sem setor" é um ato **explícito**. Audita `department.conversations_reassigned` com a contagem |
 | `PUT` | `/departments/[id]/members` | `admin` | Substitui a lista de operadores do setor |
 
-**Tela:** faixa no shell do app + página informativa `/fora-de-expediente` (RF-5), com a janela da
+**Tela:** faixa no shell do app + página informativa `/app/fora-de-expediente` (RF-5), com a janela da
 empresa, o horário de reabertura e o botão de sair. Configuração em **Configurações › Atendimento**: seção "Expediente" e seção "Departamentos".
 
 ## 4. Dados — PROPOSTA DE SCHEMA (aguarda aprovação)
@@ -305,7 +330,15 @@ do $$ begin
   if not exists (select 1 from pg_constraint where conname = 'conversations_department_fk') then
     alter table public.conversations add constraint conversations_department_fk
       foreign key (department_id, organization_id)
-      references public.departments (id, organization_id);   -- NO ACTION (N1): bloqueia apagar setor com conversas
+      references public.departments (id, organization_id)   -- NO ACTION (N1): bloqueia apagar setor com conversas
+      not valid;                                            -- não varre a tabela com lock forte (ver abaixo)
+  end if;
+end $$;
+-- VALIDATE em seguida: varre com lock mais fraco (não bloqueia leitura nem escrita). Só roda se ainda
+-- não foi validada, então re-aplicar pelo update.sh é um no-op.
+do $$ begin
+  if exists (select 1 from pg_constraint where conname = 'conversations_department_fk' and not convalidated) then
+    alter table public.conversations validate constraint conversations_department_fk;
   end if;
 end $$;
 create index if not exists idx_conversations_department
@@ -321,6 +354,13 @@ create index if not exists idx_conversations_department
   só o setor com conversas (o `restrict` bloquearia por definição; não o medi). A escolha é pelo que
   **não depende da ordem do cascade** — uma garantia por definição, e não só pelo ordenamento que
   testei.
+- **`NOT VALID` + `VALIDATE` na FK da conversa (decisão do dono do produto, 2026-11-17).** `conversations`
+  é a tabela com tráfego ao vivo, e um `add constraint foreign key` comum toma um lock que bloqueia
+  escrita enquanto varre a tabela inteira — num `update.sh` de uma VPS em produção isso é conversa
+  travada. Com `NOT VALID` o lock é breve e só as linhas **novas** são checadas; o `VALIDATE`
+  seguinte varre com um lock que **não** bloqueia leitura nem escrita. Como todo `department_id`
+  existente é nulo (a FK não checa nulos), a validação é trivialmente satisfeita. As tabelas novas
+  (`departments`, `department_members`) nascem vazias e não precisam disso.
 - **FKs compostas (condição 1).** O `organization_id` do vínculo (e da conversa) é **amarrado** à
   organização do setor, e o `user_id` é amarrado a um **membro** daquela organização:
   `unique (id, organization_id)` em `departments` é o alvo, e `user_organizations` já tem
@@ -379,33 +419,117 @@ As **duas origens** de `EXECUTE` são revogadas (A: `anon` direto; B: `PUBLIC`),
    referencia a assinatura antiga, e que cada chamador respeita o setor (um caso por chamador):
    `tests/invariants/fn-can-view-conversation-chamadores.test.ts`.
 
-**Escrita com a mesma regra (N2, RF-14).** `A` abaixo é o predicado que já existe hoje (platform admin
-ou membro da organização com papel `agent`+):
+**`update.sh` e o `drop function` (cuidado do review, 2026-11-17).** O `baseline.sql` é um dump seguido
+de apêndices, e o `update.sh` o **reaplica inteiro, de cima para baixo, sem `ON_ERROR_STOP`**. Então, a
+cada reaplicação, **o dump recria a função antiga** (e os apêndices anteriores recriam os chamadores
+com ela); o apêndice novo, por vir **depois**, migra os chamadores e a remove no fim. O estado final é
+o certo. A armadilha é o inverso: um dependente esquecido faz o `drop` falhar, e **sem
+`ON_ERROR_STOP` a falha passa em silêncio** — o clone fica com a função antiga viva (o estado de
+hoje, mais seguro do que quebrar, mas sem a regra de setor nesse chamador). Por isso o teste de
+`update` com **banco povoado** é obrigatório e reaplica o baseline **duas vezes**: ao fim, a assinatura
+antiga não existe e nenhum objeto aponta para ela.
+
+**Escrita com a mesma regra (N2, RF-14) — SQL por extenso.** `A` é o predicado que já existe hoje em
+`conversations_agent_*` (platform admin, ou membro da organização com papel `agent`+), escrito aqui
+sem abreviação:
 ```sql
--- conversations: UPDATE/DELETE exigem enxergar a conversa; o WITH CHECK impede mover para onde não se enxerga
+-- A = public.fn_is_platform_admin()
+--     or ((organization_id in (select public.fn_user_org_ids()))
+--         and public.fn_role_at_least(organization_id, 'agent'))
+
+-- conversations: INSERT, UPDATE e DELETE exigem a MESMA visibilidade do SELECT. O WITH CHECK impede
+-- criar ou mover uma conversa para onde quem escreve não enxerga.
+drop policy if exists conversations_agent_insert on public.conversations;
+create policy conversations_agent_insert on public.conversations for insert with check (
+  ( public.fn_is_platform_admin()
+    or ((organization_id in (select public.fn_user_org_ids()))
+        and public.fn_role_at_least(organization_id, 'agent')) )
+  and public.fn_can_view_conversation(organization_id, assigned_to_user_id, department_id)
+);
+
 drop policy if exists conversations_agent_update on public.conversations;
 create policy conversations_agent_update on public.conversations for update
-  using      (A and public.fn_can_view_conversation(organization_id, assigned_to_user_id, department_id))
-  with check (A and public.fn_can_view_conversation(organization_id, assigned_to_user_id, department_id));
-drop policy if exists conversations_agent_delete on public.conversations;
-create policy conversations_agent_delete on public.conversations for delete
-  using      (A and public.fn_can_view_conversation(organization_id, assigned_to_user_id, department_id));
+  using (
+    ( public.fn_is_platform_admin()
+      or ((organization_id in (select public.fn_user_org_ids()))
+          and public.fn_role_at_least(organization_id, 'agent')) )
+    and public.fn_can_view_conversation(organization_id, assigned_to_user_id, department_id)
+  )
+  with check (
+    ( public.fn_is_platform_admin()
+      or ((organization_id in (select public.fn_user_org_ids()))
+          and public.fn_role_at_least(organization_id, 'agent')) )
+    and public.fn_can_view_conversation(organization_id, assigned_to_user_id, department_id)
+  );
 
--- messages: INSERT/UPDATE/DELETE exigem enxergar a conversa. O exists roda com a RLS de quem chama,
--- então herda a regra de conversations_select (é o mesmo mecanismo do messages_select).
+drop policy if exists conversations_agent_delete on public.conversations;
+create policy conversations_agent_delete on public.conversations for delete using (
+  ( public.fn_is_platform_admin()
+    or ((organization_id in (select public.fn_user_org_ids()))
+        and public.fn_role_at_least(organization_id, 'agent')) )
+  and public.fn_can_view_conversation(organization_id, assigned_to_user_id, department_id)
+);
+
+-- messages: INSERT, UPDATE e DELETE exigem enxergar a conversa. O exists roda com a RLS de quem
+-- chama, então herda a regra de conversations_select — é o mesmo mecanismo do messages_select.
 drop policy if exists messages_insert on public.messages;
 create policy messages_insert on public.messages for insert with check (
   public.fn_is_platform_admin()
   or ((organization_id in (select public.fn_user_org_ids()))
       and exists (select 1 from public.conversations c where c.id = messages.conversation_id))
 );
--- messages_update e messages_delete: o mesmo predicado, no using (e no with check do update)
+
+drop policy if exists messages_update on public.messages;
+create policy messages_update on public.messages for update
+  using (
+    public.fn_is_platform_admin()
+    or ((organization_id in (select public.fn_user_org_ids()))
+        and exists (select 1 from public.conversations c where c.id = messages.conversation_id))
+  )
+  with check (
+    public.fn_is_platform_admin()
+    or ((organization_id in (select public.fn_user_org_ids()))
+        and exists (select 1 from public.conversations c where c.id = messages.conversation_id))
+  );
+
+drop policy if exists messages_delete on public.messages;
+create policy messages_delete on public.messages for delete using (
+  public.fn_is_platform_admin()
+  or ((organization_id in (select public.fn_user_org_ids()))
+      and exists (select 1 from public.conversations c where c.id = messages.conversation_id))
+);
 ```
-- **Guarda do `department_id` (proposta do autor, a validar na T4b).** O `WITH CHECK` acima impede
-  mover uma conversa para um setor que o agente não enxerga, mas **não** impede um `agent` de trocar
-  o setor de uma conversa que enxerga (ou zerá-lo, o que a torna visível a todos). Quem decide setor
-  é o PRD-02/PRD-07 e a rota de reatribuição do admin; então um **trigger `BEFORE UPDATE`** rejeita
-  mudança de `department_id` quando quem escreve não é `manager`+/platform admin nem `service_role`.
+- **Guarda do `department_id` — ACEITA pelo dono do produto (2026-11-17); deixa de ser "proposta do
+  autor".** O `WITH CHECK` acima impede mover uma conversa para um setor que o agente não enxerga, mas
+  **não** impede um `agent` de trocar o setor de uma conversa que enxerga, nem de zerá-lo (o que a
+  torna visível a todos). A regra decidida: **`agent` não muda nem zera o setor**; `manager`+, platform
+  admin e `service_role` podem; `fn_conversation_assign` continua `security definer`. Por extenso:
+```sql
+create or replace function public.fn_guard_department_change() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if new.department_id is distinct from old.department_id
+     and auth.uid() is not null                          -- service_role e postgres não têm JWT: passam
+     and not public.fn_is_platform_admin()
+     and not public.fn_role_at_least(new.organization_id, 'manager') then
+    raise exception 'department_id só pode ser alterado por manager ou admin' using errcode = '42501';
+  end if;
+  return new;
+end $$;
+revoke all on function public.fn_guard_department_change() from public;
+revoke execute on function public.fn_guard_department_change() from anon;
+
+drop trigger if exists conversations_guard_department on public.conversations;
+create trigger conversations_guard_department
+  before update of department_id on public.conversations
+  for each row execute function public.fn_guard_department_change();
+```
+  O trigger é só de `UPDATE`: criar a conversa já passa pela policy de `INSERT` acima (o setor tem de
+  ser um que quem cria enxerga). Quem muda setor depois é o PRD-02/PRD-07 e a rota de reatribuição do
+  admin; se o PRD-02 vier a mudar o setor dentro de `fn_conversation_assign`, o `auth.uid()` continua
+  sendo o do chamador e o trigger o barraria para um `agent` — decisão daquele PRD. Entra na **T4b**,
+  com um teste por papel (`agent` não muda nem zera; `manager`, `admin`, platform admin e
+  `service_role` mudam).
 - **Risco a testar:** o `WITH CHECK` por visibilidade rejeita um `UPDATE` direto que deixa a linha
   invisível ao próprio autor (ex.: um `agent` com `visibility_mode = own` que **solta** a conversa:
   a linha nova fica sem dono e deixa de ser visível a ele). Fluxos de soltar/transferir já passam por
@@ -421,6 +545,8 @@ create policy messages_insert on public.messages for insert with check (
   colunas novas (`department_id` nulo não é checado). *(A frase "nenhuma linha muda" só vale nesse
   dia: depois dele, apagar setor é bloqueado por N1 justamente para o comportamento não mudar em
   silêncio.)*
+- **`update.sh` sem travar tabela com tráfego:** a FK da conversa entra com `NOT VALID` e é validada
+  em seguida (§4.2), e a re-aplicação é idempotente (só valida se ainda não validou).
 - **A troca das policies é a parte que muda comportamento** (N2: escrita passa a exigir visibilidade).
   Ela fica na **T4b**, depois da T3, e é testada com o `baseline.sql` em `install` e `update` contra
   um banco **com conversas existentes**, para provar que um clone com dados continua vendo e
@@ -470,7 +596,7 @@ rota contorna a regra, depois a regra é ligada.
 ## 7. Living System Checklist
 (`docs/doctrine/sistema-vivo.md`) — cada resposta nomeia o artefato concreto.
 - **Entrada e saída:** entrada = `PATCH /settings/expediente` e `/departments*` (admin); saída = 403
-  `OUT_OF_WORK_HOURS` em `requireRole` (rotas de ação), faixa na tela com link para `/fora-de-expediente`, e a RLS de
+  `OUT_OF_WORK_HOURS` em `requireRole` (rotas de ação), faixa na tela com link para `/app/fora-de-expediente`, e a RLS de
   `conversations`.
 - **Emite atividade/log:** audit `expediente.config_changed`, `department.created/updated/deleted`,
   `department.member_set` e `department.conversations_reassigned` em `api_audit_log`; ação de
@@ -478,23 +604,23 @@ rota contorna a regra, depois a regra é ligada.
   mutação (RF-10). **A tentativa barrada NÃO gera linha de audit** (N4, decidido): é contada no
   contador agregado `expediente:barrados:<org>:<dia>` (§2.1). Nenhuma rodada que não fez nada audita.
 - **Aparece na tela:** Configurações › Atendimento (seções Expediente e Departamentos) e
-  `/fora-de-expediente`. O cabeçalho da seção Expediente mostra **quantas tentativas foram barradas
+  `/app/fora-de-expediente`. O cabeçalho da seção Expediente mostra **quantas tentativas foram barradas
   hoje**, lido do contador agregado (`—` se o Redis não responde): dado para o admin enxergar se a
   regra está pegando.
 - **Porta na navegação (`lib/navigation/registry.ts`):** as seções ficam dentro de Configurações ›
-  Atendimento, que já tem porta. `/fora-de-expediente` é destino do link da faixa, não item de
+  Atendimento, que já tem porta. `/app/fora-de-expediente` é destino do link da faixa, não item de
   menu: entra na allowlist de `tests/unit/navegacao-completude.test.ts` **com justificativa escrita**.
 - **Mecanismo anti-morte:** falha aberta (§2.1); `admin`/`manager` nunca barrados, então sempre há
-  quem corrija um expediente mal configurado; `/fora-de-expediente` sempre alcançável.
+  quem corrija um expediente mal configurado; `/app/fora-de-expediente` sempre alcançável.
 - **Laço de retorno (o que muda quando erra):** se o expediente barra quem não devia, o atendente vê
-  `/fora-de-expediente` com a janela configurada e o admin vê o contador de barrados e corrige na
+  `/app/fora-de-expediente` com a janela configurada e o admin vê o contador de barrados e corrige na
   mesma tela. Se o setor esconde conversa demais, o admin vê, na seção Departamentos, quantas
   conversas cada setor tem e quem o integra, e move o operador. Conversa sem setor é visível a todos,
   então nenhuma fica invisível por erro de classificação, e apagar um setor com conversas é bloqueado
   (N1), então nenhuma volta a "sem setor" sem um ato explícito.
 - **Mapa vivo (`docs/architecture/`):** novo `expediente-e-setor.architecture.json` com as peças
   (`departments`, `department_members`, `business_hours`, `requireRole`, `fn_can_view_conversation`,
-  `/fora-de-expediente`) e ≥2 arestas cada, e atualização de `organizacoes-e-acesso.architecture.json`.
+  `/app/fora-de-expediente`) e ≥2 arestas cada, e atualização de `organizacoes-e-acesso.architecture.json`.
 
 ## 8. Riscos
 | Risco | Mitigação |

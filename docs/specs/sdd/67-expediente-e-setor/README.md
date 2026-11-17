@@ -36,11 +36,11 @@ Estado de cada uma — a fonte é a tabela de [`05-revisao.md`](05-revisao.md), 
 | **Confirmadas pelo dono do produto** (comentário na #67 de 2026-11-13) | Q1, Q7 |
 | **Aprovadas pelo dono do produto** (comentário na #67 de 2026-11-17) | Q2, Q3, Q4, Q5, Q8, Q9 (por organização agora; por setor é evolução prevista) |
 | **Fora do escopo, com risco aceito** (2026-11-17; mapeado na #80) | Q6 |
-| **Decisões novas** (2026-11-17) | N1 (bloquear apagar setor com conversas), N2 (regra de setor também na escrita), N3 (virada de dia), N4 (sem audit por tentativa) |
+| **Decisões novas** (2026-11-17) | N1 (bloquear apagar setor com conversas), N2 (regra de setor também na escrita), N3 (virada de dia **só no expediente**, confirmada), N4 (sem audit por tentativa); gate: isenções fixas, CRM interno barrado por padrão, fora do gate (Bearer, MCP, IA, webhooks, cron, ingestão); trigger do `department_id` aceito; `NOT VALID` + `VALIDATE` |
 | **Abertas** | nenhuma |
 
 A **proposta de schema** (§4 de [`02-design.md`](02-design.md)) tem **aprovação condicionada** (2026-11-17)
-a seis ajustes, **todos incorporados**; falta o revisor registrar a aprovação final em
+a seis ajustes, **todos incorporados**; a **segunda rodada** (9 itens, em `05-revisao.md`) também foi incorporada; falta o revisor reler e registrar a aprovação final em
 [`05-revisao.md`](05-revisao.md), que libera as tarefas 🔒. Aprovar as perguntas **não** libera nada
 sozinho.
 As quatro que mais pesam no schema:
@@ -49,6 +49,11 @@ As quatro que mais pesam no schema:
 2. **Q2 — expediente em** `organizations.settings.business_hours`.
 3. **Q3 — departamento em tabela nova**, sem reaproveitar `channel_routing_*`.
 4. **Q4 — operador em vários setores** (vínculo N:N).
+
+## Sequência de implementação (depois da aprovação)
+Este PR é só de spec. A implementação vai em **PRs separados para a `develop`**: (1) gate sem schema,
+(2) auditoria T0(d)+T3, (3) T4a, (4) T4b — só depois da T3. Nenhum PR traz migration, apêndice de
+`baseline.sql` ou `MANIFEST.md` antes da aprovação final. Detalhe em [`04-tarefas.md`](04-tarefas.md).
 
 ## Checklist de aprovação
 - [x] Cada requisito rastreia para um trecho da issue
