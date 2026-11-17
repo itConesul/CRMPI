@@ -1,9 +1,9 @@
-import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import type { NextRequest } from "next/server";
 import { requireSupportWrite } from "@/lib/impersonate/support";
 import { requireRole } from "@/lib/auth/require-role";
 import { createClient } from "@/lib/supabase/server";
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
 const input = z.object({
@@ -15,7 +15,7 @@ const input = z.object({
 export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const denied = await requireSupportWrite();
   if (denied) return denied;
-  const requestId = randomUUID(),
+  const requestId = requestIdDe(req),
     auth = await requireRole("agent", { requestId, resource: "conversations" });
   if (!auth.ok) return auth.response;
   const { id } = await ctx.params,

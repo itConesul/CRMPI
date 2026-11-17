@@ -4,9 +4,9 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  * POST /api/v1/ai/followup-flows — cria draft (manager+). Nasce status='draft',
  *   draft_graph null, trigger_config default 'manual' (default do banco).
  */
-import { randomUUID } from "node:crypto";
 import type { NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
 import { requireRole } from "@/lib/auth/require-role";
@@ -19,7 +19,7 @@ export const dynamic = "force-dynamic";
 const LIST_COLUMNS = "id, name, status, active_version_id, handoff_policy, updated_at";
 
 export async function GET(_req?: NextRequest): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(_req);
   const authz = await requireRole("viewer", { requestId, resource: "followup_flows" });
   if (!authz.ok) return authz.response;
   const { org: activeOrg } = authz;
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest): Promise<Response> {
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const authz = await requireRole("manager", { requestId, resource: "followup_flows" });
   if (!authz.ok) return authz.response;
   const t = (texto: string) => traduzir(texto, authz.user.idioma);

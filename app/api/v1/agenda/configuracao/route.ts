@@ -1,13 +1,13 @@
 import { requireSupportWrite } from "@/lib/impersonate/support";
-import { randomUUID } from "node:crypto";
 import { requireRole } from "@/lib/auth/require-role";
 import { createClient } from "@/lib/supabase/server";
 import { agendaSettingsSchema, agendaSettingsWriteSchema } from "@/lib/schemas/settings";
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
 
-export async function GET() {
-  const requestId = randomUUID();
+export async function GET(req?: Request) {
+  const requestId = requestIdDe(req);
   const auth = await requireRole("viewer", { requestId, resource: "agenda" });
   if (!auth.ok) return auth.response;
   const { data, error } = await (
@@ -24,7 +24,7 @@ export async function GET() {
 export async function PATCH(req: Request) {
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const auth = await requireRole("manager", { requestId, resource: "agenda" });
   if (!auth.ok) return auth.response;
   const parsed = agendaSettingsWriteSchema.safeParse(await req.json().catch(() => null));

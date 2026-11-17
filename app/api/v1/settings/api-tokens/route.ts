@@ -6,9 +6,10 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  * Token format: `dsk_<8-hex-prefix>_<32-byte-random-base64url>`.
  * Stored as: prefix + sha256(plaintext) bytea — no reversible storage.
  */
-import { createHash, randomBytes, randomUUID } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import type { NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { ApiError } from "@/lib/api/types";
 import { audit } from "@/lib/audit";
@@ -23,7 +24,7 @@ const SELECT_COLS =
   "id, name, prefix, scopes, last_used_at, expires_at, revoked_at, created_at";
 
 export async function GET(_req: NextRequest): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(_req);
   const authz = await requireRole("admin", { requestId, resource: "api_tokens" });
   if (!authz.ok) return authz.response;
   const { org: activeOrg } = authz;
@@ -42,7 +43,7 @@ export async function POST(req: NextRequest): Promise<Response> {
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const authz = await requireRole("admin", { requestId, resource: "api_tokens" });
   if (!authz.ok) return authz.response;
   const t = (texto: string) => traduzir(texto, authz.user.idioma);

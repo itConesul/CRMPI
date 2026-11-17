@@ -13,10 +13,10 @@
  * que configura o agente. A juncao das duas metades (e a recusa em servir uma
  * capacidade sem a metade do humano) vive em `catalogo-servido.ts`.
  */
-import { randomUUID } from "node:crypto";
 import type { NextRequest } from "next/server";
 import { z } from "zod";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { loadAuthUser, resolveActiveOrg } from "@/lib/auth/server";
 import { allTools } from "@/lib/mcp/tools";
@@ -26,7 +26,7 @@ import { juntarCatalogoComHandlers } from "@/lib/mcp/tools/catalogo-servido";
 export const dynamic = "force-dynamic";
 
 export async function GET(_req: NextRequest): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(_req);
   const authUser = await loadAuthUser();
   if (!authUser) return fail("unauthenticated", "Auth required.", 401, { requestId });
   const activeOrg = await resolveActiveOrg(authUser);

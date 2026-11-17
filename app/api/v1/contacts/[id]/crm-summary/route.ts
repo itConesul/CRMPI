@@ -26,9 +26,9 @@
  * alternativa (status por seção) triplicaria os estados no componente, e a
  * doença que esta rota cura é exatamente estados distintos colapsados num só.
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { camposDoFunil, settingsDoEmbed } from "@/lib/leads/campos-do-funil";
 import { createClient } from "@/lib/supabase/server";
@@ -69,7 +69,7 @@ export async function GET(
   _req: NextRequest,
   ctx: { params: Promise<{ id: string }> },
 ): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(_req);
   const { id: contactId } = await ctx.params;
 
   const supabase = await createClient();

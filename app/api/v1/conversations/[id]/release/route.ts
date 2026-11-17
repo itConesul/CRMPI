@@ -10,11 +10,11 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  * (migration 0031) — UPDATE condicional + evento `reason='release'` em
  * `conversation_assignment_events` na MESMA transação.
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 
 import { audit } from "@/lib/audit";
 import { registrarTrocaDeComando } from "@/lib/inbox/atividade-de-comando";
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
 import { createClient } from "@/lib/supabase/server";
@@ -31,7 +31,7 @@ export async function POST(_req: NextRequest, ctx: RouteCtx): Promise<Response> 
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(_req);
   const { id } = await ctx.params;
   const supabase = await createClient();
 

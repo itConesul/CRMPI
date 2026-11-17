@@ -14,10 +14,10 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  * runtime, resolve-turn-agent.ts:193) — devolve min_confidence no payload pra
  * a tela explicar quando o resultado cairia no fallback/genérico em produção.
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 import { z } from "zod";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest, ctx: RouteCtx): Promise<Response> {
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const { id } = await ctx.params;
   if (!UUID_RX.test(id)) {
     return fail("invalid_request", "id inválido.", 400, { requestId });

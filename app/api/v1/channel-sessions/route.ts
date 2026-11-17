@@ -7,12 +7,12 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  *
  * organization_id resolvido da sessão (cookie) — nunca do body.
  */
-import { randomUUID } from "node:crypto";
 import type { NextRequest } from "next/server";
 
 import { connectWahaChannel, ChannelConnectionError } from "@/lib/channels/connect-waha";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { mfaEmDivida } from "@/lib/auth/server";
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { loadAuthUser, resolveActiveOrg } from "@/lib/auth/server";
 import { requireRole } from "@/lib/auth/require-role";
@@ -29,8 +29,8 @@ export const dynamic = "force-dynamic";
 export const CHANNEL_COLUMNS =
   "id, waha_session_name, display_name, phone_number, status, status_reason, last_health_check_at, last_status_change_at, daily_message_limit, is_warmup_complete, created_at, historico:metadata->historico";
 
-export async function GET(): Promise<Response> {
-  const requestId = randomUUID();
+export async function GET(req?: Request): Promise<Response> {
+  const requestId = requestIdDe(req);
   const user = await loadAuthUser();
   if (!user) return fail("unauthenticated", "Auth required.", 401, { requestId });
   const activeOrg = await resolveActiveOrg(user);
@@ -66,7 +66,7 @@ export async function POST(req: NextRequest): Promise<Response> {
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const authz = await requireRole("admin", {
     requestId,
     resource: "channel_sessions",

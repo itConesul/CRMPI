@@ -15,10 +15,10 @@
  * Read-only ⇒ sem audit (mesma regra de `metrics/attendants`). Piso `manager`,
  * mesmo de `accounts`.
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 import { z } from "zod";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { fail, ok } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
 import { lerCredencialDeLeitura } from "@/lib/plataformas-de-anuncio/credenciais-de-leitura";
@@ -67,7 +67,7 @@ function periodoPadrao(): { from: string; to: string } {
 }
 
 export async function GET(req: NextRequest): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
 
   const authz = await requireRole("manager", { requestId, resource: "ads_insights" });
   if (!authz.ok) return authz.response;

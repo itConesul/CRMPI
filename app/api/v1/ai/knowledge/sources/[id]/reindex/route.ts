@@ -12,9 +12,9 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  * organization_id é resolvido do JWT — nunca do body/path.
  */
 
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 import { z } from "zod";
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
 import { createClient } from "@/lib/supabase/server";
@@ -37,7 +37,7 @@ export async function POST(
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const { id } = await params;
 
   const authz = await requireRole("manager", { requestId, resource: "ai_knowledge" });

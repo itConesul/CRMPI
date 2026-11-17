@@ -22,9 +22,9 @@
  * para carga MENOS sensível — as rotas de QR (`channel-sessions/[id]/qr`,
  * `onboarding/whatsapp/qr`) setam no-store porque um QR é segredo.
  */
-import { randomUUID } from "node:crypto";
 import type { NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { createClient } from "@/lib/supabase/server";
 
@@ -33,7 +33,7 @@ export const dynamic = "force-dynamic";
 const NO_STORE = { "cache-control": "no-store, max-age=0" } as const;
 
 export async function GET(_req: NextRequest): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(_req);
   const supabase = await createClient();
 
   // getUser() valida o JWT no servidor — é ele que autoriza a resposta.

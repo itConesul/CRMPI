@@ -21,9 +21,9 @@
  *   de promessas é pulada (nenhuma promessa tem esses atributos, então
  *   nenhuma promessa poderia bater no filtro mesmo se buscada).
  */
-import { randomUUID } from "node:crypto";
 import type { NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
 import { situacaoDoRetorno } from "@/lib/followup/retorno";
@@ -131,7 +131,7 @@ function sortCompare(a: { next_fire_at: string | null; id: string }, b: { next_f
 }
 
 export async function GET(req: NextRequest): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const authz = await requireRole("viewer", { requestId, resource: "followup_queue" });
   if (!authz.ok) return authz.response;
   const t = (texto: string) => traduzir(texto, authz.user.idioma);

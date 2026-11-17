@@ -17,9 +17,9 @@
  * as duas dividem as peças de `lib/leads/timeline-query.ts` e divergem só na
  * cláusula, que é justamente onde a diferença mora.
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { loadAuthUser } from "@/lib/auth/server";
 import { traduzir } from "@/lib/i18n/dicionario";
@@ -39,7 +39,7 @@ export async function GET(
   req: NextRequest,
   ctx: { params: Promise<{ id: string }> },
 ): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const { id: contactId } = await ctx.params;
 
   const supabase = await createClient();

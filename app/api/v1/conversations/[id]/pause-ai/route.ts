@@ -31,10 +31,10 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  *
  * Auth: cookie session, agent+ (spec 13 §4: escrita é agent+, viewer é read-only).
  */
-import { randomUUID } from "node:crypto";
 import type { NextRequest } from "next/server";
 
 import { audit } from "@/lib/audit";
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
 import { registrarTrocaDeComando } from "@/lib/inbox/atividade-de-comando";
@@ -56,7 +56,7 @@ export async function POST(_req: NextRequest, ctx: RouteCtx): Promise<Response> 
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(_req);
   const { id } = await ctx.params;
 
   const authz = await requireRole("agent", { requestId, resource: "conversations" });

@@ -23,9 +23,9 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  * um insert em lote com a regra reescrita aqui — criaria a segunda verdade sobre
  * "como um negócio nasce", e é ela que envelhece sozinha.
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ApiError } from "@/lib/api/types";
 import { ok, fail } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest): Promise<Response> {
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   // Mesma régua do POST unitário de lead: escrita é `agent` para cima.
   const authz = await requireRole("agent", { requestId, resource: "crm_leads" });
   if (!authz.ok) return authz.response;
@@ -282,8 +282,8 @@ export async function POST(req: NextRequest): Promise<Response> {
   return ok(resumo, { requestId });
 }
 
-export async function GET(): Promise<Response> {
-  const requestId = randomUUID();
+export async function GET(req?: Request): Promise<Response> {
+  const requestId = requestIdDe(req);
   const authz = await requireRole("agent", { requestId, resource: "crm_leads" });
   if (!authz.ok) return authz.response;
 

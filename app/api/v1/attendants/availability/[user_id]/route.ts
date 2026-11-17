@@ -14,9 +14,9 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  * org_id de fonte confiável (activeOrg do cookie), NUNCA do body. Upsert por
  * unique(organization_id, user_id).
  */
-import { randomUUID } from "node:crypto";
 import type { NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { ApiError } from "@/lib/api/types";
 import { audit } from "@/lib/audit";
@@ -38,7 +38,7 @@ export async function PATCH(
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const { user_id: targetUserId } = await ctx.params;
 
   const authz = await requireRole("agent", { requestId, resource: "attendant_availability" });

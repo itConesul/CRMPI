@@ -9,10 +9,10 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  */
 import { type NextRequest } from "next/server";
 import { z } from "zod";
-import { randomUUID } from "node:crypto";
 
 import { requirePlatformAdmin } from "@/lib/auth/requirePlatformAdmin";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
 
@@ -30,7 +30,7 @@ export async function POST(
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const { id } = await params;
 
   let adminCtx: Awaited<ReturnType<typeof requirePlatformAdmin>>;

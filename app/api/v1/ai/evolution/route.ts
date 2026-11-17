@@ -15,10 +15,10 @@
  * cru, que entregaria `timestamptz` como `Date` e quebraria o `.slice(0, 10)` do
  * agregador) e a coerção de `numeric` para `number`.
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 import { z } from "zod";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
 import { createClient } from "@/lib/supabase/server";
@@ -57,7 +57,7 @@ function resolveRange(qs: { from?: string; to?: string }): { from: Date; to: Dat
 }
 
 export async function GET(req: NextRequest): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
 
   const authz = await requireRole("manager", { requestId, resource: "ai_evolution" });
   if (!authz.ok) return authz.response;

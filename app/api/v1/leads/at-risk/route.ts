@@ -11,10 +11,10 @@
  *
  * Client de sessão preserva RLS; organização e papel vêm de requireRole, nunca do body.
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 import { z } from "zod";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
 import { carregaRadarDeRisco, RADAR_MIN_HOURS_PADRAO } from "@/lib/leads/radar-de-risco";
@@ -31,7 +31,7 @@ const querySchema = z.object({
 export type { AtRiskLead } from "@/lib/leads/radar-de-risco";
 
 export async function GET(req: NextRequest): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const authz = await requireRole("agent", { requestId, resource: "leads_at_risk" });
   if (!authz.ok) return authz.response;
   const t = (texto: string) => traduzir(texto, authz.user.idioma);

@@ -16,10 +16,10 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  * (puras, testadas); aqui só há transporte e a ORDEM das escritas, que é o que o
  * índice único de padrão cobra.
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 import { z } from "zod";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { fail, ok } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
 import { requireRole } from "@/lib/auth/require-role";
@@ -64,7 +64,7 @@ export async function PATCH(req: NextRequest, ctx: RouteCtx): Promise<Response> 
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const authz = await requireRole("manager", { requestId, resource: "crm_pipelines" });
   if (!authz.ok) return authz.response;
   const t = (texto: string) => traduzir(texto, authz.user.idioma);
@@ -224,7 +224,7 @@ export async function DELETE(req: NextRequest, ctx: RouteCtx): Promise<Response>
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const authz = await requireRole("manager", { requestId, resource: "crm_pipelines" });
   if (!authz.ok) return authz.response;
   const t = (texto: string) => traduzir(texto, authz.user.idioma);

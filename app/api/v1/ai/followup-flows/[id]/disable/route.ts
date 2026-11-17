@@ -3,9 +3,9 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  * POST /api/v1/ai/followup-flows/:id/disable — status='disabled' (manager+).
  * No-op ok (200, sem novo audit) se já estava disabled.
  */
-import { randomUUID } from "node:crypto";
 import type { NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
 import { requireRole } from "@/lib/auth/require-role";
@@ -22,7 +22,7 @@ export async function POST(_req: NextRequest, ctx: RouteCtx): Promise<Response> 
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(_req);
   const { id } = await ctx.params;
   if (!UUID_RX.test(id)) {
     return fail("invalid_request", "id inválido.", 400, { requestId });

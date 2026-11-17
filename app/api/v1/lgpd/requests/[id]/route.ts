@@ -7,9 +7,9 @@
  * Auth: cookie session, role >= admin.
  * organization_id resolved from session — never from body or path.
  */
-import { randomUUID } from "node:crypto";
 import type { NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -21,7 +21,7 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(_req);
 
   const authz = await requireRole("admin", {
     requestId,

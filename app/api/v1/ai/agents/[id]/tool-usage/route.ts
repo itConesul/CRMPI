@@ -19,10 +19,10 @@
  * argumentos da chamada). `organization_id` vem do cookie via `requireRole` e
  * filtra explicitamente, como manda o CLAUDE.md para todo uso de service role.
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 import { z } from "zod";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -45,7 +45,7 @@ const querySchema = z.object({
 type Ctx = { params: Promise<{ id: string }> };
 
 export async function GET(req: NextRequest, ctx: Ctx): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const { id } = await ctx.params;
   if (!UUID_RX.test(id)) return fail("invalid_request", "id inválido.", 400, { requestId });
 

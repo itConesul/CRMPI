@@ -1,9 +1,9 @@
 import { type NextRequest } from "next/server";
 import { requirePlatformAdmin } from "@/lib/auth/requirePlatformAdmin";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
-import { randomUUID } from "node:crypto";
 
 // ---------------------------------------------------------------------------
 // T-04 (Spec 01 §3.4): platform_admins is managed exclusively by DBA via SQL.
@@ -18,7 +18,7 @@ const T04_MESSAGE =
 // ---------------------------------------------------------------------------
 
 export async function GET(_req: NextRequest) {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(_req);
 
   let adminCtx: Awaited<ReturnType<typeof requirePlatformAdmin>>;
   try {

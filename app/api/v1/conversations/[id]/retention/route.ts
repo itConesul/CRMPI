@@ -4,10 +4,10 @@
  * (client de sessão): responde POR QUE a resposta do assistente foi retida, com o
  * contexto dos knobs efetivos do número para a UI compor a copy leiga.
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 
 import { PACING_DEFAULTS } from "@/lib/agent-engine/pacing/defaults";
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { loadAuthUser, resolveActiveOrg } from "@/lib/auth/server";
 import { traduzir } from "@/lib/i18n/dicionario";
@@ -23,7 +23,7 @@ interface RouteCtx {
 }
 
 export async function GET(_req: NextRequest, ctx: RouteCtx): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(_req);
   const { id } = await ctx.params;
   const supabase = await createClient();
 

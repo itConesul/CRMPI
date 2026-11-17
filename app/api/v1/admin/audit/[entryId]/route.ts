@@ -2,9 +2,9 @@ import { type NextRequest } from "next/server";
 import { z } from "zod";
 import { requirePlatformAdmin } from "@/lib/auth/requirePlatformAdmin";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
-import { randomUUID } from "node:crypto";
 
 const paramsSchema = z.object({
   entryId: z.string().uuid(),
@@ -18,7 +18,7 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ entryId: string }> },
 ) {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(_req);
 
   let adminCtx: Awaited<ReturnType<typeof requirePlatformAdmin>>;
   try {

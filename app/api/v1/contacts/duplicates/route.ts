@@ -13,8 +13,8 @@
  * `viewer` pode LISTAR (é leitura de contato, que ele já enxerga na tabela);
  * quem funde é `manager`, e esse gate está na rota de POST /contacts/merge.
  */
-import { randomUUID } from "node:crypto";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { loadAuthUser, resolveActiveOrg } from "@/lib/auth/server";
 import {
@@ -38,8 +38,8 @@ export const dynamic = "force-dynamic";
  */
 const TETO_DE_VARREDURA = 2000;
 
-export async function GET(): Promise<Response> {
-  const requestId = randomUUID();
+export async function GET(req?: Request): Promise<Response> {
+  const requestId = requestIdDe(req);
 
   const user = await loadAuthUser();
   if (!user) {

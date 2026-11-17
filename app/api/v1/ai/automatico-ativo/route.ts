@@ -26,9 +26,9 @@
  * afirmando "IA atendendo" logo depois de o dono pausar. É por isso que os dois
  * lados agora importam a mesma função em vez de descreverem um ao outro.
  */
-import { randomUUID } from "node:crypto";
 import type { NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
 import { agenteAtende } from "@/lib/ai/agents/no-ar";
@@ -37,7 +37,7 @@ import { createClient } from "@/lib/supabase/server";
 export const dynamic = "force-dynamic";
 
 export async function GET(_req: NextRequest): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(_req);
   const authz = await requireRole("agent", { requestId, resource: "ai_agents" });
   if (!authz.ok) return authz.response;
 

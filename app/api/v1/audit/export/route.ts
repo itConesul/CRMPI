@@ -3,9 +3,9 @@
  *
  * Same filters as /api/v1/audit. No pagination — single shot. Use sparingly.
  */
-import { randomUUID } from "node:crypto";
 import type { NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { fail } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
 import { createClient } from "@/lib/supabase/server";
@@ -34,7 +34,7 @@ function csvEscape(v: unknown): string {
 }
 
 export async function GET(req: NextRequest): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const authz = await requireRole("manager", {
     requestId,
     resource: "audit",

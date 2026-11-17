@@ -27,10 +27,10 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  * `ai_budgets_bloquear_precisa_de_teto` é o backstop, não a régua: quem bate nele
  * recebe 23514 → 500 genérico, sem saber qual campo ofendeu.
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 import { z } from "zod";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
 import { requireRole } from "@/lib/auth/require-role";
@@ -87,7 +87,7 @@ const patchSchema = z
   );
 
 export async function GET(_req: NextRequest): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(_req);
   const authz = await requireRole("manager", { requestId, resource: "ai_budget" });
   if (!authz.ok) return authz.response;
   const { org: activeOrg } = authz;
@@ -100,7 +100,7 @@ export async function PATCH(req: NextRequest): Promise<Response> {
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const authz = await requireRole("admin", { requestId, resource: "ai_budget" });
   if (!authz.ok) return authz.response;
   const t = (texto: string) => traduzir(texto, authz.user.idioma);

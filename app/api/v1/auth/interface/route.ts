@@ -1,11 +1,11 @@
-import { randomUUID } from "node:crypto";
 import { requireRole } from "@/lib/auth/require-role";
 import { lerInterface } from "@/lib/navigation/interface";
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok } from "@/lib/api/wrappers";
 export const dynamic = "force-dynamic";
 /** Somente contexto próprio. Payload de Realtime invalida, nunca autoriza. */
-export async function GET() {
-  const requestId = randomUUID();
+export async function GET(req?: Request) {
+  const requestId = requestIdDe(req);
   const authz = await requireRole("viewer", { requestId, resource: "interface" });
   if (!authz.ok) return authz.response;
   const settings = lerInterface(authz.org.interface_settings).settings;

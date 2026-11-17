@@ -16,10 +16,10 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  * Mesmo raciocínio da wave 4, um degrau adiante: lá a trava era contra o agente
  * reescrever a proposta; aqui é contra o RELÓGIO tê-la encerrado.
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 import { z } from "zod";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { fail, ok } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
 import { emitLeadActivity } from "@/lib/leads/activity-emitter";
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest, ctx: RouteCtx): Promise<Response> {
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const { id: leadId } = await ctx.params;
 
   const guard = await requireRole("agent", { requestId });

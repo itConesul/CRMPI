@@ -13,10 +13,10 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  * que a pessoa leu — o timestamp é só o que o banco mexeu. Mesmo raciocínio do
  * lastro: vale o que sustenta a afirmação, não o carimbo.
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 import { z } from "zod";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { fail, ok } from "@/lib/api/wrappers";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/require-role";
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest, ctx: RouteCtx): Promise<Response> {
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const { id: leadId } = await ctx.params;
 
   // Mesmo piso do move: quem não pode mexer no negócio não decide por ele.

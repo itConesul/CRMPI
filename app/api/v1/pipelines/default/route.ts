@@ -6,8 +6,8 @@
  * `manager` da listagem completa (GET /api/v1/pipelines) — ex.: criar lead a
  * partir do painel do Inbox, onde quem atende é `agent`.
  */
-import { randomUUID } from "node:crypto";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
 import { createClient } from "@/lib/supabase/server";
@@ -16,8 +16,8 @@ import { traduzir } from "@/lib/i18n/dicionario";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(): Promise<Response> {
-  const requestId = randomUUID();
+export async function GET(req?: Request): Promise<Response> {
+  const requestId = requestIdDe(req);
   const authz = await requireRole("agent", { requestId, resource: "pipelines" });
   if (!authz.ok) return authz.response;
   const t = (texto: string) => traduzir(texto, authz.user.idioma);

@@ -4,10 +4,10 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  * do router (admin), audit `ai.router_members_updated`. `position` = índice
  * do array recebido. organization_id sempre de requireRole.
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 import { z } from "zod";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
 import { requireRole } from "@/lib/auth/require-role";
@@ -35,7 +35,7 @@ export async function PUT(req: NextRequest, ctx: RouteCtx): Promise<Response> {
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const { id } = await ctx.params;
   if (!UUID_RX.test(id)) {
     return fail("invalid_request", "id inválido.", 400, { requestId });

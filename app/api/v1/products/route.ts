@@ -7,10 +7,10 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  * é o motivo de este catálogo não morar na tabela da Nuvemshop, cuja policy é
  * org-flat sem checagem de papel.
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 
 import { audit } from "@/lib/audit";
+import { requestIdDe } from "@/lib/api/request-id";
 import { fail, ok } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
 import { moedaDaOrganizacao } from "@/lib/catalogo/moeda-da-org";
@@ -21,7 +21,7 @@ import { traduzir } from "@/lib/i18n/dicionario";
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const authz = await requireRole("viewer", { requestId, resource: "catalog_products" });
   if (!authz.ok) return authz.response;
 
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest): Promise<Response> {
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const authz = await requireRole("manager", { requestId, resource: "catalog_products" });
   if (!authz.ok) return authz.response;
   const t = (texto: string) => traduzir(texto, authz.user.idioma);

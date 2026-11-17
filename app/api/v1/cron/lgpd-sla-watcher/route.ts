@@ -15,9 +15,9 @@
  * (D+5 corridos ≈ D+5 úteis in short windows). Precision via computeDueAt
  * deferred to v2.
  */
-import { randomUUID } from "node:crypto";
 import type { NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { env } from "@/lib/env";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -40,7 +40,7 @@ interface OrgRow {
 type RequestWithOrg = LgpdRequest & OrgRow;
 
 export async function GET(req: NextRequest): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const startedAt = Date.now();
 
   // ────────────────────────────────────────────────────────────────────────

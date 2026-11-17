@@ -10,9 +10,9 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  * organization_id vem SEMPRE de requireRole — NUNCA do form (pacote adulterado não
  * consegue apontar pra outro tenant).
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
 import { requireRole } from "@/lib/auth/require-role";
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest): Promise<Response> {
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
 
   const authz = await requireRole("manager", { requestId, resource: "ai_skills" });
   if (!authz.ok) return authz.response;

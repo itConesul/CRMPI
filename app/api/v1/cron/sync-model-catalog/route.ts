@@ -33,9 +33,9 @@
  * repo. Cadência diária basta: modelo novo que demora um dia para aparecer no
  * seletor não quebra ninguém.
  */
-import { randomUUID } from "node:crypto";
 import type { NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { fail, ok } from "@/lib/api/wrappers";
 import {
   FONTE_OPENROUTER,
@@ -133,7 +133,7 @@ function autorizado(req: NextRequest): boolean {
 }
 
 async function handler(req: NextRequest): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   if (!autorizado(req)) {
     return fail("unauthorized", "cron secret ausente ou inválido", 401, { requestId });
   }

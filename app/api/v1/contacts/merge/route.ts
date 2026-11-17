@@ -17,9 +17,9 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  * `performed_by_user_id` preenchido. Trocar por service role apagaria as três
  * coisas de uma vez.
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ApiError } from "@/lib/api/types";
 import { ok, fail } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
@@ -80,7 +80,7 @@ export async function POST(req: NextRequest): Promise<Response> {
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
 
   const authz = await requireRole("manager", { requestId, resource: "contact" });
   if (!authz.ok) return authz.response;

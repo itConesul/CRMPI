@@ -31,7 +31,6 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  *
  * Admin only. organization_id vem da sessão — nunca do path/body.
  */
-import { randomUUID } from "node:crypto";
 import type { NextRequest } from "next/server";
 import { z } from "zod";
 
@@ -39,6 +38,7 @@ import { assertWahaConnectionIdle, ChannelConnectionError } from "@/lib/channels
 import { createAdminClient } from "@/lib/supabase/admin";
 import { mfaEmDivida } from "@/lib/auth/server";
 import { audit } from "@/lib/audit";
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
 import { ARCHIVED_AT, queryTolerantToMissingArchived } from "@/lib/channels/archived";
@@ -57,7 +57,7 @@ export async function POST(
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const { id } = await params;
 
   let rawBody: unknown = {};

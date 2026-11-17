@@ -1,11 +1,11 @@
 import { type NextRequest } from "next/server";
 import { cookies } from "next/headers";
-import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { requirePlatformAdmin } from "@/lib/auth/requirePlatformAdmin";
 import { loadAuthUser, mfaEmDivida, resolveActiveOrg } from "@/lib/auth/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
 import { cookieSecure } from "@/lib/supabase/cookie-secure";
@@ -13,7 +13,7 @@ import { IMPERSONATE_COOKIE_NAME, IMPERSONATE_TTL_SECONDS, isImpersonateSecretRe
 
 const inputSchema = z.object({ access_mode: z.enum(["full", "support_readonly"]).default("full") });
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const { id: tenantId } = await params;
   if (!z.string().uuid().safeParse(tenantId).success) return fail("validation_failed", "Organização inválida.", 422, { requestId });
   const input = inputSchema.safeParse(await req.json().catch(() => ({})));

@@ -28,8 +28,8 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  * Rodada sem efeito (nenhum aviso aberto) não audita: não houve mutação, e
  * auditar o vazio é a mesma poluição que a doutrina já barrou nos crons.
  */
-import { randomUUID } from "node:crypto";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
 import { requireRole } from "@/lib/auth/require-role";
@@ -38,11 +38,11 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 
-export async function POST(): Promise<Response> {
+export async function POST(req?: Request): Promise<Response> {
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
 
   // Mesmo piso do aviso avulso (`agent` — spec 13 §4, viewer é read-only). O
   // lote é mais largo, mas não é mais destrutivo: resolver não apaga nada,

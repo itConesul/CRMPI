@@ -6,6 +6,7 @@ import { type NextRequest } from "next/server";
 import { z } from "zod";
 import { requirePlatformAdmin } from "@/lib/auth/requirePlatformAdmin";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
 import { createHash, randomUUID } from "node:crypto";
@@ -47,7 +48,7 @@ function decodeCursor(cursor: string): CursorPayload | null {
 // ---------------------------------------------------------------------------
 
 export async function GET(req: NextRequest) {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
 
   let adminCtx: Awaited<ReturnType<typeof requirePlatformAdmin>>;
   try {
@@ -154,7 +155,7 @@ export async function POST(req: NextRequest) {
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
 
   let adminCtx: Awaited<ReturnType<typeof requirePlatformAdmin>>;
   try {

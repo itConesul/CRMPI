@@ -17,10 +17,10 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  * `imagem_url` e `ativo` ficam de fora de propósito — quem escreveu a descrição
  * pela tela não pode perdê-la porque alguém reimportou a lista de preços.
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 
 import { audit } from "@/lib/audit";
+import { requestIdDe } from "@/lib/api/request-id";
 import { fail, ok } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
 import { moedaDaOrganizacao } from "@/lib/catalogo/moeda-da-org";
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest): Promise<Response> {
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   // Preço de venda é escrita de gestão: o mesmo papel do POST unitário.
   const authz = await requireRole("manager", { requestId, resource: "catalog_products" });
   if (!authz.ok) return authz.response;
@@ -242,8 +242,8 @@ export async function POST(req: NextRequest): Promise<Response> {
 }
 
 /** GET devolve o modelo de planilha, para a pessoa não ter de adivinhar as colunas. */
-export async function GET(): Promise<Response> {
-  const requestId = randomUUID();
+export async function GET(req?: Request): Promise<Response> {
+  const requestId = requestIdDe(req);
   const authz = await requireRole("manager", { requestId, resource: "catalog_products" });
   if (!authz.ok) return authz.response;
   const t = (texto: string) => traduzir(texto, authz.user.idioma);

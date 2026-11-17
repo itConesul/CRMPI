@@ -6,9 +6,9 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  *
  * Thin wrapper: auth + Zod + ok/fail. Decrypt CPF + LGPD irreversibility no handler.
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ApiError } from "@/lib/api/types";
 import { ok, fail, noContent } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
@@ -25,7 +25,7 @@ export async function GET(
   req: NextRequest,
   ctx: { params: Promise<{ id: string }> },
 ): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const { id } = await ctx.params;
 
   const supabase = await createClient();
@@ -73,7 +73,7 @@ export async function PATCH(
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const { id } = await ctx.params;
 
   const supabase = await createClient();
@@ -124,7 +124,7 @@ export async function DELETE(
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(_req);
   const { id } = await ctx.params;
 
   const authz = await requireRole("agent", { requestId, resource: "contacts" });

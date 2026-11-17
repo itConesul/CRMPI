@@ -19,9 +19,9 @@
  * agregada por tick (`followup.worker_run` + `followup.silence_sweep_run`),
  * sem organization_id (roda pra todas as orgs).
  */
-import { randomUUID } from "node:crypto";
 import type { NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
 import { env } from "@/lib/env";
@@ -47,7 +47,7 @@ async function enqueueJob(job: FollowupJobRequest): Promise<void> {
 }
 
 async function handle(req: NextRequest): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
 
   const auth = req.headers.get("authorization") ?? "";
   const bearer = auth.startsWith("Bearer ") ? auth.slice("Bearer ".length).trim() : "";

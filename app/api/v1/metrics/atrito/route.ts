@@ -23,10 +23,10 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  * convidaria exatamente o uso que a doutrina §3.6 desaconselha (otimização
  * local que degrada o todo).
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 import { z } from "zod";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { fail, ok } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
 import {
@@ -87,7 +87,7 @@ const VAZIO: Omit<AtritoRaw, "escopo"> = {
 };
 
 export async function GET(req: NextRequest): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
 
   const authz = await requireRole("agent", { requestId, resource: "metrics" });
   if (!authz.ok) return authz.response;
@@ -191,7 +191,7 @@ export async function PATCH(req: NextRequest): Promise<Response> {
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
 
   const authz = await requireRole("manager", { requestId, resource: "metrics" });
   if (!authz.ok) return authz.response;

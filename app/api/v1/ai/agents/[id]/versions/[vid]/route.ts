@@ -5,9 +5,9 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  *
  * Spec 10 §4.4. Versões published/superseded/archived são imutáveis (409).
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
 import { requireRole } from "@/lib/auth/require-role";
@@ -26,7 +26,7 @@ const UUID_RX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 type Ctx = { params: Promise<{ id: string; vid: string }> };
 
 export async function GET(_req: NextRequest, ctx: Ctx): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(_req);
   const { id, vid } = await ctx.params;
   if (!UUID_RX.test(id) || !UUID_RX.test(vid)) {
     return fail("invalid_request", "ids inválidos.", 400, { requestId });
@@ -55,7 +55,7 @@ export async function PATCH(req: NextRequest, ctx: Ctx): Promise<Response> {
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const { id, vid } = await ctx.params;
   if (!UUID_RX.test(id) || !UUID_RX.test(vid)) {
     return fail("invalid_request", "ids inválidos.", 400, { requestId });

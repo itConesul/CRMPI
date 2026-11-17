@@ -1,9 +1,9 @@
 /**
  * GET /api/v1/automation-rules/[id]/runs?limit=50 — histórico de execuções, desc.
  */
-import { randomUUID } from "node:crypto";
 import type { NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
 import { createClient } from "@/lib/supabase/server";
@@ -18,7 +18,7 @@ const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 100;
 
 export async function GET(req: NextRequest, ctx: RouteCtx): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const { id } = await ctx.params;
   const authz = await requireRole("manager", { requestId, resource: "automation_rules" });
   if (!authz.ok) return authz.response;

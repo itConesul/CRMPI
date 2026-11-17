@@ -4,9 +4,9 @@
  * Lê do catálogo curado `ai_models` (tabela GLOBAL, RLS read-all).
  * Retorna modelos não-deprecated ordenados por default-first depois preço.
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { loadAuthUser, resolveActiveOrg } from "@/lib/auth/server";
 import { createClient } from "@/lib/supabase/server";
@@ -26,7 +26,7 @@ export async function GET(
   _req: NextRequest,
   ctx: { params: Promise<{ provider: string }> },
 ): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(_req);
   const { provider } = await ctx.params;
 
   if (!ehProvedorSuportado(provider)) {

@@ -39,9 +39,9 @@
  * NOTA DE DEPLOY: o agendamento vive no serviço `scheduler` do
  * `docker-compose.prod.yml` — não há `vercel.json` neste repo (self-host).
  */
-import { randomUUID } from "node:crypto";
 import type { NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { fail, ok } from "@/lib/api/wrappers";
 import {
   CHANNEL_SESSION_REF_COLUMNS,
@@ -71,7 +71,7 @@ type LinhaDeSessao = ChannelSessionRef & {
 };
 
 async function handle(req: NextRequest): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
 
   const auth = req.headers.get("authorization") ?? "";
   const provided = auth.startsWith("Bearer ") ? auth.slice("Bearer ".length).trim() : "";

@@ -5,9 +5,9 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  * Disparado pelo inbox após 1,5s com a conversa em foco (EPIC-03 S-03.10).
  * RLS garante que só conversas visíveis ao ator são atualizadas.
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ApiError } from "@/lib/api/types";
 import { ok, fail } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
@@ -25,7 +25,7 @@ export async function POST(_req: NextRequest, ctx: RouteCtx): Promise<Response> 
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(_req);
   const { id } = await ctx.params;
   const supabase = await createClient();
 

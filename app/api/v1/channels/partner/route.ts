@@ -17,10 +17,11 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  * não qual é. O segredo do webhook volta UMA vez, na gravação, porque o
  * operador precisa colá-lo do outro lado — depois disso, nunca mais.
  */
-import { randomBytes, randomUUID } from "node:crypto";
+import { randomBytes } from "node:crypto";
 import type { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { fail, ok } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
 import {
@@ -68,7 +69,7 @@ function urlDoWebhook(req: NextRequest, token: string): string {
 }
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   // Conectar um canal move dinheiro e expõe a conta da empresa: é decisão de
   // dono, não de quem atende.
   const authz = await requireRole("admin", { requestId, resource: "channels_partner" });
@@ -100,7 +101,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   // Conectar um canal move dinheiro e expõe a conta da empresa: é decisão de
   // dono, não de quem atende.
   const authz = await requireRole("admin", { requestId, resource: "channels_partner" });

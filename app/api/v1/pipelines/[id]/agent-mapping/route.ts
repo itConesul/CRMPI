@@ -18,10 +18,10 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  * parcial reabriria o caso em que a tela ocupa uma etapa e desmapeia em silêncio
  * o passo que ela declarava.
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 import { z } from "zod";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { fail, ok } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
 import { requireRole } from "@/lib/auth/require-role";
@@ -153,7 +153,7 @@ function corpo(etapas: EtapaComAutoria[]) {
 }
 
 export async function GET(_req: NextRequest, ctx: RouteCtx): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(_req);
   const authz = await requireRole("manager", { requestId, resource: "pipeline_agent_mapping" });
   if (!authz.ok) return authz.response;
   const t = (texto: string) => traduzir(texto, authz.user.idioma);
@@ -174,7 +174,7 @@ export async function PUT(req: NextRequest, ctx: RouteCtx): Promise<Response> {
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const authz = await requireRole("manager", { requestId, resource: "pipeline_agent_mapping" });
   if (!authz.ok) return authz.response;
   const t = (texto: string) => traduzir(texto, authz.user.idioma);

@@ -31,9 +31,9 @@
  * contagem de hoje: contagem responde sobre o que existe, não sobre o que o
  * código permite, e aqui o zero estava dos dois lados do argumento.
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { loadAuthUser } from "@/lib/auth/server";
 import { traduzir } from "@/lib/i18n/dicionario";
@@ -54,7 +54,7 @@ interface RouteCtx {
 }
 
 export async function GET(req: NextRequest, ctx: RouteCtx): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const { id: leadId } = await ctx.params;
 
   const supabase = await createClient();
