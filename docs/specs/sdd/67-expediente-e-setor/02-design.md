@@ -1,10 +1,11 @@
 # 02 — Design
 
-**Verificado em:** `59c76a3` · **Comando:** `git rev-parse --short HEAD`
+**Verificado em:** `eb8bd68` (re-conferido em 2026-11-17) · **Comando:** `git rev-parse --short HEAD`
 **Natureza:** proposta. Nada aqui foi implementado. O §4 é a **proposta de schema** que a issue exige
 antes de qualquer migration.
-**Q1–Q8:** as recomendações foram adotadas em 2026-11-16 e este documento já as reflete; seguem
-pendentes da confirmação do dono do produto (`05-revisao.md`).
+**Q1–Q9:** as recomendações Q1–Q8 foram adotadas em 2026-11-16 e este documento já as reflete. **Q1 e
+Q7 foram confirmadas pelo dono do produto** (comentário de 2026-11-13 na #67); as demais seguem
+pendentes (`05-revisao.md`). **Q9** (expediente por organização ou por setor) está aberta.
 
 ## 1. O que existe hoje (verificado lendo cada arquivo)
 
@@ -63,6 +64,23 @@ Dois mecanismos independentes, cada um com uma **função pura** testável sem b
 - **Na tela:** uma faixa no shell do app (mesmo lugar de `FaixaDeAvisos`) mostra a janela da empresa
   e a próxima abertura, e os controles de ação ficam desabilitados com o motivo. Calculado no
   servidor pela mesma função pura, para cliente e servidor não divergirem.
+- **Bypass auditado (RF-10).** Quando `admin`/`manager` passam pelo gate **fora do expediente**,
+  `requireRole` devolve `foraDoExpediente: true` no resultado, e a rota o repassa para o `audit()` que
+  **já** grava a mutação (`metadata.fora_do_expediente = true`). Não há linha nova: a doutrina de
+  audit manda auditar quando há efeito, e uma linha emitida no gate registraria tentativas que a
+  rota depois recusa por outro motivo. Dentro do expediente nada é acrescentado. Como as rotas de
+  ação já chamam `audit()` após o sucesso, o custo é um campo; se alguma não chamar, a varredura de
+  T2 a reprova.
+- **Distribuição (RF-12).** `eligibility.ts` hoje decide "disponível ∧ janela própria ∧ folga"
+  (`isWithinSchedule` sobre `attendant_availability.schedule`). O expediente da organização entra
+  como **mais uma conjunção**, via parâmetro opcional `expediente` em `lib/routing/eligibility.ts`
+  e `decide.ts` (funções puras; `undefined` = sem restrição, então nenhum chamador existente muda de
+  comportamento). Quem monta a entrada do roteamento passa `organizations.settings.business_hours`.
+  Fora do expediente, ninguém `agent` é elegível e a conversa **fica na fila sem dono** (RF-11).
+  `admin`/`manager` continuam elegíveis porque não são barrados (RF-6).
+- **Ingestão intocada (RF-11).** Webhooks de mensagem recebida não chamam `requireRole` e não leem o
+  expediente: a mensagem do cliente entra sempre. O teste de isenções varre `webhooks/*` para
+  garantir que ninguém ligue o gate ali sem querer.
 - **Isenções** (RNF-1), todas testadas: papéis `manager` e `admin`; platform admin; sessão de
   suporte/impersonação; rotas `cron/*` e `webhooks/*` (não chamam `requireRole`, autenticam por
   segredo — **NÃO VERIFICADO** para todas, vira teste que varre as rotas).
@@ -221,6 +239,9 @@ RLS correta no banco coexiste com uma API que vaza.
 | RF-4 | §2.1 (`requireRole`), §3 (`OUT_OF_WORK_HOURS`) |
 | RF-5 | §2.1 (faixa no shell do app), §3 (tela) |
 | RF-6, RNF-1 | §2.1 (isenções) |
+| RF-10 | §2.1 (bypass auditado), §7 |
+| RF-11 | §2.1 (ingestão intocada), §8 |
+| RF-12 | §2.1 (distribuição), §6 |
 | RF-7, RF-8 | §4.3 |
 | RF-9 | §2.2 (Realtime herda a RLS) + NÃO VERIFICADO do §1 |
 | RNF-2 | §4.3, §4.5, `03-testes.md` |
@@ -243,7 +264,8 @@ RLS correta no banco coexiste com uma API que vaza.
   `conversations`.
 - **Emite atividade/log:** audit `expediente.config_changed`, `department.created/updated/deleted`,
   `department.member_set` em `api_audit_log`; tentativa barrada reaproveita `authz.denied` de
-  `requireRole`. **A decidir (T0):** se a tentativa barrada vira linha por requisição ou só uma por
+  `requireRole`; ação de `admin`/`manager` fora do expediente carrega
+  `metadata.fora_do_expediente = true` na linha da própria mutação (RF-10). **A decidir (T0):** se a tentativa barrada vira linha por requisição ou só uma por
   atendente por hora, para não repetir o erro das rodadas de cron vazias que inflaram o audit.
 - **Aparece na tela:** Configurações › Atendimento (seções Expediente e Departamentos) e
   `/fora-de-expediente`. Quantas tentativas foram barradas hoje aparece no cabeçalho da seção

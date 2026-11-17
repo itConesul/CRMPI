@@ -7,8 +7,9 @@ não tocam schema e podem ser adiantadas, como a issue permite.
 | # | Tarefa | Cobre | Prova | 🔒 | Feito |
 |---|---|---|---|---|---|
 | T0 | **Medir os NÃO VERIFICADOS** de `02-design.md` §1: `loadAuthUser` carrega `settings`? há canal de broadcast para conversas? comportamento do Realtime quando a linha sai do escopo? lista das rotas que leem `conversations` com client admin | RF-9, RNF-2 | resultado colado em `02-design.md` | | [ ] |
-| T1 | Função pura `dentroDoExpediente` + `expedienteBarra` em `lib/` (reusa `isWithinSchedule`/`localMoment`), schema Zod `expedienteConfigSchema` | RF-3, RF-4, RF-6 | `tests/unit/expediente.test.ts` | | [ ] |
+| T1 | Função pura `dentroDoExpediente` + `expedienteBarra` em `lib/` (reusa `isWithinSchedule`/`localMoment`), schema Zod `expedienteConfigSchema` | RF-3, RF-4, RF-6, RF-10 | `tests/unit/expediente.test.ts` | | [ ] |
 | T2 | Erro `OUT_OF_WORK_HOURS` em `lib/api/errors.ts`; opção `exigeExpediente` em `requireRole`, declarada pelas rotas de ação de conversa, com isenções; varredura de AST de `app/api/v1/conversations/**` (escrita sem a opção nem justificativa reprova) e das rotas `cron/*` e `webhooks/*` | RF-4, RNF-1 | `tests/unit/expediente-isencoes.test.ts`, `tests/unit/expediente-rotas-de-acao.test.ts` | | [ ] |
+| T2b | **Distribuição respeita o expediente (RF-12):** parâmetro opcional `expediente` em `lib/routing/eligibility.ts` e `decide.ts` (`undefined` = sem restrição); quem monta a entrada do roteamento passa `organizations.settings.business_hours`. **Medir antes** quais chamadores montam essa entrada (`lib/routing/eligibles.ts` e os workers) | RF-11, RF-12 | `lib/routing/eligibility.test.ts`, `lib/routing/decide.test.ts` (+ os existentes sem mudança) | | [ ] |
 | T3 | **Auditar as rotas com client admin** que listam conversas e aplicar a regra de setor na consulta (`organization_id` do cookie) | CA-2, RNF-2 | teste por rota | 🔒 | [ ] |
 | T4 | Migration `departments`, `department_members`, `conversations.department_id`, função `fn_can_view_conversation(uuid,uuid,uuid)` + nova `conversations_select`; apêndice idempotente no `baseline.sql`; linha no `MANIFEST.md`; regenerar `lib/database.types.ts` | RF-1, RF-2, RF-7 a RF-9 | `tests/invariants/visibilidade-por-setor.test.ts`, `pnpm test:db` (install + update) | 🔒 | [ ] |
 | T5 | Rotas `/settings/expediente` e `/departments*` com audit e `Idempotency-Key` | RF-1 a RF-3 | unit por rota | 🔒 | [ ] |
@@ -18,7 +19,7 @@ não tocam schema e podem ser adiantadas, como a issue permite.
 | T9 | Mapa vivo `docs/architecture/expediente-e-setor.architecture.json` + atualização de `organizacoes-e-acesso`; atualizar `docs/index.md` se houver doc novo | Sistema Vivo | teste de mapas de arquitetura | | [ ] |
 | T10 | Fragmento em `.changes/` (`capacidade_nova`); conferir com `pnpm release:conferir`; procurar afirmações de estado sobre visibilidade/horário nos docs de autoridade (DoD 16) | DoD 16, 17 | `pnpm release:conferir` | | [ ] |
 
-**Ordem:** T0 → T1 → T2 → T7 (nada disso toca o banco) → **aprovação** → T4 → T3 → T5 → T6 → T8 → T9 → T10.
+**Ordem:** T0 → T1 → T2 → T2b → T7 (nada disso toca o banco) → **aprovação** → T4 → T3 → T5 → T6 → T8 → T9 → T10.
 
 T0 vem primeiro porque três perguntas de design dependem do que ele mede (custo do gate, Realtime e
 quantas rotas precisam do filtro manual).

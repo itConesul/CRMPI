@@ -3,7 +3,7 @@
 **Issue:** #67 — https://github.com/itConesul/CRMPI/issues/67
 **Estado:** `rascunho` — **proposta de schema aguardando aprovação do dono do produto**
 **Autor:** cMoreiraSul (com Claude)
-**Medido em:** `59c76a3` (develop)
+**Medido em:** `eb8bd68` (develop; afirmações sobre o código re-conferidas em 2026-11-17)
 
 ## Resumo
 Hoje nada impede um atendente humano de operar de madrugada (o horário que existe vale para o agente
@@ -30,7 +30,9 @@ Enquanto o item 2 não estiver registrado em [`05-revisao.md`](05-revisao.md), a
 
 ## Decisões (Q1–Q8)
 Em 2026-11-16 o autor adotou as recomendações da spec; o dono do produto ainda precisa **confirmar**
-(registro em [`05-revisao.md`](05-revisao.md)). As quatro que mais pesam no schema:
+(registro em [`05-revisao.md`](05-revisao.md)). **Q1 e Q7 já foram confirmadas** pelo dono do produto
+(comentário na #67 de 2026-11-13), e a **Q9** (expediente por organização ou por setor) está aberta.
+As quatro que mais pesam no schema:
 1. **Q1 — só a ação é bloqueada** (assumir, responder, transferir…); a leitura fica liberada. O texto
    pedia bloqueio total, então RF-4 e RF-5 foram adaptados.
 2. **Q2 — expediente em** `organizations.settings.business_hours`.
