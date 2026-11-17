@@ -19,7 +19,6 @@ postada e à aprovação explícita.
 | 2026-11-16 | Q6: leads e contatos no isolamento? | Não neste PRD | Fora de escopo; issue própria se o dono quiser | _pendente_ |
 | 2026-11-16 | Q7: conversa com todos barrados | Fica sem dono até a abertura; o aviso ao cliente é do PRD-07 | Registrado como risco, sem solução neste PRD. Virou RF-11 | ✅ 2026-11-13 (comentário na #67) |
 | 2026-11-16 | Q8: granularidade do expediente | Por dia da semana, sem feriado | `windows` com `dow`, como no horário por atendente | _pendente_ |
-
 | 2026-11-17 | Q9: expediente da organização ou de cada setor? | **Aberta.** Recomendação: por organização agora | O comentário do dono do produto cita "expediente por setor"; a spec guarda um por organização (§4.1). Por setor mudaria o §4 | _pendente_ |
 
 ## Comentários de review
