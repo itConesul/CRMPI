@@ -11,11 +11,11 @@
  * Configured for `maxDuration=300` in vercel.ts — agent loops with multiple
  * tool calls can stretch close to that budget.
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 import { z } from "zod";
 
 import { runAgent } from "@/lib/ai/runtime/agent";
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { env } from "@/lib/env";
 
@@ -57,7 +57,7 @@ function authorize(req: NextRequest): boolean {
 }
 
 export async function POST(req: NextRequest): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
 
   if (!authorize(req)) {
     return fail("unauthenticated", "Internal secret missing or invalid.", 401, {

@@ -11,12 +11,12 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  * Piso `agent` nos três verbos: marcar, remarcar e cancelar são mutação, e quem
  * só olha a agenda não muda nada nela.
  */
-import { randomUUID } from "node:crypto";
 
 import { type NextRequest } from "next/server";
 import { z } from "zod";
 
 import { listaAgendamentos, type AgendamentoListado } from "@/lib/agenda/consulta";
+import { requestIdDe } from "@/lib/api/request-id";
 import { fail, ok } from "@/lib/api/wrappers";
 import { logger } from "@/lib/logger";
 
@@ -141,7 +141,7 @@ const cancelarSchema = z.object({
  * esta rota não precisa adivinhar em que fuso o dia foi pedido.
  */
 export async function GET(req: NextRequest): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
 
   // `viewer`: olhar a agenda é o menor privilégio desta feature.
   const authz = await requireRole("viewer", { requestId, resource: "agenda" });
@@ -293,7 +293,7 @@ async function despachar<T>(
   ) => Promise<Record<string, unknown>>,
   status: 200 | 201,
 ): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
 
   const authz = await requireRole("agent", { requestId, resource: "agenda" });
   if (!authz.ok) return authz.response;

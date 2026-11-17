@@ -4,9 +4,9 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  * versão NOVA do agente via publish-por-ponteiro (o clique É o gate humano).
  * Idempotência: proposta já aplicada → 409 (applied_at, migration 0053).
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
 import { requireRole } from "@/lib/auth/require-role";
@@ -32,7 +32,7 @@ export async function POST(_req: NextRequest, ctx: Ctx): Promise<Response> {
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(_req);
   const { id, pid } = await ctx.params;
   if (!UUID_RX.test(id) || !UUID_RX.test(pid)) {
     return fail("invalid_request", "id inválido.", 400, { requestId });

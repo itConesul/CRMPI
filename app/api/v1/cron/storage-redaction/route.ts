@@ -8,9 +8,9 @@
  * Auth: `Authorization: Bearer <INTERNAL_CRON_SECRET>` (fail-closed when
  * secret missing). Mirrors `app/api/v1/cron/kb-conversations-batch/route.ts`.
  */
-import { randomUUID } from "node:crypto";
 import type { NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { env } from "@/lib/env";
 import { drainStorageRedactionQueue } from "@/lib/lgpd/storage-redaction-queue";
@@ -21,7 +21,7 @@ const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 200;
 
 export async function GET(req: NextRequest): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
 
   const auth = req.headers.get("authorization") ?? "";
   const provided = auth.startsWith("Bearer ") ? auth.slice("Bearer ".length).trim() : "";

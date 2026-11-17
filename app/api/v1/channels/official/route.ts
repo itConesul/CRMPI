@@ -21,10 +21,10 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  * O token é cifrado pelas MESMAS RPCs do resto do repo (`lib/webhooks/secrets.ts`) e
  * **nunca volta** num GET: uma vez gravado, a tela mostra que existe, não qual é.
  */
-import { randomUUID } from "node:crypto";
 import type { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { fail, ok } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
 import { ARCHIVED_AT, queryTolerantToMissingArchived } from "@/lib/channels/archived";
@@ -64,7 +64,7 @@ function publicBase(req: NextRequest): string {
 }
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const authz = await requireRole("admin", { requestId, resource: "channels_official" });
   if (!authz.ok) return authz.response;
   const orgId = authz.org.orgId;
@@ -114,7 +114,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const authz = await requireRole("admin", { requestId, resource: "channels_official" });
   if (!authz.ok) return authz.response;
   const t = (texto: string) => traduzir(texto, authz.user.idioma);

@@ -13,9 +13,9 @@
  * Só `pending`: proposta decidida ou vencida é histórico, e oferecer botão para
  * algo que acabou é a simulação de atenção que esta wave inteira combate.
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
 import { createClient } from "@/lib/supabase/server";
@@ -29,7 +29,7 @@ export interface ReactivationLive {
 }
 
 export async function GET(_req: NextRequest): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(_req);
   const guard = await requireRole("viewer", { requestId });
   if (!guard.ok) return guard.response;
 

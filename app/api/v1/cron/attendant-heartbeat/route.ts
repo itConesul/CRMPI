@@ -11,9 +11,9 @@
  * lib/routing/eligibility.ts (isHeartbeatStale), testada com clock mockado — a
  * regra dos 15min é constante NOMEADA única, não número mágico espalhado.
  */
-import { randomUUID } from "node:crypto";
 import type { NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
 import { env } from "@/lib/env";
@@ -23,7 +23,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
 
   const authHeader = req.headers.get("authorization") ?? "";
   const provided = authHeader.startsWith("Bearer ")

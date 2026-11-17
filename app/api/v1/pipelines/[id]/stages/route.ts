@@ -17,10 +17,10 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  * usuário, então a RLS vale; o filtro explícito é a convenção do repo e a rede
  * que sobra se a policy mudar.
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 import { z } from "zod";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { respostaDeRecusa } from "@/lib/api/recusa";
 import { fail, ok } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest, ctx: RouteCtx): Promise<Response> {
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const authz = await requireRole("manager", { requestId, resource: "crm_stages" });
   if (!authz.ok) return authz.response;
   const t = (texto: string) => traduzir(texto, authz.user.idioma);

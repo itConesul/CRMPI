@@ -13,9 +13,9 @@
  * filtra organization_id manualmente. Degrada (availability-only, sem nomes)
  * quando o service role não está configurado (dev), como o /api/v1/team faz.
  */
-import { randomUUID } from "node:crypto";
 import type { NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { isServiceRoleConfigured } from "@/lib/audit";
 import { requireRole } from "@/lib/auth/require-role";
@@ -38,7 +38,7 @@ interface AvailabilityRow {
 }
 
 export async function GET(_req: NextRequest): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(_req);
 
   const authz = await requireRole("agent", { requestId, resource: "attendant_availability" });
   if (!authz.ok) return authz.response;

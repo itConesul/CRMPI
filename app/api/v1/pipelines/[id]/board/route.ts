@@ -12,9 +12,9 @@
  * (PGRST116). Routing through the API ensures the server-side cookie reader
  * runs, same as every other authed query.
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { fail, ok } from "@/lib/api/wrappers";
 import { loadAuthUser } from "@/lib/auth/server";
 import { traduzir } from "@/lib/i18n/dicionario";
@@ -346,7 +346,7 @@ async function withNextActions(
 }
 
 export async function GET(_req: NextRequest, ctx: RouteCtx): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(_req);
   const { id: pipelineId } = await ctx.params;
 
   const supabase = await createClient();

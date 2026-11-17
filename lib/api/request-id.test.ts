@@ -11,6 +11,12 @@ describe("requestIdDe", () => {
     expect(requestIdDe(req(id))).toBe(id);
   });
 
+  it("sem requisição nenhuma (handler chamado direto) gera UUID, não lança", () => {
+    expect(requestIdDe()).toMatch(/^[0-9a-f-]{36}$/);
+    expect(requestIdDe(null)).toMatch(/^[0-9a-f-]{36}$/);
+    expect(requestIdDe({} as Request)).toMatch(/^[0-9a-f-]{36}$/);
+  });
+
   it("gera um UUID quando o header não vem", () => {
     expect(requestIdDe(req())).toMatch(/^[0-9a-f-]{36}$/);
   });

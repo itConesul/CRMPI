@@ -6,8 +6,8 @@
  * em modo own* recebe a contagem do SEU escopo, NUNCA o total da org — a mesma
  * garantia do listing. Head count (count:'exact', head:true) não devolve linhas.
  */
-import { randomUUID } from "node:crypto";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { fail, ok } from "@/lib/api/wrappers";
 import { loadAuthUser, resolveActiveOrg } from "@/lib/auth/server";
 import { traduzir } from "@/lib/i18n/dicionario";
@@ -18,8 +18,8 @@ import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(): Promise<Response> {
-  const requestId = randomUUID();
+export async function GET(req?: Request): Promise<Response> {
+  const requestId = requestIdDe(req);
   const supabase = await createClient();
 
   const {

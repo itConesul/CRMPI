@@ -8,10 +8,10 @@
  * manager+ ⇒ org-wide + filtro opcional `owner_user_id`. Piso de rota = agent.
  * org da org ativa (cookie validado), NUNCA do body/query. Read-only ⇒ sem audit.
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 import { z } from "zod";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { fail, ok } from "@/lib/api/wrappers";
 import { isServiceRoleConfigured } from "@/lib/audit";
 import { requireRole } from "@/lib/auth/require-role";
@@ -43,7 +43,7 @@ interface MetricsPayload {
 }
 
 export async function GET(req: NextRequest): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
 
   // spec 13 §6.1: piso agent (vê as próprias); RLS gate a comparação manager+.
   const authz = await requireRole("agent", { requestId, resource: "metrics" });

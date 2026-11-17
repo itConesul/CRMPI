@@ -10,9 +10,9 @@
  * lib/waha/ingest.ts). Idempotência e resolução atômica de contato/conversa
  * vivem no módulo compartilhado.
  */
-import { randomUUID } from "node:crypto";
 import type { NextRequest, NextResponse } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { fail, ok } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
 import { ARCHIVED_AT, queryTolerantToMissingArchived } from "@/lib/channels/archived";
@@ -26,7 +26,7 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
 
   const rawBody = await req.text();
   // ─── O contrato do fio, em DOIS momentos ─────────────────────────────────

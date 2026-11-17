@@ -12,9 +12,9 @@ import { isServiceRoleConfigured } from "@/lib/audit";
  * Membership row is created at /accept-invite time (Server Action) — that's
  * also when audit emits `member.accepted`. Here we audit `member.invited`.
  */
-import { randomUUID } from "node:crypto";
 import type { NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { ApiError } from "@/lib/api/types";
 
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest): Promise<Response> {
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const authz = await requireRole("admin", { requestId, resource: "team" });
   if (!authz.ok) return authz.response;
   const { user: authUser, org: activeOrg } = authz;

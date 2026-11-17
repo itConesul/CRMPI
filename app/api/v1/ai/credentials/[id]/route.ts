@@ -7,9 +7,9 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  * Caso contrário, deleta. A FK ON DELETE RESTRICT é a última linha de defesa
  * (drafts não-publicadas também referenciam — preferimos erro 409 amigável).
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
 import { requireRole } from "@/lib/auth/require-role";
@@ -26,7 +26,7 @@ export async function DELETE(
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(_req);
   const { id } = await ctx.params;
 
   const authz = await requireRole("admin", { requestId, resource: "ai_credentials" });

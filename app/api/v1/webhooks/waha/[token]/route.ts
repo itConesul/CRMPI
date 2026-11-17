@@ -9,9 +9,9 @@
  * Idempotência e resolução atômica de contato/conversa vivem no módulo
  * compartilhado — este handler só faz auth + roteamento.
  */
-import { randomUUID } from "node:crypto";
 import type { NextRequest, NextResponse } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { fail, ok } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
 import { ARCHIVED_AT, queryTolerantToMissingArchived } from "@/lib/channels/archived";
@@ -29,7 +29,7 @@ interface RouteCtx {
 }
 
 export async function POST(req: NextRequest, ctx: RouteCtx): Promise<NextResponse> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const { token } = await ctx.params;
 
   if (!token || token.length < 8) {

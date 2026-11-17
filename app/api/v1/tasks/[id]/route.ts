@@ -12,10 +12,10 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  * — que esta rota já traduz para 404, o desfecho certo. Mantê-lo explícito é a
  * regra do CLAUDE.md e o que segura o dia em que alguém trocar o client.
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 import { z } from "zod";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
 import { requireRole } from "@/lib/auth/require-role";
@@ -52,7 +52,7 @@ export async function PATCH(req: NextRequest, ctx: Contexto): Promise<Response> 
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const { id } = await ctx.params;
 
   const authz = await requireRole("agent", { requestId, resource: "crm_tasks" });
@@ -129,7 +129,7 @@ export async function DELETE(_req: NextRequest, ctx: Contexto): Promise<Response
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(_req);
   const { id } = await ctx.params;
 
   const authz = await requireRole("agent", { requestId, resource: "crm_tasks" });

@@ -23,10 +23,10 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  *     dado indo para um lugar que nenhuma lista, índice ou policy alcança.
  *     Falhar aberto na INFORMAÇÃO é o certo aqui: 500 com a mensagem do banco.
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 import { z } from "zod";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
 import { requireRole } from "@/lib/auth/require-role";
@@ -64,7 +64,7 @@ const listaSchema = z.object({
 });
 
 export async function GET(req: NextRequest): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
 
   const authz = await requireRole("viewer", { requestId, resource: "crm_tasks" });
   if (!authz.ok) return authz.response;
@@ -111,7 +111,7 @@ export async function POST(req: NextRequest): Promise<Response> {
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
 
   // `agent` e não `manager`: criar tarefa é o gesto de quem ATENDE, todo dia.
   const authz = await requireRole("agent", { requestId, resource: "crm_tasks" });

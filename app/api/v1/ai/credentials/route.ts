@@ -10,10 +10,10 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  *
  * Spec 10 §4.2 / §7.
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 import { z } from "zod";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
 import { type Provider } from "@/lib/ai/provider-validators";
@@ -38,8 +38,8 @@ const createSchema = z.object({
   api_key: z.string().trim().min(8).max(2048),
 });
 
-export async function GET(): Promise<Response> {
-  const requestId = randomUUID();
+export async function GET(req?: Request): Promise<Response> {
+  const requestId = requestIdDe(req);
   const authz = await requireRole("manager", { requestId, resource: "ai_credentials" });
   if (!authz.ok) return authz.response;
   const { org: activeOrg } = authz;
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest): Promise<Response> {
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const authz = await requireRole("admin", { requestId, resource: "ai_credentials" });
   if (!authz.ok) return authz.response;
   const t = (texto: string) => traduzir(texto, authz.user.idioma);

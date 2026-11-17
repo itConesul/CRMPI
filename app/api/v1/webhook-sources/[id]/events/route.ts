@@ -3,8 +3,8 @@
  * (últimos 20), pra UI mostrar "chegou / não chegou" em tempo quase real
  * depois do botão "Enviar lead de teste".
  */
-import { randomUUID } from "node:crypto";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
 import { createClient } from "@/lib/supabase/server";
@@ -17,7 +17,7 @@ interface RouteCtx {
 }
 
 export async function GET(_req: Request, ctx: RouteCtx): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(_req);
   const { id } = await ctx.params;
   const authz = await requireRole("manager", { requestId, resource: "webhook_sources" });
   if (!authz.ok) return authz.response;

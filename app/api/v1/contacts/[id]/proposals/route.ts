@@ -8,9 +8,9 @@
  * Devolve o `trecho` junto: sem ele, confirmar é um ato de fé. Quem decide
  * precisa ver o que a pessoa escreveu, não só o valor que a IA extraiu.
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { fail, ok } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
 import { createClient } from "@/lib/supabase/server";
@@ -33,7 +33,7 @@ export interface PropostaViva {
 }
 
 export async function GET(_req: NextRequest, ctx: RouteCtx): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(_req);
   const { id: contactId } = await ctx.params;
 
   // `viewer` porque LER o que está pendente é informação, não poder. Quem

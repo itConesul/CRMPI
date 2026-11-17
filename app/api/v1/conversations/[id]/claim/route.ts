@@ -14,11 +14,11 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  * o atendimento automático. Antes disso o motor moderno nunca soube que alguém
  * assumiu (ele não lê `assignee_kind`) e os dois atendiam o mesmo cliente.
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 
 import { audit } from "@/lib/audit";
 import { registrarTrocaDeComando } from "@/lib/inbox/atividade-de-comando";
+import { requestIdDe } from "@/lib/api/request-id";
 import { ApiError } from "@/lib/api/types";
 import { ok, fail } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest, ctx: RouteCtx): Promise<Response> {
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const { id } = await ctx.params;
   const supabase = await createClient();
 

@@ -5,9 +5,9 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  * run.event_id). Se o evento foi apagado (FK on delete set null zera
  * event_id) → 409 `event_gone`. Grava um run NOVO com o resultado.
  */
-import { randomUUID } from "node:crypto";
 import type { NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
 import { requireRole } from "@/lib/auth/require-role";
@@ -34,7 +34,7 @@ export async function POST(_req: NextRequest, ctx: RouteCtx): Promise<Response> 
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(_req);
   const { runId } = await ctx.params;
   const authz = await requireRole("manager", { requestId, resource: "automation_rules" });
   if (!authz.ok) return authz.response;

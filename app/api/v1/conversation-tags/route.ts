@@ -6,9 +6,9 @@
  * HttpOnly, então o client do browser não lê a sessão — leitura autenticada
  * passa pelo servidor, mesmo padrão do board de pipelines.
  */
-import { randomUUID } from "node:crypto";
 import type { NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
 import { canonicalConversationTagsSchema } from "@/lib/schemas/settings";
@@ -17,7 +17,7 @@ import { createClient } from "@/lib/supabase/server";
 export const dynamic = "force-dynamic";
 
 export async function GET(_req: NextRequest): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(_req);
   const authz = await requireRole("viewer", { requestId, resource: "conversations" });
   if (!authz.ok) return authz.response;
   const { org: activeOrg } = authz;

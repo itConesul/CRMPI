@@ -9,9 +9,9 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  *   e versões saem no cascade / na ordem abaixo; não dá para desfazer.
  */
 import { rascunhoDoFluxo } from "@/lib/followup/rascunho";
-import { randomUUID } from "node:crypto";
 import type { NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
 import { requireRole } from "@/lib/auth/require-role";
@@ -29,7 +29,7 @@ const UUID_RX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 type RouteCtx = { params: Promise<{ id: string }> };
 
 export async function GET(_req: NextRequest, ctx: RouteCtx): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(_req);
   const { id } = await ctx.params;
   if (!UUID_RX.test(id)) {
     return fail("invalid_request", "id inválido.", 400, { requestId });
@@ -87,7 +87,7 @@ export async function PATCH(req: NextRequest, ctx: RouteCtx): Promise<Response> 
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const { id } = await ctx.params;
   if (!UUID_RX.test(id)) {
     return fail("invalid_request", "id inválido.", 400, { requestId });
@@ -173,7 +173,7 @@ export async function DELETE(_req: NextRequest, ctx: RouteCtx): Promise<Response
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(_req);
   const { id } = await ctx.params;
   if (!UUID_RX.test(id)) {
     return fail("invalid_request", "id inválido.", 400, { requestId });

@@ -27,9 +27,9 @@
  * sempre. 500 fica reservado para falha de ESCRITA — aí a reentrega é o que
  * queremos, porque o evento era bom e nós é que não gravamos.
  */
-import { randomUUID } from "node:crypto";
 import type { NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { fail, ok } from "@/lib/api/wrappers";
 import { ARCHIVED_AT, queryTolerantToMissingArchived } from "@/lib/channels/archived";
 import {
@@ -47,7 +47,7 @@ export async function POST(
   req: NextRequest,
   ctx: { params: Promise<{ token: string }> },
 ): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const { token } = await ctx.params;
 
   // Token curto nunca foi emitido por nós. 404 e não 401: quem varre URLs não

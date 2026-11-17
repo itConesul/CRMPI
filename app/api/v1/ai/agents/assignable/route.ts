@@ -34,9 +34,9 @@
  * RLS-scoped (createClient), sem admin client: não há nada aqui que a RLS do
  * tenant não deva mostrar.
  */
-import { randomUUID } from "node:crypto";
 import type { NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
 import { agenteAtende } from "@/lib/ai/agents/no-ar";
@@ -52,7 +52,7 @@ export interface AssignableAgent {
 }
 
 export async function GET(_req: NextRequest): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(_req);
   const authz = await requireRole("agent", { requestId, resource: "ai_agents" });
   if (!authz.ok) return authz.response;
   const orgId = authz.org.orgId;

@@ -3,9 +3,9 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  * GET   /api/v1/conversations/[id] — single conversation (handler em ../_handler.ts)
  * PATCH /api/v1/conversations/[id] — update status e/ou tags (handler em ../_handler.ts)
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ApiError } from "@/lib/api/types";
 import { ok, fail } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
@@ -24,7 +24,7 @@ interface RouteCtx {
 }
 
 export async function GET(_req: NextRequest, ctx: RouteCtx): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(_req);
   const { id } = await ctx.params;
   const supabase = await createClient();
 
@@ -70,7 +70,7 @@ export async function PATCH(req: NextRequest, ctx: RouteCtx): Promise<Response> 
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const { id } = await ctx.params;
   const supabase = await createClient();
 

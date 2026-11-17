@@ -9,9 +9,9 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  * stage_id/position; the trigger will close-as-won/lost if the target is a
  * close stage. RLS scopes everything to the caller's tenant.
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 import { audit, isServiceRoleConfigured } from "@/lib/audit";
+import { requestIdDe } from "@/lib/api/request-id";
 import { ApiError } from "@/lib/api/types";
 import { ok, fail } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest): Promise<Response> {
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const supabase = await createClient();
 
   // spec 13 §4: escrita é agent+ (viewer é read-only).

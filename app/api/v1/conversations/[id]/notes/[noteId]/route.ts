@@ -3,10 +3,10 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  * DELETE /api/v1/conversations/[id]/notes/[noteId] — apaga uma nota interna.
  * Autor da nota OU manager+ pode apagar; qualquer outro agent recebe 403.
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 
 import { audit } from "@/lib/audit";
+import { requestIdDe } from "@/lib/api/request-id";
 import { fail, noContent } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
 import { roleAtLeast } from "@/lib/auth/types";
@@ -23,7 +23,7 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams): Promis
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(_req);
   const authz = await requireRole("agent", { requestId, resource: "conversation_notes" });
   if (!authz.ok) return authz.response;
   const t = (texto: string) => traduzir(texto, authz.user.idioma);

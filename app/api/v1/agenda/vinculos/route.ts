@@ -1,10 +1,10 @@
-import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { requireRole } from "@/lib/auth/require-role";
 import { createClient } from "@/lib/supabase/server";
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 export async function GET(req: Request) {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const auth = await requireRole("agent", { requestId, resource: "agenda" });
   if (!auth.ok) return auth.response;
   const input = z

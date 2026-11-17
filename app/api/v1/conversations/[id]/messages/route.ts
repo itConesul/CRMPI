@@ -2,9 +2,9 @@
  * GET /api/v1/conversations/[id]/messages — histórico de mensagens (handler
  * em /app/api/v1/messages/_handler.ts → listMessagesHandler).
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ApiError } from "@/lib/api/types";
 import { fail, ok } from "@/lib/api/wrappers";
 import { loadAuthUser, resolveActiveOrg } from "@/lib/auth/server";
@@ -21,7 +21,7 @@ interface RouteCtx {
 }
 
 export async function GET(req: NextRequest, ctx: RouteCtx): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const { id: conversationId } = await ctx.params;
   const supabase = await createClient();
 

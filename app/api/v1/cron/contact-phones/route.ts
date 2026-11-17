@@ -33,9 +33,9 @@
  *
  * Auth: Bearer INTERNAL_SECRET (fail-closed), igual aos demais crons.
  */
-import { randomUUID } from "node:crypto";
 import type { NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { fail, ok } from "@/lib/api/wrappers";
 import {
   CHANNEL_SESSION_REF_COLUMNS,
@@ -71,7 +71,7 @@ interface ContactRow {
 }
 
 async function handle(req: NextRequest): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
 
   const auth = req.headers.get("authorization") ?? "";
   const provided = auth.startsWith("Bearer ") ? auth.slice("Bearer ".length).trim() : "";

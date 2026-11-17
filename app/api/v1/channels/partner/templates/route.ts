@@ -24,9 +24,9 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  * `channel_session_id` é o que permite responder "o que posso usar NESTA
  * conexão?". Sem ele, dois números do mesmo provider dividiriam a mesma lista.
  */
-import { randomUUID } from "node:crypto";
 import type { NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { fail, ok } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
 import { loadAuthUser, resolveActiveOrg } from "@/lib/auth/server";
@@ -103,8 +103,8 @@ async function contexto(
 }
 
 /** Lista o que está ESPELHADO. Rápido, e é o que a tela mostra. */
-export async function GET(): Promise<Response> {
-  const requestId = randomUUID();
+export async function GET(req?: Request): Promise<Response> {
+  const requestId = requestIdDe(req);
   const r = await contexto(requestId);
   if (!r.ok) return r.res;
 
@@ -148,7 +148,7 @@ export async function POST(req: NextRequest): Promise<Response> {
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const r = await contexto(requestId);
   if (!r.ok) return r.res;
   const t = (texto: string) => traduzir(texto, r.ctx.idioma);

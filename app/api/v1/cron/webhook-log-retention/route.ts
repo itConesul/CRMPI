@@ -12,9 +12,9 @@
  * Auth: `Authorization: Bearer <INTERNAL_CRON_SECRET>` (fecha quando falta o
  * segredo). Mesma forma de `app/api/v1/cron/storage-redaction/route.ts`.
  */
-import { randomUUID } from "node:crypto";
 import type { NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { LOTE_PADRAO, podarArquivoDeWebhooks } from "@/lib/channels/retencao-do-arquivo";
 import { podarHistoricoDeCaptacao } from "@/lib/webhooks/retencao-da-captacao";
@@ -26,7 +26,7 @@ export const dynamic = "force-dynamic";
 const LOTE_MAXIMO = 5_000;
 
 export async function GET(req: NextRequest): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
 
   const auth = req.headers.get("authorization") ?? "";
   const provided = auth.startsWith("Bearer ") ? auth.slice("Bearer ".length).trim() : "";

@@ -52,9 +52,9 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  * upload sem render não seria.
  */
 import type { NextRequest } from "next/server";
-import { randomUUID } from "node:crypto";
 import { z } from "zod";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { fail, ok } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
 import { loadAuthUser, mfaEmDivida, resolveActiveOrg } from "@/lib/auth/server";
@@ -359,7 +359,7 @@ export async function POST(req: NextRequest): Promise<Response> {
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
 
   const form = await req.formData().catch(() => null);
   const escopoLido = escopoSchema.safeParse(form?.get("escopo"));
@@ -460,7 +460,7 @@ export async function DELETE(req: NextRequest): Promise<Response> {
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
 
   const escopoLido = escopoSchema.safeParse(new URL(req.url).searchParams.get("escopo"));
   if (!escopoLido.success) {

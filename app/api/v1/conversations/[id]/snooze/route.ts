@@ -13,10 +13,10 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  * sucesso + audit falso (mutação que não ocorreu). Mesma lição do DELETE de
  * message-templates.
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 
 import { audit } from "@/lib/audit";
+import { requestIdDe } from "@/lib/api/request-id";
 import { fail, ok, noContent } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
 import { snoozeSchema } from "@/lib/schemas/snooze";
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest, { params }: RouteParams): Promise<R
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const authz = await requireRole("agent", { requestId, resource: "conversations" });
   if (!authz.ok) return authz.response;
   const t = (texto: string) => traduzir(texto, authz.user.idioma);
@@ -80,7 +80,7 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams): Promis
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(_req);
   const authz = await requireRole("agent", { requestId, resource: "conversations" });
   if (!authz.ok) return authz.response;
   const t = (texto: string) => traduzir(texto, authz.user.idioma);

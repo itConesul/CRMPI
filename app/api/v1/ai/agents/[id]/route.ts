@@ -7,8 +7,8 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  * organization_id sempre vem do JWT da sessão, nunca do body/path inseguro.
  * Audit: trigger trg_ai_agents_audit grava em audit_log automaticamente.
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
 import { requireRole } from "@/lib/auth/require-role";
@@ -35,7 +35,7 @@ const UUID_RX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 // ---------------------------------------------------------------------------
 
 export async function GET(_req: NextRequest, ctx: RouteCtx): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(_req);
   const { id } = await ctx.params;
 
   if (!UUID_RX.test(id)) {
@@ -73,7 +73,7 @@ export async function PATCH(req: NextRequest, ctx: RouteCtx): Promise<Response> 
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const { id } = await ctx.params;
 
   if (!UUID_RX.test(id)) {
@@ -217,7 +217,7 @@ export async function DELETE(_req: NextRequest, ctx: RouteCtx): Promise<Response
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(_req);
   const { id } = await ctx.params;
 
   if (!UUID_RX.test(id)) {

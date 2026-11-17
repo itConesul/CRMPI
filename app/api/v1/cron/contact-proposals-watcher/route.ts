@@ -19,9 +19,9 @@
  * órfã. O comentário do `risk-watcher` conta o que acontece sem isso — uma rota
  * com teste e doc que ninguém chamava, por meses.
  */
-import { randomUUID } from "node:crypto";
 import type { NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { vencePropostasDeDado } from "@/lib/contacts/proposta-de-dado";
 import { env } from "@/lib/env";
@@ -34,7 +34,7 @@ export const dynamic = "force-dynamic";
 const ORG_LIMIT = 50;
 
 async function handle(req: NextRequest): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
 
   const auth = req.headers.get("authorization") ?? "";
   const provided = auth.startsWith("Bearer ") ? auth.slice("Bearer ".length).trim() : "";

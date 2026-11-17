@@ -8,13 +8,13 @@
  * NUNCA logamos plaintext do bearer. Em erro retornamos JSON-RPC 2.0
  * envelope com `error.code` MCP (-32001/-32002/etc).
  */
-import { randomUUID } from "node:crypto";
 import type { NextRequest } from "next/server";
 
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 
 import { createMcpServer } from "@/lib/mcp/server";
 import { McpAuthError, validateBearerToken } from "@/lib/mcp/auth";
+import { requestIdDe } from "@/lib/api/request-id";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -35,7 +35,7 @@ function jsonRpcError(code: number, message: string, status: number): Response {
 }
 
 async function handle(req: NextRequest): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   let auth;
   try {
     auth = await validateBearerToken(req.headers.get("authorization"));

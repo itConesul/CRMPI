@@ -15,10 +15,10 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  * Auth: sessão por cookie, papel manager+. `organization_id` sai do JWT — nunca
  * do body nem da URL.
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 import { z } from "zod";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { respostaDeRecusa } from "@/lib/api/recusa";
 import { fail, ok } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
@@ -52,7 +52,7 @@ export async function PATCH(req: NextRequest, ctx: RouteCtx): Promise<Response> 
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const authz = await requireRole("manager", { requestId, resource: "crm_stages" });
   if (!authz.ok) return authz.response;
   const t = (texto: string) => traduzir(texto, authz.user.idioma);
@@ -95,7 +95,7 @@ export async function DELETE(req: NextRequest, ctx: RouteCtx): Promise<Response>
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const authz = await requireRole("manager", { requestId, resource: "crm_stages" });
   if (!authz.ok) return authz.response;
 

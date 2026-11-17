@@ -1,16 +1,16 @@
-import { randomUUID } from "node:crypto";
 import { requireRole } from "@/lib/auth/require-role";
 import { mfaEmDivida } from "@/lib/auth/server";
 import { requireSupportWrite } from "@/lib/impersonate/support";
 import { createClient } from "@/lib/supabase/server";
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { channelRoutingPatchSchema } from "@/lib/schemas/routing";
 import { loadChannelRoutingSettings } from "@/lib/routing/channel-policies";
 import { audit } from "@/lib/audit";
 export const dynamic = "force-dynamic";
 
-export async function GET(): Promise<Response> {
-  const requestId = randomUUID();
+export async function GET(req?: Request): Promise<Response> {
+  const requestId = requestIdDe(req);
   const auth = await requireRole("manager", { requestId, resource: "settings_routing", allowPlatformAdmin: true });
   if (!auth.ok) return auth.response;
   if (await mfaEmDivida()) return fail("mfa_required", "Confirme a verificação em duas etapas.", 403, { requestId });
@@ -21,7 +21,7 @@ export async function GET(): Promise<Response> {
 
 export async function PATCH(req: Request): Promise<Response> {
   const denied = await requireSupportWrite(); if (denied) return denied;
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const auth = await requireRole("manager", { requestId, resource: "settings_routing", allowPlatformAdmin: true });
   if (!auth.ok) return auth.response;
   if (await mfaEmDivida()) return fail("mfa_required", "Confirme a verificação em duas etapas.", 403, { requestId });

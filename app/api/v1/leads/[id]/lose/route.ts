@@ -10,9 +10,9 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  * encerramento da IA (IA 360 · wave 2). Duas implementações fariam a IA e o
  * humano fecharem negócio por critérios diferentes.
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ApiError } from "@/lib/api/types";
 import { ok, fail } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
@@ -30,7 +30,7 @@ export async function POST(
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const { id: leadId } = await ctx.params;
 
   const supabase = await createClient();

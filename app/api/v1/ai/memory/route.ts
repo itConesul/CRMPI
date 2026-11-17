@@ -8,10 +8,10 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  * entradas não-propostas. POST: publica conteúdo novo como versão e move o
  * ponteiro (o clique É o gate humano — mesmo padrão de publish de agente).
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 import { z } from "zod";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
 import { requireRole } from "@/lib/auth/require-role";
@@ -24,7 +24,7 @@ export const dynamic = "force-dynamic";
 const postSchema = z.object({ content: z.string().min(1).max(50_000) });
 
 export async function GET(_req: NextRequest): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(_req);
   const authz = await requireRole("agent", { requestId, resource: "org_memory" });
   if (!authz.ok) return authz.response;
   const t = (texto: string) => traduzir(texto, authz.user.idioma);
@@ -88,7 +88,7 @@ export async function POST(req: NextRequest): Promise<Response> {
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const authz = await requireRole("admin", { requestId, resource: "org_memory" });
   if (!authz.ok) return authz.response;
   const t = (texto: string) => traduzir(texto, authz.user.idioma);

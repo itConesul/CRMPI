@@ -6,10 +6,10 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  *      null (compartilhado) e exige role manager+; `shared=false` (default) grava
  *      owner_user_id = user.id (pessoal, role agent+ já garantido pelo requireRole).
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 
 import { audit } from "@/lib/audit";
+import { requestIdDe } from "@/lib/api/request-id";
 import { fail, ok } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
 import { roleAtLeast } from "@/lib/auth/types";
@@ -21,7 +21,7 @@ export const dynamic = "force-dynamic";
 const COLS = "id, organization_id, owner_user_id, title, body, shortcut, created_by_user_id, created_at, updated_at";
 
 export async function GET(_req: NextRequest): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(_req);
   const authz = await requireRole("agent", { requestId, resource: "message_templates" });
   if (!authz.ok) return authz.response;
   const { org } = authz;
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest): Promise<Response> {
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const authz = await requireRole("agent", { requestId, resource: "message_templates" });
   if (!authz.ok) return authz.response;
   const t = (texto: string) => traduzir(texto, authz.user.idioma);

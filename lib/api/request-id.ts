@@ -14,7 +14,11 @@ import { randomUUID } from "node:crypto";
 
 const UUID_RX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export function requestIdDe(req: Pick<Request, "headers">): string {
-  const recebido = req.headers.get("x-request-id");
+/**
+ * `req` é opcional de propósito: testes e chamadas internas invocam o handler sem
+ * requisição, e a resposta certa é um UUID novo — nunca um crash por `undefined.headers`.
+ */
+export function requestIdDe(req?: Pick<Request, "headers"> | null): string {
+  const recebido = req?.headers?.get("x-request-id") ?? null;
   return recebido !== null && UUID_RX.test(recebido) ? recebido : randomUUID();
 }

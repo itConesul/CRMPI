@@ -40,9 +40,9 @@
  * Cursor pagination opaco base64 (created_at + id), como as demais rotas.
  * Filtro opcional ?status=.
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
 import { createClient } from "@/lib/supabase/server";
@@ -148,7 +148,7 @@ function decodeCursor(raw: string): CursorPayload | null {
 }
 
 export async function GET(req: NextRequest, ctx: Ctx): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const { id } = await ctx.params;
   if (!UUID_RX.test(id)) return fail("invalid_request", "id inválido.", 400, { requestId });
 

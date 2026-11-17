@@ -7,10 +7,10 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  * de auditar: sem isso, um DELETE barrado pela RLS devolveria sucesso e gravaria
  * auditoria de uma mutação que não aconteceu.
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 
 import { audit } from "@/lib/audit";
+import { requestIdDe } from "@/lib/api/request-id";
 import { fail, ok } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
 import { COLUNAS_DO_PRODUTO, produtoPatchSchema } from "@/lib/schemas/produtos";
@@ -26,7 +26,7 @@ export async function PATCH(
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const authz = await requireRole("manager", { requestId, resource: "catalog_products" });
   if (!authz.ok) return authz.response;
   const t = (texto: string) => traduzir(texto, authz.user.idioma);
@@ -81,7 +81,7 @@ export async function DELETE(
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(_req);
   const authz = await requireRole("manager", { requestId, resource: "catalog_products" });
   if (!authz.ok) return authz.response;
   const t = (texto: string) => traduzir(texto, authz.user.idioma);

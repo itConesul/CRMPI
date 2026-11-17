@@ -18,9 +18,9 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  *
  * Auth: cookie session, role >= agent. Audit: `ai.reactivated_by_agent`.
  */
-import { randomUUID } from "node:crypto";
 import type { NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
 import { devolverAtendimentoAoAgente } from "@/lib/escalacao/retomada";
@@ -37,7 +37,7 @@ export async function POST(_req: NextRequest, ctx: RouteCtx): Promise<Response> 
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(_req);
   const { id } = await ctx.params;
 
   const authz = await requireRole("agent", { requestId, resource: "conversations" });

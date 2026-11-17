@@ -8,10 +8,10 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  *
  * organization_id vem SEMPRE de requireRole — NUNCA de query/body.
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 import { z } from "zod";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
 import { requireRole } from "@/lib/auth/require-role";
@@ -31,7 +31,7 @@ export async function POST(
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(_req);
 
   const authz = await requireRole("manager", { requestId, resource: "ai_skills" });
   if (!authz.ok) return authz.response;

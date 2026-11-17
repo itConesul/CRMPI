@@ -19,9 +19,9 @@
  * Tenancy: client de sessão (RLS), nunca admin. A lista é o que ESTE usuário
  * pode ver.
  */
-import { randomUUID } from "node:crypto";
 import type { NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { fail, ok } from "@/lib/api/wrappers";
 import type { LeadCandidate } from "@/lib/leads/active-lead";
 import { roteiaProximasAcoes, type EstadoDoContato } from "@/lib/leads/next-action";
@@ -58,7 +58,7 @@ export interface DecisaoPassada {
 }
 
 export async function GET(req: NextRequest): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   void req;
 
   const user = await requireAuth();
