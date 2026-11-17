@@ -1,4 +1,4 @@
-<!-- traduzido-de: docs/white-label.md@bea2659e9c40 -->
+<!-- traduzido-de: docs/white-label.md@489cc9e2a62b -->
 
 [🇧🇷 Português](white-label.md) · 🇺🇸 English · [🇪🇸 Español](white-label.es.md)
 
@@ -12,7 +12,7 @@ The license is MIT: you may modify it, host it for third parties, resell it and 
 
 ## Changing the brand
 
-**From the screen, and without restarting anything.** In `/admin/marca` you change the **system name** and the **brand color**. You save, you reload, and the whole interface is already repainted — the sidebar, the buttons, the focus ring, the tab title and the browser icon.
+**From the screen, and without restarting anything.** In `/admin/marca` you change the **system name** and the **brand color**. You save, you reload, and the whole interface is already repainted — the sidebar, the buttons, the focus ring, and the tab title. The **tab icon is the Cone Sul cone** on every installation — it does not follow the brand color or name.
 
 The color is **derived**, not applied raw: one hex yields eleven shades in both themes (light and dark), with a contrast floor computed per role and per surface. If the color you picked would be illegible as button text in the dark theme, the system walks the steps it needs and the screen **shows you** which shade each thing will land on, before you save. None of that "I picked yellow and the button turned white on white".
 
