@@ -18,7 +18,7 @@
  * que é o que a view `ai_provider_credentials_safe` expõe.
  */
 
-import { randomUUID } from "node:crypto";
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
 import { createClient } from "@/lib/supabase/server";
@@ -29,8 +29,8 @@ import {
 
 export const dynamic = "force-dynamic";
 
-export async function GET(): Promise<Response> {
-  const requestId = randomUUID();
+export async function GET(req?: Request): Promise<Response> {
+  const requestId = requestIdDe(req);
 
   const authz = await requireRole("manager", { requestId, resource: "ai_knowledge" });
   if (!authz.ok) return authz.response;

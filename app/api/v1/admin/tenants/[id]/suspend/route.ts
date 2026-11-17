@@ -8,11 +8,11 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  * Emits audit + event_log domain event.
  */
 import { type NextRequest } from "next/server";
-import { randomUUID } from "node:crypto";
 import { z } from "zod";
 
 import { requirePlatformAdmin } from "@/lib/auth/requirePlatformAdmin";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
 
@@ -30,7 +30,7 @@ export async function POST(
   const supportDenied = await requireSupportWrite((await params).id);
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const { id: tenantId } = await params;
 
   let adminCtx: Awaited<ReturnType<typeof requirePlatformAdmin>>;

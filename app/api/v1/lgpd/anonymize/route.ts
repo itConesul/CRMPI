@@ -18,11 +18,11 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  * `already_anonymized` (nada faltava). O do meio existia sem nome, e caía em
  * `already_anonymized` — que é a frase que descreve o DEFEITO (issue #310).
  */
-import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { type NextRequest } from "next/server";
 
 import { audit } from "@/lib/audit";
+import { requestIdDe } from "@/lib/api/request-id";
 import { ApiError } from "@/lib/api/types";
 import {
   completarRedacaoDoContato,
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest): Promise<Response> {
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
 
   const supabase = await createClient();
   const {

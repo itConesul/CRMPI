@@ -19,9 +19,9 @@
  * 3. **`claimed_until` vai para a resposta.** É o que explica um 409 na hora de
  *    intervir: sem ele, a tela diria "não deu" sem poder dizer por quê.
  */
-import { randomUUID } from "node:crypto";
 import type { NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
 import { rotuloDoContato } from "@/lib/contacts/rotulo-do-contato";
@@ -135,7 +135,7 @@ async function resolveAutores(eventos: Array<{ payload: unknown }>): Promise<Rec
 }
 
 export async function GET(_req: NextRequest, ctx: RouteCtx): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(_req);
   const { id } = await ctx.params;
   if (!UUID_RX.test(id)) return fail("invalid_request", "id inválido.", 400, { requestId });
 

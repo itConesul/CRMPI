@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import type { NextRequest } from "next/server";
 import { requireSupportWrite } from "@/lib/impersonate/support";
 import { requireRole } from "@/lib/auth/require-role";
@@ -6,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getRequestPool } from "@/lib/agent-engine/db/request-pool";
 import { requestTurnDeps } from "@/lib/agent-engine/agent/request-deps";
 import { generateReplyDraft } from "@/lib/agent-engine/agent/reply-drafts";
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
 import { traduzir } from "@/lib/i18n/dicionario";
@@ -28,7 +28,7 @@ async function context(ctx: Ctx, requestId: string) {
   return { auth, conversation, t } as const;
 }
 export async function GET(_req: NextRequest, ctx: Ctx) {
-  const requestId = randomUUID(),
+  const requestId = requestIdDe(_req),
     c = await context(ctx, requestId);
   if ("response" in c) return c.response;
   const { rows } = await getRequestPool().query(
@@ -42,7 +42,7 @@ export async function GET(_req: NextRequest, ctx: Ctx) {
 export async function POST(_req: NextRequest, ctx: Ctx) {
   const denied = await requireSupportWrite();
   if (denied) return denied;
-  const requestId = randomUUID(),
+  const requestId = requestIdDe(_req),
     c = await context(ctx, requestId);
   if ("response" in c) return c.response;
   const {

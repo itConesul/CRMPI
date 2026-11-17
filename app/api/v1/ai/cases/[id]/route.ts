@@ -5,9 +5,9 @@
  * A consulta vive em `lib/escalacao/chamados.ts` — a capacidade "ler um chamado e
  * o que a pessoa decidiu" do agente lê o mesmo detalhe e a mesma linha do tempo.
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
 import { lerChamado } from "@/lib/escalacao/chamados";
@@ -21,7 +21,7 @@ interface RouteParams {
 }
 
 export async function GET(_req: NextRequest, { params }: RouteParams): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(_req);
   const authz = await requireRole("agent", { requestId, resource: "agent_cases" });
   if (!authz.ok) return authz.response;
   const t = (texto: string) => traduzir(texto, authz.user.idioma);

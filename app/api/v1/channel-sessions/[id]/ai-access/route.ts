@@ -1,8 +1,8 @@
-import { randomUUID } from "node:crypto";
 import type { NextRequest } from "next/server";
 import { z } from "zod";
 
 import { audit } from "@/lib/audit";
+import { requestIdDe } from "@/lib/api/request-id";
 import { fail, ok } from "@/lib/api/wrappers";
 import { requireSupportWrite } from "@/lib/impersonate/support";
 import { requireRole } from "@/lib/auth/require-role";
@@ -16,7 +16,7 @@ type Context = { params: Promise<{ id: string }> };
 
 /** Só administradores podem ler os telefones de teste ou mudar o alcance da IA. */
 export async function GET(_req: NextRequest, { params }: Context): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(_req);
   const auth = await requireRole("admin", { requestId, resource: "channel_sessions", allowPlatformAdmin: true });
   if (!auth.ok) return auth.response;
   const { id } = await params;
@@ -32,7 +32,7 @@ export async function GET(_req: NextRequest, { params }: Context): Promise<Respo
 export async function PATCH(req: NextRequest, { params }: Context): Promise<Response> {
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const auth = await requireRole("admin", { requestId, resource: "channel_sessions", allowPlatformAdmin: true });
   if (!auth.ok) return auth.response;
   const { id } = await params;

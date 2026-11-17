@@ -6,9 +6,9 @@
  * A URL desta rota é usada diretamente como src de <img>/<video>/<audio>
  * (cookie de sessão vai junto por ser same-origin; RLS decide o acesso).
  */
-import { randomUUID } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { fail } from "@/lib/api/wrappers";
 import { loadAuthUser, resolveActiveOrg } from "@/lib/auth/server";
 import { traduzir } from "@/lib/i18n/dicionario";
@@ -32,7 +32,7 @@ interface RouteCtx {
 }
 
 export async function GET(_req: NextRequest, ctx: RouteCtx): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(_req);
   const { id: messageId } = await ctx.params;
   const supabase = await createClient();
 

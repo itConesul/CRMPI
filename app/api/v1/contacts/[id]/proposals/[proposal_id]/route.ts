@@ -22,11 +22,11 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  * finalidade e já emite o audit com `old_`/`new_`. Escrever direto aqui
  * duplicaria as três regras — e a cópia é que fica para trás.
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 import { z } from "zod";
 
 import { patchContactHandler } from "@/app/api/v1/contacts/_handler";
+import { requestIdDe } from "@/lib/api/request-id";
 import { ApiError } from "@/lib/api/types";
 import { fail, ok } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
@@ -57,7 +57,7 @@ export async function POST(req: NextRequest, ctx: RouteCtx): Promise<Response> {
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const { id: contactId, proposal_id } = await ctx.params;
 
   // `agent`: paridade com o PATCH do próprio contato. Confirmar um dado é

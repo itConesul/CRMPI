@@ -4,10 +4,10 @@
  * Cross-tenant list of lgpd_requests — platform admin only.
  * Service-role client (bypasses RLS). organization_id NEVER from body.
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 import { z } from "zod";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { requirePlatformAdmin } from "@/lib/auth/requirePlatformAdmin";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -79,7 +79,7 @@ function decodeCursor(cursor: string): CursorPayload | null {
 // ---------------------------------------------------------------------------
 
 export async function GET(req: NextRequest): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
 
   let adminCtx: Awaited<ReturnType<typeof requirePlatformAdmin>>;
   try {

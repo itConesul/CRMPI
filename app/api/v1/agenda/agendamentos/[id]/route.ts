@@ -1,17 +1,17 @@
 import { readServiceBoundarySupabase } from "@/lib/atendimento/origem";
 import { meetingDeliverySchema, meetingAuthorizationCurrent } from "@/lib/agenda/google/meet";
 import { conflictSchema } from "@/lib/agenda/google/sync-model";
-import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { requireRole } from "@/lib/auth/require-role";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { tagDeIdioma } from "@/lib/i18n/datas";
 import { traduzir } from "@/lib/i18n/dicionario";
 
 export async function GET(_req: Request, context: { params: Promise<{ id: string }> }) {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(_req);
   const auth = await requireRole("viewer", { requestId, resource: "agenda" });
   if (!auth.ok) return auth.response;
   const { id } = await context.params;

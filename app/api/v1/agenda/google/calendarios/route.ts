@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { requireRole } from "@/lib/auth/require-role";
 import { requireSupportWrite } from "@/lib/impersonate/support";
@@ -6,10 +5,11 @@ import { createClient } from "@/lib/supabase/server";
 import { coverageSchema } from "@/lib/agenda/google/sync-model";
 import { googleRpc } from "@/lib/agenda/google/sync-store";
 import { canReadCalendar, canWriteCalendar } from "@/lib/agenda/google/transport";
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
-export async function GET() {
-  const requestId = randomUUID();
+export async function GET(req?: Request) {
+  const requestId = requestIdDe(req);
   const auth = await requireRole("agent", { requestId, resource: "agenda" });
   if (!auth.ok) return auth.response;
   const db = await createClient();
@@ -75,7 +75,7 @@ const selectionSchema = z
 export async function PATCH(req: Request) {
   const denied = await requireSupportWrite();
   if (denied) return denied;
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const auth = await requireRole("agent", { requestId, resource: "agenda" });
   if (!auth.ok) return auth.response;
   const parsed = selectionSchema.safeParse(await req.json().catch(() => null));

@@ -32,7 +32,6 @@
  * Piso `viewer`: consultar horário livre é o menor privilégio que existe nesta
  * feature — quem só olha a agenda precisa ver o que está livre.
  */
-import { randomUUID } from "node:crypto";
 
 import { type NextRequest } from "next/server";
 import { z } from "zod";
@@ -42,6 +41,7 @@ import {
   MAXIMO_DE_DIAS,
   type CodigoDeRecusaDaConsulta,
 } from "@/lib/agenda/consulta";
+import { requestIdDe } from "@/lib/api/request-id";
 import { fail, ok } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
 import { createClient } from "@/lib/supabase/server";
@@ -55,7 +55,7 @@ const querySchema = z.object({
 });
 
 export async function GET(req: NextRequest): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
 
   const authz = await requireRole("viewer", { requestId, resource: "agenda" });
   if (!authz.ok) return authz.response;

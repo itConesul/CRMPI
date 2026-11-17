@@ -1,9 +1,9 @@
 import { type NextRequest } from "next/server";
 import { requirePlatformAdmin } from "@/lib/auth/requirePlatformAdmin";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
-import { randomUUID } from "node:crypto";
 
 // ---------------------------------------------------------------------------
 // GET /api/v1/admin/users/[id]
@@ -13,7 +13,7 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(_req);
   const { id } = await params;
 
   let adminCtx: Awaited<ReturnType<typeof requirePlatformAdmin>>;

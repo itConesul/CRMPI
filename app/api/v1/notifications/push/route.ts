@@ -4,10 +4,10 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  * PUT  — grava a inscrição deste navegador.
  * DELETE — remove a inscrição pelo endpoint.
  */
-import { randomUUID } from "node:crypto";
 import type { NextRequest } from "next/server";
 import { z } from "zod";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
 import { requireRole } from "@/lib/auth/require-role";
@@ -25,8 +25,8 @@ const subSchema = z.object({
   }),
 });
 
-export async function GET(): Promise<Response> {
-  const requestId = randomUUID();
+export async function GET(req?: Request): Promise<Response> {
+  const requestId = requestIdDe(req);
   const authz = await requireRole("viewer", { requestId, resource: "push_subscriptions" });
   if (!authz.ok) return authz.response;
   return ok(
@@ -39,7 +39,7 @@ export async function PUT(req: NextRequest): Promise<Response> {
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const authz = await requireRole("viewer", { requestId, resource: "push_subscriptions" });
   if (!authz.ok) return authz.response;
   const t = (texto: string) => traduzir(texto, authz.user.idioma);
@@ -98,7 +98,7 @@ export async function DELETE(req: NextRequest): Promise<Response> {
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const authz = await requireRole("viewer", { requestId, resource: "push_subscriptions" });
   if (!authz.ok) return authz.response;
   const t = (texto: string) => traduzir(texto, authz.user.idioma);

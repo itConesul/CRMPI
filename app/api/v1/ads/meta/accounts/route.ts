@@ -15,11 +15,11 @@
  * Org da org ativa (cookie validado), NUNCA do query/body. Read-only ⇒ sem
  * audit, mesma regra de `metrics/attendants`.
  */
-import { randomUUID } from "node:crypto";
 
 import { requireRole } from "@/lib/auth/require-role";
 import { listarContas } from "@/lib/plataformas-de-anuncio/meta/insights";
 import { lerCredencialDeLeitura } from "@/lib/plataformas-de-anuncio/credenciais-de-leitura";
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok } from "@/lib/api/wrappers";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -27,8 +27,8 @@ import { respostaDeFalha, respostaSemConexao } from "../_falha";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(): Promise<Response> {
-  const requestId = randomUUID();
+export async function GET(req?: Request): Promise<Response> {
+  const requestId = requestIdDe(req);
 
   const authz = await requireRole("manager", { requestId, resource: "ads_insights" });
   if (!authz.ok) return authz.response;

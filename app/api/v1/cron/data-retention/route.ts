@@ -47,9 +47,9 @@
  * NOTA DE DEPLOY: não há `vercel.json` neste repo (self-host). O agendamento
  * vive no serviço `scheduler` (docker/scheduler/entrypoint.sh), diário.
  */
-import { randomUUID } from "node:crypto";
 import type { NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
 import { env } from "@/lib/env";
@@ -219,7 +219,7 @@ export function houveEfeito(resultado: ResultadoDaRetencao): boolean {
 }
 
 async function handle(req: NextRequest): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
 
   const auth = req.headers.get("authorization") ?? "";
   const provided = auth.startsWith("Bearer ") ? auth.slice("Bearer ".length).trim() : "";

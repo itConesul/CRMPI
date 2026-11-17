@@ -25,7 +25,6 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  * meio pode deixar um caso fora de `awaiting_human` sem o efeito prometido,
  * porque esse estado não tem caminho de volta pela API (viraria 409 eterno).
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 import { z } from "zod";
 
@@ -42,6 +41,7 @@ import { getRequestPool } from "@/lib/agent-engine/db/request-pool";
 import { createLogger } from "@/lib/agent-engine/obs/logger";
 import { enqueueJob } from "@/lib/agent-engine/queue/queue";
 import { audit } from "@/lib/audit";
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
 import { traduzir } from "@/lib/i18n/dicionario";
@@ -79,7 +79,7 @@ export async function POST(req: NextRequest, { params }: RouteParams): Promise<R
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const authz = await requireRole("agent", { requestId, resource: "agent_cases" });
   if (!authz.ok) return authz.response;
   const t = (texto: string) => traduzir(texto, authz.user.idioma);

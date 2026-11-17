@@ -23,10 +23,10 @@
  *
  * Não há mutação; a doutrina de audit cobre POST/PATCH/DELETE.
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 import { z } from "zod";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { fail, ok } from "@/lib/api/wrappers";
 import { isServiceRoleConfigured } from "@/lib/audit";
 import { requireRole } from "@/lib/auth/require-role";
@@ -71,7 +71,7 @@ const querySchema = z.object({
 });
 
 export async function GET(req: NextRequest): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
 
   // Piso `viewer`: é leitura, e quem restringe por atendente é a RLS, não o
   // papel. Um piso mais alto esconderia da pessoa as atividades dela mesma.

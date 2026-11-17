@@ -27,11 +27,11 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  * registro para depois — e "depois" é exatamente o estado que esta rota existe
  * para eliminar.
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 import { z } from "zod";
 
 import { audit } from "@/lib/audit";
+import { requestIdDe } from "@/lib/api/request-id";
 import { fail, ok } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -59,7 +59,7 @@ export async function PATCH(
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const { id } = await ctx.params;
 
   const authz = await requireRole("agent", { requestId, resource: "demandas" });

@@ -7,10 +7,10 @@
  * chamados em aberto" do agente lê exatamente a mesma lista, e a tela e o agente
  * discordarem sobre o que está aberto seria o pior tipo de divergência.
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 import { z } from "zod";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
 import { listarChamados } from "@/lib/escalacao/chamados";
@@ -24,7 +24,7 @@ const querySchema = z.object({
 });
 
 export async function GET(req: NextRequest): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const authz = await requireRole("agent", { requestId, resource: "agent_cases" });
   if (!authz.ok) return authz.response;
   const t = (texto: string) => traduzir(texto, authz.user.idioma);

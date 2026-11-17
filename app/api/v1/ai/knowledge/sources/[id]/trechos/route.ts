@@ -15,7 +15,7 @@
  * Auth: sessão por cookie, papel >= manager (mesmo gate do resto do acervo).
  */
 
-import { randomUUID } from "node:crypto";
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
 import { createClient } from "@/lib/supabase/server";
@@ -30,7 +30,7 @@ export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string }> },
 ): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(_req);
   const { id: sourceId } = await params;
 
   const authz = await requireRole("manager", { requestId, resource: "ai_knowledge" });

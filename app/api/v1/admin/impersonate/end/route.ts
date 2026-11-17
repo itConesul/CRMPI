@@ -1,16 +1,16 @@
 import { cookies } from "next/headers";
-import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { cookieSecure } from "@/lib/supabase/cookie-secure";
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
 import { IMPERSONATE_COOKIE_NAME } from "@/lib/impersonate/cookie";
 
 /** A própria sessão pode sair depois de expiração/revogação de plataforma. */
-export async function POST() {
-  const requestId = randomUUID();
+export async function POST(req?: Request) {
+  const requestId = requestIdDe(req);
   const db = await createClient();
   const { data: { user } } = await db.auth.getUser();
   if (!user) return fail("unauthenticated", "Entre novamente.", 401, { requestId });

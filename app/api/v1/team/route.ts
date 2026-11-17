@@ -7,9 +7,9 @@ import type { InterfaceSettings } from "@/lib/navigation/interface";
  * role is not configured (dev placeholder), degrade gracefully and return
  * memberships with `email = null` — the UI can still render role/status.
  */
-import { randomUUID } from "node:crypto";
 import type { NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
 import { createClient } from "@/lib/supabase/server";
@@ -35,7 +35,7 @@ interface MemberDto extends MembershipRow {
 }
 
 export async function GET(_req: NextRequest): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(_req);
   // spec 13 §4: team read é manager+ (viewer/agent = none; nota 7).
   const authz = await requireRole("manager", { requestId, resource: "team" });
   if (!authz.ok) return authz.response;

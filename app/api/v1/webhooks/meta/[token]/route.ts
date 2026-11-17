@@ -16,9 +16,9 @@
  * antes de qualquer escrita — sem ele, quem conhecesse o App Secret escreveria em
  * qualquer tenant.
  */
-import { randomUUID } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { fail } from "@/lib/api/wrappers";
 import { lerEnvelopeMeta } from "@/lib/channels/meta/envelope";
 import { parseMetaWebhook, verificationChallenge, verifyMetaSignature } from "@/lib/channels/meta/webhook";
@@ -53,7 +53,7 @@ export async function GET(req: NextRequest, ctx: RouteCtx): Promise<NextResponse
 }
 
 export async function POST(req: NextRequest, ctx: RouteCtx): Promise<NextResponse> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const { token } = await ctx.params;
 
   const session = await metaSessionByWebhookToken(token);

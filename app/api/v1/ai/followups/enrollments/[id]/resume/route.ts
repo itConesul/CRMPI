@@ -8,9 +8,9 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  * espera, e não uma mensagem imediata. O restante foi congelado no evento da
  * pausa (`lib/followup/intervencao.ts`).
  */
-import { randomUUID } from "node:crypto";
 import type { NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
 import { requireRole } from "@/lib/auth/require-role";
@@ -30,7 +30,7 @@ export async function POST(_req: NextRequest, ctx: RouteCtx): Promise<Response> 
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(_req);
   const { id } = await ctx.params;
   const invalido = validaIdDaRota(id, requestId);
   if (invalido) return invalido;

@@ -10,9 +10,9 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  * Nenhum campo aqui é "quantidade de parâmetros". O número é consequência dos slots;
  * se algum dia aparecer um campo editável com esse nome, o desenho vazou.
  */
-import { randomUUID } from "node:crypto";
 import type { NextRequest, NextResponse } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { fail, ok } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
 import { metaSessionForOrg } from "@/lib/channels/meta/session";
@@ -82,8 +82,8 @@ async function orgOrFail(requestId: string): Promise<OrgGate> {
   return { autorizado: true, orgId: authz.org.orgId };
 }
 
-export async function GET(): Promise<NextResponse> {
-  const requestId = randomUUID();
+export async function GET(req?: Request): Promise<NextResponse> {
+  const requestId = requestIdDe(req);
   const r = await orgOrFail(requestId);
   if (!r.autorizado) return r.resposta;
 
@@ -150,7 +150,7 @@ export async function POST(_req: NextRequest): Promise<NextResponse> {
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(_req);
   const r = await orgOrFail(requestId);
   if (!r.autorizado) return r.resposta;
 

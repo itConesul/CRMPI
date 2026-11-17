@@ -6,9 +6,9 @@
  * ação síncrona além de criar o lead (motor de regras consome lead.created
  * via event_log). Aceita JSON e form-urlencoded na mesma URL.
  */
-import { randomUUID } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { fail, ok } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
 import { checkRateLimit } from "@/lib/ai/dispatcher/rate-limit";
@@ -64,7 +64,7 @@ function findRawPhoneIfUnnormalized(payload: Record<string, unknown>, fieldMap: 
 }
 
 export async function POST(req: NextRequest, ctx: RouteCtx): Promise<NextResponse> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const { token } = await ctx.params;
   if (!token || token.length < 8) {
     return fail("not_found", "unknown webhook token", 404, { requestId });

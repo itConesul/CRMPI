@@ -6,9 +6,9 @@
  * agent precisa escolher o destino pra transferir (decisão G1-06d). Exposto o
  * mínimo — user_id, nome e role. Sem e-mail, sem last_sign_in (LGPD/PII).
  */
-import { randomUUID } from "node:crypto";
 import type { NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
 import { createClient } from "@/lib/supabase/server";
@@ -24,7 +24,7 @@ interface AssignableMember {
 }
 
 export async function GET(_req: NextRequest): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(_req);
   const authz = await requireRole("agent", { requestId, resource: "team" });
   if (!authz.ok) return authz.response;
   const orgId = authz.org.orgId; // fonte confiável (cookie validado)

@@ -15,9 +15,9 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  * agente de IA (BRIEFING §3, Decisão 4). Aqui só há transporte e a cifragem do
  * segredo, que depende do admin client e por isso fica na borda.
  */
-import { randomUUID } from "node:crypto";
 import type { NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { respostaDeRecusa } from "@/lib/api/recusa";
 import { ok, fail } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
@@ -34,8 +34,8 @@ import { traduzir } from "@/lib/i18n/dicionario";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(): Promise<Response> {
-  const requestId = randomUUID();
+export async function GET(req?: Request): Promise<Response> {
+  const requestId = requestIdDe(req);
   const authz = await requireRole("manager", { requestId, resource: "webhook_sources" });
   if (!authz.ok) return authz.response;
 
@@ -57,7 +57,7 @@ export async function POST(req: NextRequest): Promise<Response> {
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const authz = await requireRole("manager", { requestId, resource: "webhook_sources" });
   if (!authz.ok) return authz.response;
   const t = (texto: string) => traduzir(texto, authz.user.idioma);

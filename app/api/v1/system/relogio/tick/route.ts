@@ -4,9 +4,10 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  *
  * Auth: sessão admin OU Bearer INTERNAL_SECRET (GitHub Actions / cron externo).
  */
-import { randomUUID, timingSafeEqual } from "node:crypto";
+import { timingSafeEqual } from "node:crypto";
 import type { NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { fail, ok } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
 import { loadAuthUser } from "@/lib/auth/server";
@@ -62,7 +63,7 @@ export async function POST(req: NextRequest): Promise<Response> {
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const porSegredo = bearerValido(req);
   if (!porSegredo && !(await sessaoAdmin(requestId))) {
     return fail("forbidden", "Cron secret missing or invalid.", 403, { requestId });

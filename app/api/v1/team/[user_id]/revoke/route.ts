@@ -7,9 +7,9 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  *  - Cannot revoke self.
  *  - Cannot revoke the last admin.
  */
-import { randomUUID } from "node:crypto";
 import type { NextRequest } from "next/server";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
 import { requireRole } from "@/lib/auth/require-role";
@@ -25,7 +25,7 @@ export async function POST(
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(_req);
   const { user_id: targetUserId } = await ctx.params;
 
   const authz = await requireRole("admin", { requestId, resource: "team" });

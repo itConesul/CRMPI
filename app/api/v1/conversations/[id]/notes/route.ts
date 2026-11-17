@@ -6,10 +6,10 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  * Ambos confirmam antes que a conversa pertence à org ativa (`.select("id").maybeSingle()`)
  * pra devolver 404 honesto em vez de vazar existência cross-org.
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 
 import { audit } from "@/lib/audit";
+import { requestIdDe } from "@/lib/api/request-id";
 import { fail, ok } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
 import { mencaoAtingeUsuario, tokensDeMencao } from "@/lib/notifications/mentions";
@@ -26,7 +26,7 @@ interface RouteParams {
 }
 
 export async function GET(_req: NextRequest, { params }: RouteParams): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(_req);
   const authz = await requireRole("agent", { requestId, resource: "conversation_notes" });
   if (!authz.ok) return authz.response;
   const t = (texto: string) => traduzir(texto, authz.user.idioma);
@@ -56,7 +56,7 @@ export async function POST(req: NextRequest, { params }: RouteParams): Promise<R
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const authz = await requireRole("agent", { requestId, resource: "conversation_notes" });
   if (!authz.ok) return authz.response;
   const t = (texto: string) => traduzir(texto, authz.user.idioma);

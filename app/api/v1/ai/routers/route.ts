@@ -8,10 +8,10 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  * index (channel_session_id where is_active) garante 1 router ativo por sessão
  * — violação vira 409 tratado, não 500 cru.
  */
-import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 import { z } from "zod";
 
+import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
 import { requireRole } from "@/lib/auth/require-role";
@@ -35,7 +35,7 @@ const createRouterSchema = z.object({
 // ---------------------------------------------------------------------------
 
 export async function GET(_req: NextRequest): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = requestIdDe(_req);
   const authz = await requireRole("agent", { requestId, resource: "ai_routers" });
   if (!authz.ok) return authz.response;
   const { org } = authz;
@@ -77,7 +77,7 @@ export async function POST(req: NextRequest): Promise<Response> {
   const supportDenied = await requireSupportWrite();
   if (supportDenied) return supportDenied;
 
-  const requestId = randomUUID();
+  const requestId = requestIdDe(req);
   const authz = await requireRole("admin", { requestId, resource: "ai_routers" });
   if (!authz.ok) return authz.response;
   const t = (texto: string) => traduzir(texto, authz.user.idioma);
