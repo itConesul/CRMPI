@@ -28,10 +28,16 @@ Enquanto o item 2 não estiver registrado em [`05-revisao.md`](05-revisao.md), a
 | [`04-tarefas.md`](04-tarefas.md) | Ordem de implementação, com o que está travado pela aprovação |
 | [`05-revisao.md`](05-revisao.md) | Decisões e aprovação |
 
-## Decisões (Q1–Q8)
-Em 2026-11-16 o autor adotou as recomendações da spec; o dono do produto ainda precisa **confirmar**
-(registro em [`05-revisao.md`](05-revisao.md)). **Q1 e Q7 já foram confirmadas** pelo dono do produto
-(comentário na #67 de 2026-11-13), e a **Q9** (expediente por organização ou por setor) está aberta.
+## Decisões (Q1–Q9)
+Estado de cada uma — a fonte é a tabela de [`05-revisao.md`](05-revisao.md), que prevalece se divergir:
+
+| Estado | Perguntas |
+|---|---|
+| **Confirmadas pelo dono do produto** (comentário na #67 de 2026-11-13) | Q1, Q7 |
+| **Adotadas pelo autor em 2026-11-16, aguardando confirmação do dono** | Q2, Q3, Q4, Q5, Q6, Q8 |
+| **Abertas** | Q9 (expediente por organização ou por setor; recomendação: por organização agora) |
+
+Confirmar Q1 e Q7 **não** aprova a proposta de schema (§4 de [`02-design.md`](02-design.md)).
 As quatro que mais pesam no schema:
 1. **Q1 — só a ação é bloqueada** (assumir, responder, transferir…); a leitura fica liberada. O texto
    pedia bloqueio total, então RF-4 e RF-5 foram adaptados.
