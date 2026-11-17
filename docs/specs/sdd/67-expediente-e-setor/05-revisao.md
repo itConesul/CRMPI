@@ -55,7 +55,7 @@ abaixo quando conferir.
 | 6 | Registrar o comportamento do Realtime (DELETE não passa pela RLS; transferência para setor alheio não notifica quem perdeu o acesso), com teste e2e, e um `explain` da listagem com volume | §1, §8, `03-testes.md` |
 
 ### Segunda rodada — os 9 itens que o revisor pediu para registrar a aprovação final (20:20)
-Todos incorporados em 2026-11-17; falta o revisor reler e registrar a aprovação.
+Todos incorporados em 2026-11-17 e **aprovados pelo revisor às 20:44**.
 
 | # | Item | Onde ficou |
 |---|---|---|
@@ -86,11 +86,14 @@ Todos incorporados em 2026-11-17; falta o revisor reler e registrar a aprovaçã
 | 2026-11-17 | Sciuba, comentário geral — Realtime, desempenho, Q6, `updated_at` | Realtime sem RLS no DELETE; função por linha; risco da Q6; trigger de `updated_at` | Realtime e `explain`: §1, §8, T0, T4b. Q6: risco aceito (#80). `updated_at`: o repo tem `fn_set_updated_at` (`baseline.sql`), usado nos triggers de `departments` |
 | 2026-11-17 19:43 | Sciuba, `02-design.md` §2.1 (N3) — não é retrocompatível com a agenda | Estender `scheduleWindowSchema` faria o roteamento aceitar `22:00–06:00` e a agenda descartá-la (`horarios-livres.ts`, linhas 53–55); cita 5 consumidores; pede inventário, **uma** saída e `opens_at`/faixa nas bordas da T1 | **Procede, e eu já o tinha encontrado ao implementar a T1.** (1) Inventário dos 5 consumidores no §2.1 (jornada `safeParse`; agenda descarta; os 3 outros usam `.parse`). (2) Saída adotada: a virada vale **só para o expediente** (schema próprio), o editor do atendente continua rejeitando, a função de janela é uma só com a virada desligada por padrão. (3) Bordas de `opens_at` testadas (terça 06:00, domingo 06:00, dentro da madrugada, `end = 00:00`); a faixa da T7 deve exibi-las. **Confirmado pelo dono do produto às 20:14** ([thread](https://github.com/itConesul/CRMPI/pull/75#discussion_r4605180992)); thread resolvida |
 | 2026-11-17 19:43 | Sciuba, review geral — pontos "para a T0/T1/T4b" | Autoatendimento (perfil, MFA, preferências, notificação lida) é escrita de `agent`; chamadores não humanos (Bearer, MCP); `INSERT` em `conversations`; trigger do `department_id`; SQL por extenso; `NOT VALID`; `drop function` no `update.sh`; corrida do e2e | Todos tratados em 2026-11-17 (ver a "Segunda rodada" acima). **Medido:** perfil, idioma e MFA são Server Actions sem `requireRole`, então o gate não as alcança; MCP e Bearer autenticam por `lib/mcp/auth.ts` e nunca chamam `requireRole` |
-| 2026-11-17 20:20 | Sciuba, comentário geral — 9 itens para registrar a aprovação final | Ver "Segunda rodada" | Todos incorporados; as 8 threads que o commit `02ee709` cobria foram resolvidas pelo revisor. **Aguarda a releitura dele** para marcar a aprovação final abaixo |
+| 2026-11-17 20:20 | Sciuba, comentário geral — 9 itens para registrar a aprovação final | Ver "Segunda rodada" | Todos incorporados; as 8 threads que o commit `02ee709` cobria foram resolvidas pelo revisor. **Aprovado por ele às 20:44** ([review](https://github.com/itConesul/CRMPI/pull/75#pullrequestreview-5946320660)); a aprovação final está registrada abaixo |
+| 2026-11-17 20:44 | Sciuba, aviso de aprovação na #67 — 3 ajustes de texto antes do merge | (1) corrigir a frase sobre Server Actions ("duas chamam `requireRole`, ambas de admin"); (2) marcar os checkboxes de aprovação; (3) registrar na T4b o `INSERT` manual por `agent` com `visibility_mode = own` | **(1) Parcialmente atendido, de propósito.** A frase não foi trocada, porque seria falsa: re-medido, **nenhuma** Server Action chama nem importa `requireRole` (o `grep -l` casa `updateBranding.ts` e `updateMarcaDaOrganizacao.ts` só por **comentário**, e o próprio código diz que não o usa; cada uma faz gate próprio). O que o pedido quer — que ninguém leia errado — foi atendido: a spec agora explica as duas leituras e dá o comando que as separa, **testado** (devolve vazio nas Server Actions e encontra a chamada numa rota; uma primeira versão do comando casava dois comentários e foi corrigida antes de publicar) (§2.1). **(2) Feito** (abaixo). **(3) Feito:** §4.3, `03-testes.md` e T4b; a rota de produto `open-with-contact` usa o client admin e não é afetada |
 
 ## Aprovação
-Aprovação condicionada registrada em 2026-11-17 (comentário na #67). As caixas abaixo são do **dono
-do produto / revisor** e só são marcadas por ele:
+**Aprovada em 2026-11-17.** O dono do produto aprovou a spec e a proposta de schema (§4 de
+`02-design.md`) no [review do PR #75](https://github.com/itConesul/CRMPI/pull/75#pullrequestreview-5946320660), registrado por `Sciuba` e anunciado na
+[#67](https://github.com/itConesul/CRMPI/issues/67#issuecomment-6960494942). As caixas abaixo foram marcadas pelo **autor da spec** (cMoreiraSul), a pedido do
+revisor, **registrando uma aprovação dada no review** — a aprovação em si é a do review, não a desta marcação.
 
-- [ ] **Proposta de schema (`02-design.md` §4) aprovada por:** <nome> em <AAAA-MM-DD> — migration liberada
-- [ ] **Spec aprovada por:** <nome> em <AAAA-MM-DD> — implementação liberada
+- [x] **Proposta de schema (`02-design.md` §4) aprovada por:** dono do produto, registrado por Sciuba, em 2026-11-17 — migration liberada, **na ordem de PRs de `04-tarefas.md`** (T3 antes da T4b; nenhum PR de schema antes disso)
+- [x] **Spec aprovada por:** dono do produto, registrado por Sciuba, em 2026-11-17 — implementação liberada, em **PRs novos para a `develop`** (o primeiro é o gate, sem schema)

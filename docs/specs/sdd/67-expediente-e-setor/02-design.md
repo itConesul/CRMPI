@@ -4,9 +4,9 @@
 **Natureza:** proposta. Nada aqui foi implementado. O §4 é a **proposta de schema** que a issue exige
 antes de qualquer migration.
 **Decisões:** Q1 a Q9 e N1 a N4 estão **confirmadas pelo dono do produto** (comentários de 2026-11-13
-e 2026-11-17 na #67) e este documento já as reflete — registro em `05-revisao.md`. O schema (§4) tem
-**aprovação condicionada** a seis ajustes, todos incorporados aqui; falta o registro da aprovação
-final pelo revisor.
+e 2026-11-17 na #67) e este documento já as reflete — registro em `05-revisao.md`. O schema (§4) foi
+**aprovado em 2026-11-17** depois de seis ajustes e de uma segunda rodada de nove itens, todos incorporados aqui
+(registro em `05-revisao.md`).
 
 ## 1. O que existe hoje (verificado lendo cada arquivo)
 
@@ -138,7 +138,21 @@ Dois mecanismos independentes, cada um com uma **função pura** testável sem b
   - **Medido na T0(f), o que a implementação já encontrou:** perfil, idioma e MFA são **Server
     Actions** que autenticam só por `loadAuthUser`/`getUser`, e **nenhuma** Server Action chama
     `requireRole` — então o gate **não as alcança** e o cadastro de MFA nunca é barrado (era a
-    preocupação do review: trancar quem a organização obriga a ter MFA). Das rotas de API, as duas
+    preocupação do review: trancar quem a organização obriga a ter MFA).
+    **Cuidado com a leitura desta frase** (esclarecida em 2026-11-17, a pedido do revisor):
+    `grep -rl requireRole app/actions` lista **dois** arquivos — `updateBranding.ts` e
+    `updateMarcaDaOrganizacao.ts` (a primeira exige platform admin; a segunda, admin da organização) —,
+    mas é por **comentário**: os dois dizem que
+    **não** usam o `requireRole` ("Server Action NÃO é rota: não passa por `requireRole`"; "Nenhuma das
+    actions de `app/actions/` chama"). Nenhuma tem **chamada nem import** dele; cada uma faz o próprio
+    gate (`updateBranding`: `requirePlatformAdmin()`; `updateMarcaDaOrganizacao`: `loadAuthUser` +
+    `ROLE_RANK` com piso `admin`). O comando que separa as duas leituras é
+    `grep -rnE 'requireRole *\(|from +.@/lib/auth/require-role' app/actions`, que devolve **vazio** (e
+    enxerga uma chamada real: o mesmo padrão aplicado a `app/api/v1/settings/routing/route.ts` a
+    encontra). **Cuidado:** a variante `grep -rn 'auth/require-role'` **não** serve, porque casa dois
+    comentários que citam o caminho do arquivo. Para o expediente a conclusão é a mesma nos dois casos
+    (nenhuma é alcançada pelo gate, e as duas exigem papel de administração, que nunca é barrado), mas
+    só a primeira leitura é a verdadeira. Das rotas de API, as duas
     isenções que existem hoje são `attendants/availability/[user_id]` ("o atendente gerencia a
     própria disponibilidade", senão ficaria "disponível" no roteamento sem como sair) e
     `notifications/push` (`PUT`/`DELETE`, "inscrição de push do próprio navegador"). A T0(f)
@@ -157,7 +171,7 @@ Dois mecanismos independentes, cada um com uma **função pura** testável sem b
     agente de IA tem a própria janela (`janela-de-atendimento.ts`); webhooks e cron autenticam por
     segredo. O teste `tests/unit/expediente-rotas-de-acao.test.ts` fixa isto: `lib/mcp` e
     `app/api/mcp` não podem chamar `requireRole`, `cron/*` e `webhooks/*` também não, e **nenhuma
-    Server Action** o chama. Consequência a ter à vista: uma Server Action de **atendimento**
+    Server Action** o chama (nem chamada nem import; ver a nota acima). Consequência a ter à vista: uma Server Action de **atendimento**
     escaparia do gate; hoje nenhuma existe, e quem criar uma deve chamar o gate explicitamente.
   - **Limite do fail-closed (T0(f), inventário):** o gate só alcança rotas que chamam `requireRole`.
     Das **140** rotas de escrita fora de `cron/*` e `webhooks/*`, **17 não o chamam** (`admin/*`,
@@ -530,6 +544,16 @@ create trigger conversations_guard_department
   sendo o do chamador e o trigger o barraria para um `agent` — decisão daquele PRD. Entra na **T4b**,
   com um teste por papel (`agent` não muda nem zera; `manager`, `admin`, platform admin e
   `service_role` mudam).
+- **`INSERT` manual por `agent` com `visibility_mode = own` (caso registrado a pedido do revisor,
+  2026-11-17).** Em `own`, uma conversa **sem dono** não é visível a quem a cria (a função só admite
+  as próprias), então o `WITH CHECK` da policy de `INSERT` **nega** um `INSERT` direto, pelo
+  PostgREST com o JWT do agente, que não traga `assigned_to_user_id = auth.uid()`. Com o dono
+  preenchido com o próprio autor passa; em `own_and_unassigned` (o padrão) e em `all` a conversa sem
+  dono já é visível e passa. **A rota de produto não é afetada:** `conversations/open-with-contact`, o
+  caminho em que um `agent` abre conversa à mão, usa o client **admin** (bypassa a RLS) e a
+  ingestão de mensagem também. Não há `INSERT` em `conversations` pelo client de sessão em código de
+  produto. O comportamento "negado" é, portanto, **o esperado e fica fixado por teste**, e não um
+  defeito: quem quiser criar conversa por JWT em `own` tem de se atribuir como dono.
 - **Risco a testar:** o `WITH CHECK` por visibilidade rejeita um `UPDATE` direto que deixa a linha
   invisível ao próprio autor (ex.: um `agent` com `visibility_mode = own` que **solta** a conversa:
   a linha nova fica sem dono e deixa de ser visível a ele). Fluxos de soltar/transferir já passam por

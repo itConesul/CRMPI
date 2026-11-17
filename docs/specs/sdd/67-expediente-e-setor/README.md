@@ -1,7 +1,7 @@
 # PRD-01 · Expediente da empresa e isolamento por setor
 
 **Issue:** #67 — https://github.com/itConesul/CRMPI/issues/67
-**Estado:** `rascunho` — **schema com aprovação condicionada; ajustes incorporados, aguardando o registro da aprovação final**
+**Estado:** `aprovada` — **spec e proposta de schema aprovadas pelo dono do produto em 2026-11-17** ([review do PR #75](https://github.com/itConesul/CRMPI/pull/75#pullrequestreview-5946320660)); implementação em PRs novos, na ordem de `04-tarefas.md`
 **Autor:** cMoreiraSul (com Claude)
 **Medido em:** `eb8bd68` (develop; afirmações sobre o código re-conferidas em 2026-11-17)
 
@@ -62,4 +62,4 @@ Este PR é só de spec. A implementação vai em **PRs separados para a `develop
 - [x] Fora de escopo está explícito
 - [x] Impacto em schema, RLS, API e `.changes/` declarado em `02-design.md` §4 e §8
 - [x] Living System Checklist respondido em `02-design.md` §7
-- [ ] **Dono do produto aprovou a proposta de schema** (registrar em `05-revisao.md` e na issue)
+- [x] **Dono do produto aprovou a proposta de schema** (2026-11-17, registrado em `05-revisao.md` e na #67)
