@@ -3,6 +3,7 @@ import { cookieSecure } from "@/lib/supabase/cookie-secure";
 import { NextResponse, type NextRequest } from "next/server";
 import { env } from "@/lib/env";
 import { isPublicPath } from "@/lib/auth/public-paths";
+import { HEADER_METODO_HTTP } from "@/lib/expediente/metodo";
 import {
   verifyImpersonateCookieEdge,
   IMPERSONATE_COOKIE_NAME_EDGE,
@@ -11,7 +12,13 @@ import {
 const COOKIE_NAME = "sb-deskcomm-auth";
 
 export async function proxy(request: NextRequest) {
-  const response = NextResponse.next({ request: { headers: request.headers } });
+  // O método HTTP real, para o gate de expediente (PRD-01 / #67). Os cabeçalhos da requisição são
+  // montados ANTES de `NextResponse.next`, que é o padrão documentado: o que se muta depois dele
+  // pode não chegar ao handler. `set` (e não "se ausente") sobrescreve o que o cliente mandar, então
+  // o carimbo não é forjável. Ver `lib/expediente/metodo.ts`.
+  const headersDaRequisicao = new Headers(request.headers);
+  headersDaRequisicao.set(HEADER_METODO_HTTP, request.method);
+  const response = NextResponse.next({ request: { headers: headersDaRequisicao } });
 
   // Inject X-Request-Id for downstream correlation (audit log, error wrappers).
   const requestId = request.headers.get("x-request-id") ?? crypto.randomUUID();

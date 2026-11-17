@@ -6701,6 +6701,9 @@ export const DICIONARIO: Traducoes = {
   "sem organização ativa": { es: "sin organización activa" },
   "Sem organização ativa": { es: "Sin organización activa" },
   "Sem organização ativa.": { es: "Sin organización activa." },
+  "Fora do expediente da empresa. Você pode consultar as conversas, mas só consegue agir quando o expediente abrir.": {
+    es: "Fuera del horario de la empresa. Puedes consultar las conversaciones, pero solo podrás actuar cuando abra el horario.",
+  },
   "Sessão de canal não encontrada.": { es: "Sesión de canal no encontrada." },
   "Sessão expirada": { es: "Sesión expirada" },
   "Sessão sem token.": { es: "Sesión sin token." },

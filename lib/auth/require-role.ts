@@ -18,7 +18,9 @@
  */
 import type { NextResponse } from "next/server";
 
+import { ApiErrorCodes } from "@/lib/api/errors";
 import { fail, type ApiError } from "@/lib/api/wrappers";
+import { avaliarGateDeExpediente, type IsencaoDeExpediente } from "@/lib/expediente/gate";
 import { audit } from "@/lib/audit";
 import { loadAuthUser, mfaEmDivida, resolveActiveOrg } from "@/lib/auth/server";
 import { ROLE_RANK, type ActiveOrg, type AuthUser, type Role } from "@/lib/auth/types";
@@ -43,6 +45,13 @@ interface RequireRoleOpts {
    * NUNCA do body. O role vem de `fn_user_role_in_org(p_org)` nessa org.
    */
   organizationId?: string;
+  /**
+   * PRD-01 (#67), gate de expediente FAIL-CLOSED: fora do expediente da organização, todo método que
+   * não seja leitura é barrado ao `agent` (`403 OUT_OF_WORK_HOURS`). A rota só escapa declarando
+   * `expediente: { isenta: "<motivo>" }` — o motivo é obrigatório e a lista de isenções é fixada por
+   * `tests/unit/expediente-rotas-de-acao.test.ts`. Sem expediente configurado nada é barrado.
+   */
+  expediente?: IsencaoDeExpediente;
 }
 
 /**
@@ -50,7 +59,7 @@ interface RequireRoleOpts {
  * `if (!authz.ok) return authz.response;`
  */
 export async function requireRole(min: Role, opts: RequireRoleOpts = {}): Promise<RoleCheck> {
-  const { requestId, resource, allowPlatformAdmin = false, organizationId } = opts;
+  const { requestId, resource, allowPlatformAdmin = false, organizationId, expediente } = opts;
 
   const user = await loadAuthUser();
   if (!user) {
@@ -150,6 +159,31 @@ export async function requireRole(min: Role, opts: RequireRoleOpts = {}): Promis
         requestId,
       }),
     };
+  }
+
+  // Gate de expediente (PRD-01 / #67). Depois do rank e do MFA: quem não tem papel segue levando
+  // 403 por papel. Platform admin e sessão de suporte nunca são barrados (RNF-1). Só o `agent` é
+  // alcançado, e só em escrita; leitura e outros papéis não custam consulta nenhuma.
+  if (!user.is_platform_admin && !user.support) {
+    const gate = await avaliarGateDeExpediente({
+      papel: effectiveRole as Role,
+      organizationId: org.orgId,
+      db: supabase,
+      isencao: expediente,
+    });
+    if (gate.barrado) {
+      return {
+        ok: false,
+        response: fail(
+          ApiErrorCodes.OUT_OF_WORK_HOURS,
+          t(
+            "Fora do expediente da empresa. Você pode consultar as conversas, mas só consegue agir quando o expediente abrir.",
+          ),
+          403,
+          { requestId, details: { opens_at: gate.abreEm ? gate.abreEm.toISOString() : null } },
+        ),
+      };
+    }
   }
 
   return { ok: true, user, org: { ...org, role: effectiveRole as Role } };

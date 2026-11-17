@@ -14,6 +14,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { isAttendantEligible, OPEN_LOAD_STATUSES } from "./eligibility";
 import type { RoutingCandidate } from "./decide";
+import { carregarExpediente } from "@/lib/expediente/carregar";
 import { availabilityScheduleSchema } from "@/lib/schemas/routing";
 
 export type RoutingScope =
@@ -98,12 +99,16 @@ export async function loadEligibleAttendants(
     }
   }
 
+  // Expediente da organização (RF-12): lido UMA vez por chamada, não por atendente. Ausente ou
+  // ilegível = sem restrição (falha aberta), então uma org sem `business_hours` roteia como antes.
+  const expediente = await carregarExpediente(supabase, organizationId);
+
   const candidates: RoutingCandidate[] = [];
   for (const r of rows) {
     const currentLoad = loadByUser.get(r.user_id) ?? 0;
     const schedule = availabilityScheduleSchema.parse(r.schedule ?? {});
     const eligible = isAttendantEligible(
-      { isAvailable: true, capacity: r.capacity, currentLoad, schedule },
+      { isAvailable: true, capacity: r.capacity, currentLoad, schedule, expediente },
       now,
     );
     if (eligible) {

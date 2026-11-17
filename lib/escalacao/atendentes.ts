@@ -16,7 +16,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { ROLE_RANK, type Role } from "@/lib/auth/types";
 import { isAttendantEligible, OPEN_LOAD_STATUSES } from "@/lib/routing/eligibility";
-import { availabilityScheduleSchema } from "@/lib/schemas/routing";
+import { availabilityScheduleSchema, type ExpedienteConfig } from "@/lib/schemas/routing";
 
 const COLUNAS_DISPONIBILIDADE =
   "user_id, is_available, capacity, schedule, last_heartbeat_at, updated_at";
@@ -118,7 +118,16 @@ export async function carregarRosterDeAtendimento(
  * `attendant_availability` com `is_available`). Responder true aqui faria o
  * agente prometer um atendente que o roteamento nunca escolheria.
  */
-export function podeAssumirAgora(atendente: AtendenteDoRoster, now: Date): boolean {
+export function podeAssumirAgora(
+  atendente: AtendenteDoRoster,
+  now: Date,
+  /**
+   * Expediente da organização (PRD-01 / #67): a mesma camada que o roteamento aplica
+   * (`isAttendantEligible`). Sem ele a IA prometeria "um atendente vai assumir" fora do expediente,
+   * quando o roteamento nunca escolheria ninguém. Ausente = sem restrição.
+   */
+  expediente?: ExpedienteConfig | null,
+): boolean {
   if (atendente.capacidade === null) return false;
   return isAttendantEligible(
     {
@@ -126,6 +135,7 @@ export function podeAssumirAgora(atendente: AtendenteDoRoster, now: Date): boole
       capacity: atendente.capacidade,
       currentLoad: atendente.cargaAtual,
       schedule: availabilityScheduleSchema.parse(atendente.agenda ?? {}),
+      expediente,
     },
     now,
   );

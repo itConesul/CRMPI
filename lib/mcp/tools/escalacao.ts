@@ -32,6 +32,7 @@ import {
 import { getRequestPool } from "@/lib/agent-engine/db/request-pool";
 import { audit } from "@/lib/audit";
 import { carregarRosterDeAtendimento, podeAssumirAgora } from "@/lib/escalacao/atendentes";
+import { carregarExpediente } from "@/lib/expediente/carregar";
 import { lerChamado, listarChamados } from "@/lib/escalacao/chamados";
 import { lerContinuidadeHumana } from "@/lib/escalacao/continuidade";
 import { devolverAtendimentoAoAgente } from "@/lib/escalacao/retomada";
@@ -72,13 +73,14 @@ export const crmListAvailableAttendants: McpToolDefinition<typeof atendentesInpu
   handler: async (input, ctx) => {
     const agora = new Date();
     const roster = await carregarRosterDeAtendimento(ctx.supabase, ctx.organizationId);
+    const expediente = await carregarExpediente(ctx.supabase, ctx.organizationId);
     const linhas = roster.map((a) => ({
       user_id: a.userId,
       role: a.papel,
       is_available: a.disponivel,
       capacity: a.capacidade,
       current_load: a.cargaAtual,
-      can_take_now: podeAssumirAgora(a, agora),
+      can_take_now: podeAssumirAgora(a, agora, expediente),
     }));
     const elegiveis = linhas.filter((l) => l.can_take_now);
     return {
