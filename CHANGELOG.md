@@ -8,6 +8,15 @@ Se você roda o DeskcommCRM numa VPS, **leia a seção da versão para a qual es
 
 ## [Não lançado]
 
+## [1.23.6] — 2026-11-17
+
+### Alterado
+
+- **O código mostrado no aviso de falha agora serve para localizar a chamada em qualquer tela** Antes só a listagem de conversas reaproveitava o código que o navegador envia; as demais
+  rotas geravam um código próprio, e o `ID` do aviso "o servidor não respondeu a tempo" não
+  aparecia em nenhum registro. Agora todas as rotas da API usam o código do navegador (só se
+  for um UUID válido), e ele serve para localizar a chamada em qualquer tela.
+
 ## [1.23.5] — 2026-11-16
 
 ### Alterado
@@ -3523,7 +3532,8 @@ Primeira versão marcada do DeskcommCRM. O projeto vinha sendo desenvolvido publ
 
 - **Node 22 é obrigatório para desenvolvimento.** A suíte de invariantes instancia o cliente do Supabase, que exige o `WebSocket` global — nativo apenas a partir do Node 22. Isso não afeta quem apenas hospeda: a VPS roda a imagem pronta.
 
-[Não lançado]: https://github.com/itConesul/CRMPI/compare/v1.23.5...HEAD
+[Não lançado]: https://github.com/itConesul/CRMPI/compare/v1.23.6...HEAD
+[1.23.6]: https://github.com/itConesul/CRMPI/compare/v1.23.5...v1.23.6
 [1.23.5]: https://github.com/itConesul/CRMPI/compare/v1.23.4...v1.23.5
 [1.23.4]: https://github.com/itConesul/CRMPI/compare/v1.23.3...v1.23.4
 [1.23.3]: https://github.com/itConesul/CRMPI/compare/v1.23.2...v1.23.3
