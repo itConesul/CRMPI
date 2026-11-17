@@ -1,0 +1,74 @@
+# 03 — Testes e provas
+
+## Matriz de aceite
+| Critério | Prova | Tipo | Arquivo / comando | Evidência |
+|---|---|---|---|---|
+| CA-1 | `dentroDoExpediente` com expediente 08–18 e `agora` = 22h no fuso da org devolve `false`; 12h devolve `true`; dia fora das `windows` devolve `false` | unit | `tests/unit/expediente.test.ts` | — |
+| CA-1 | `requireRole("agent")` fora do expediente devolve 403 `OUT_OF_WORK_HOURS` com `details.opens_at`; dentro, passa | unit | `lib/auth/require-role.test.ts` (acrescentar) | — |
+| CA-1 | `agent` fora do expediente abre a conversa e **lê**, vê a faixa com a janela da empresa, o campo de resposta desabilitado com o motivo, e tentar enviar pela API devolve 403; o link da faixa abre `/app/fora-de-expediente` | e2e (pela tela) | `tests/e2e/expediente-e-setor.spec.ts` | — |
+| RF-4 / RNF-1 | **Fail-closed:** uma rota de escrita nova, sem declaração nenhuma, é barrada a um `agent` fora do expediente; só escapa quem tem `expediente: { isenta: "<motivo>" }`; `GET`/`HEAD`/`OPTIONS` nunca são barrados | unit (varredura de AST de **`app/api/v1/**`** + caso de rota sintética) | `tests/unit/expediente-rotas-de-acao.test.ts` | — |
+| RF-4 | Regressão do furo medido: `/messages` (o envio) e rotas de escrita **fora** de `conversations/**` (`leads/*`, `tasks/*`) também são barradas fora do expediente | unit | `tests/unit/expediente-rotas-de-acao.test.ts` | — |
+| RF-4 | A isenção `attendants/availability/[user_id]` e `notifications` funciona fora do expediente (o atendente consegue ficar indisponível) | unit | `tests/unit/expediente-isencoes.test.ts` | — |
+| CA-1 | **Sem depender do relógio do runner nem da meia-noite (comentário do review):** o e2e lê `agora` do `GET /settings/expediente` (relógio do **servidor**, fuso da organização) e monta a janela em torno dele: **"dentro"** = de `agora − 3 h` a `agora + 3 h`, **"fora"** = de `agora + 6 h` a `agora + 12 h`. Como a janela pode virar o dia (N3), os dois casos valem inclusive perto da meia-noite. As bordas exatas ficam no teste unitário, com relógio injetado. **Corrida residual na virada do dia** (review, 2026-11-17): o spec **não lê o `agora` nem monta a janela a menos de 30 s da fronteira da meia-noite no fuso da organização** (espera passar) e **relê o `agora` depois** da asserção do gate; o caso "fora" (janela só daqui a 3 dias) e o "dentro" (±3 h em todos os dias) já são imunes por construção, e a corrida só existiria na asserção de `opens_at` | e2e + unit | `tests/e2e/expediente-e-setor.spec.ts` + `tests/unit/expediente.test.ts` | — |
+| RF-3 (N3) | Virada de dia, com relógio injetado: `22:00–06:00` às 21:59 (fora), 22:00, 23:59, 00:00 e 05:59 do dia seguinte (dentro), 06:00 (fora); virada no sábado para o domingo; `start == end` é rejeitado pelo schema; a janela de um `dow` não vaza para o `dow` anterior; `end = "00:00"` vale até a meia-noite; fuso com mudança de horário de verão; **os testes de roteamento existentes seguem verdes sem mudança** | unit | `tests/unit/expediente.test.ts` + `lib/routing/eligibility.test.ts` | — |
+| RF-3 (N3, consumidores) | **Regressão da agenda:** o schema do ATENDENTE (`scheduleWindowSchema`/`availabilityScheduleSchema`) **continua rejeitando** `end < start`; só o `expedienteConfigSchema` aceita a virada; `isWithinSchedule` sem a opção `viradaDeDia` trata `end < start` como antes (nunca contém nada); os 5 consumidores do schema do atendente seguem inalterados | unit | `lib/expediente/expediente.test.ts` + testes existentes de roteamento, escalação e agenda | ✅ passam na branch `feat/67-expediente-gate` |
+| RF-3 (N3, `opens_at`) | `opens_at` com janela que vira o dia: terça 06:00 → próxima segunda 22:00; domingo 06:00 → próximo sábado 22:00; dentro da madrugada da janela → nada a anunciar; `end = 00:00`; o 403 e a decisão do gate trazem o `abreEm` | unit | `lib/expediente/expediente.test.ts` | ✅ passam na branch `feat/67-expediente-gate` |
+| RNF-1 (fora do gate) | **Fora do gate, por escrito e com varredura:** `lib/mcp` e `app/api/mcp` (Bearer e MCP), `cron/*` e `webhooks/*` não chamam `requireRole` nem declaram expediente; **nenhuma Server Action** chama `requireRole` (logo perfil, idioma e MFA nunca são barrados); a ingestão de mensagem fora do expediente cria a conversa na fila | unit (varredura de AST) | `tests/unit/expediente-rotas-de-acao.test.ts` | ✅ passam na branch `feat/67-expediente-gate` |
+| RF-4 (isenções fixas) | O `agent` fora do expediente ainda consegue: ler, trocar de organização, editar perfil e preferências, cadastrar e verificar MFA, marcar notificação como lida, registrar presença e gerenciar a própria disponibilidade; a lista de rotas de API isentas é exatamente a conhecida e cada uma tem motivo | unit + e2e | `tests/unit/expediente-rotas-de-acao.test.ts` + `tests/e2e/expediente-barra-a-acao.spec.ts` | parcial: `attendants/availability` e `notifications/push` cobertas; o restante vem da T0(f) |
+| RF-4 (CRM interno) | `leads/*`, `contacts/*`, `tasks/*` e `agenda/*` são **barrados por padrão** fora do expediente; uma rota só é liberada com o motivo escrito e o critério "dispara mensagem ao cliente?" — se dispara, continua barrada | unit (varredura) + e2e | `tests/unit/expediente-rotas-de-acao.test.ts` | — |
+| RNF-5 (N4) | Uma rajada de N tentativas barradas **não cria nenhuma linha** em `api_audit_log` e incrementa o contador agregado N vezes; com o Redis fora, a requisição continua sendo barrada (a regra não depende do contador) e a tela mostra `—` | unit + e2e | `tests/unit/expediente.test.ts` + `tests/e2e/expediente-e-setor.spec.ts` | — |
+| RF-6 / RNF-1 | `manager`, `admin`, platform admin e sessão de suporte **nunca** são barrados, mesmo fora do expediente | unit | `tests/unit/expediente.test.ts` | — |
+| RNF-1 | Nenhuma rota de `app/api/v1/cron/` ou `webhooks/` chama `requireRole` com gate de expediente (varredura de AST, como `cron-audita-so-quando-ha-efeito.test.ts`) | unit | `tests/unit/expediente-isencoes.test.ts` | — |
+| RF-10 | `admin`/`manager` age fora do expediente: `requireRole` devolve `foraDoExpediente: true` e a linha de audit da mutação carrega `metadata.fora_do_expediente = true`; dentro do expediente o campo não existe; **nenhuma linha extra** em `api_audit_log` | unit | `tests/unit/expediente.test.ts` + `lib/auth/require-role.test.ts` | — |
+| RF-11 | Mensagem do cliente recebida fora do expediente cria/atualiza a conversa normalmente, sem dono (rota de webhook não aplica o gate) | unit (varredura de `webhooks/*`) + e2e | `tests/unit/expediente-isencoes.test.ts` + `tests/e2e/expediente-e-setor.spec.ts` | — |
+| RF-12 | Fora do expediente da organização nenhum `agent` é elegível, mesmo disponível e dentro da própria janela; dentro, a decisão é a de hoje; `expediente` ausente = comportamento atual (regressão: `lib/routing/*.test.ts` existentes seguem verdes sem mudança) | unit | `lib/routing/eligibility.test.ts` + `lib/routing/decide.test.ts` (acrescentar) | — |
+| Falha aberta | Config ausente, fuso inválido, `windows` torto → `dentroDoExpediente` devolve `true` | unit | `tests/unit/expediente.test.ts` | — |
+| Rota de saída | `/app/fora-de-expediente`, logout e troca de organização não são barrados | unit + e2e | `tests/unit/expediente-isencoes.test.ts` | — |
+| CA-2 | Com 2 setores e 1 `agent` em Suporte, `select` em `conversations` não devolve a de Comercial; devolve a de Suporte e as **sem setor** | invariante | `tests/invariants/visibilidade-por-setor.test.ts` | — |
+| CA-2 | `messages` da conversa de Comercial também não aparecem ao operador de Suporte (herda por `exists`) | invariante | idem | — |
+| CA-2 | `viewer`/`manager`/`admin` veem as duas | invariante | idem | — |
+| RF-7 / Q5 | O dono vê a conversa mesmo em outro setor | invariante | idem | — |
+| RNF-2 | **2 organizações**: operador da org A não vê nada da org B, com e sem setor; as tabelas novas têm RLS ligada e `organization_id` coerente com o do departamento | invariante | `tests/invariants/visibilidade-por-setor.test.ts` + o teste de isolamento existente | — |
+| RNF-2 | A função nova revoga `EXECUTE` de `PUBLIC` e de `anon` | invariante | `tests/invariants/hardening-definer-varredura.test.ts` (já varre todas as `security definer`) | — |
+| Condição 2 | **Nenhuma** policy, função ou trigger referencia a assinatura antiga `fn_can_view_conversation(uuid, uuid)` (consulta ao catálogo) e a função antiga não existe mais; **um caso de isolamento por chamador**: `conversations_select`, `fn_appointment_stamp`, `fn_meet_action`, `tenant_isolation_ai_reply_drafts_all`, `fn_reply_action` | invariante | `tests/invariants/fn-can-view-conversation-chamadores.test.ts` | — |
+| Condição 1 | **Vínculo cruzando organizações é impossível por constraint:** `INSERT` em `department_members` com setor de uma organização e `organization_id` de outra falha; com `user_id` que **não é membro** da organização falha; `conversations.department_id` apontando para setor de outra organização falha | invariante | `tests/invariants/departamentos-estrutura.test.ts` | — |
+| N1 / RF-13 | `DELETE` de setor **com conversas** falha com `23503` e a API devolve `409 department_not_empty` com a contagem; **vazio** apaga; apagar a **organização** inteira continua funcionando; `POST /departments/[id]/reassign` move as conversas e só então o `DELETE` passa; `{ sem_setor: true }` é o único caminho de volta a "sem setor" | invariante + unit por rota | `tests/invariants/departamentos-estrutura.test.ts` + teste da rota | — |
+| N2 / RF-14 | Com a regra de setor ligada, um `agent` de Suporte **não consegue**: `INSERT`/`UPDATE`/`DELETE` em `messages` de conversa do Comercial (regressão do `INSERT 0 1` medido), `UPDATE`/`DELETE` em conversa do Comercial, nem trocar o `department_id` de uma conversa que enxerga; `manager`/`admin` e `service_role` seguem podendo | invariante | `tests/invariants/visibilidade-por-setor.test.ts` | — |
+| N2 (insert) | Com a regra de setor ligada, um `agent` de Suporte **não consegue** criar conversa (`INSERT`) em setor de Comercial; criar em setor próprio ou sem setor funciona | invariante | `tests/invariants/visibilidade-por-setor.test.ts` | — |
+| N2 (insert, `own`) | **`INSERT` manual por `agent` com `visibility_mode = own`:** sem `assigned_to_user_id` é **negado** (a conversa seria invisível ao autor); com `assigned_to_user_id = auth.uid()` **passa**; em `own_and_unassigned` e `all` o `INSERT` sem dono passa. A rota `conversations/open-with-contact` (client admin) segue funcionando em `own`, e é a prova de que o caminho de produto não é afetado | invariante | `tests/invariants/visibilidade-por-setor.test.ts` | — |
+| N2 (trigger, aceito) | `agent` **não muda nem zera** o `department_id` de uma conversa que enxerga; `manager`, `admin`, platform admin e `service_role` mudam; `fn_conversation_assign` segue `security definer` e funcional | invariante | `tests/invariants/visibilidade-por-setor.test.ts` | — |
+| N2 (fluxos) | Assumir, soltar, transferir e encerrar continuam funcionando para o `agent` com `visibility_mode = own` e padrão (o `WITH CHECK` não pode quebrar o fluxo legítimo) | invariante + e2e | `tests/invariants/visibilidade-por-setor.test.ts` + `tests/e2e/expediente-e-setor.spec.ts` | — |
+| Condição 6 | **Desempenho:** `explain (analyze, buffers)` da listagem de conversas como `agent`, com ~100 mil conversas e 10 setores; o plano e o tempo são registrados em `02-design.md` §1, e a decisão "função ou `exists` inline" é tomada com o revisor | medição | script da T4b | — |
+| CA-2 (Realtime) | Dois navegadores logados (Suporte e Comercial): nova mensagem na conversa de Comercial **não chega** ao de Suporte; chega ao de Comercial | e2e (pela tela) | `tests/e2e/expediente-e-setor.spec.ts` | — |
+| Condição 6 (Realtime) | **Transferência entre setores** em dois navegadores: a conversa transferida de Suporte para Comercial **some** da lista de Suporte (pelo refetch) e aparece na de Comercial; o que acontece **sem** refetch (lista obsoleta até recarregar) é **medido e registrado**, e não pressuposto | e2e (pela tela) | `tests/e2e/expediente-e-setor.spec.ts` | — |
+| Condição 6 (`DELETE`) | O evento `DELETE` de conversa chega ao assinante com **só a chave primária** (`REPLICA IDENTITY DEFAULT`), sem conteúdo | invariante | `tests/invariants/visibilidade-por-setor.test.ts` | — |
+| CA-2 (API admin) | Para cada rota que lista conversas com client admin: a resposta a um `agent` de Suporte não contém conversa de Comercial | unit/integração por rota | resultado da tarefa T3 | — |
+| RNF-3 (`update.sh` e `drop function`) | Com **banco povoado** (conversas, mensagens, rascunhos de IA, agendamentos), o baseline reaplicado **duas vezes** em modo `update` (sem `ON_ERROR_STOP`) termina com a assinatura antiga **inexistente** e nenhum objeto apontando para ela; `conversations_department_fk` termina **validada**; uma segunda reaplicação é um no-op | invariante | `tests/invariants/fn-can-view-conversation-chamadores.test.ts` + `pnpm test:db` | — |
+| RNF-3 | Baseline aplica em **install** (`ON_ERROR_STOP=1`) e **update** (re-aplicação) sem erro; clone com conversas existentes continua vendo tudo | invariante | `pnpm test:db` | — |
+| Navegação | `/app/fora-de-expediente` na allowlist com justificativa | unit | `tests/unit/navegacao-completude.test.ts` | — |
+
+Tipos: `unit` (`pnpm test:unit`, **sem caminho**) · `invariante` (`pnpm test:db`) ·
+`e2e` (Playwright, pela tela) · `medição` (`getBoundingClientRect`/`getComputedStyle`, nunca a olho).
+
+## Prova pela tela (toca UI)
+Ambiente fresco estilo VPS (`docs/testing/user-journey-map.md`): Postgres do `baseline.sql`,
+`bootstrap-owner.ts`, `next build` + `next start`, **envs opcionais ausentes**. Jornadas, em ordem de
+prioridade:
+1. **[P0]** Admin recém-instalado abre Configurações › Atendimento: a seção Expediente aparece
+   **sem restrição** e nada o barra (instalação fresca não pode nascer trancada).
+2. Admin cria 2 departamentos, vincula 2 operadores, define expediente.
+3. `agent` fora do expediente: lê a conversa, vê a faixa e o campo de resposta desabilitado, abre
+   `/app/fora-de-expediente` pelo link da faixa e sai.
+4. `agent` de Suporte não vê a conversa de Comercial; o de Comercial vê.
+
+Evidência (screenshot/trace) em `.superpowers/evidence/`; jornadas registradas em
+`docs/testing/user-journey-map.md`; spec registrado em `SPECS_PARTE_*` de
+`.github/workflows/e2e.yml` (senão `e2e-cobertura-completa.test.ts` reprova).
+
+## Gates antes do PR
+- [ ] `pnpm typecheck`
+- [ ] `pnpm lint`
+- [ ] `pnpm test:unit` (suíte inteira, sem caminho; rodapé conferido contra o `grep FAIL`)
+- [ ] `pnpm test:db` (toca schema e RLS — obrigatório)
+- [ ] `pnpm test:e2e` (toca UI)
+- [ ] `pnpm release:conferir` (fragmento em `.changes/`: `capacidade_nova`)
