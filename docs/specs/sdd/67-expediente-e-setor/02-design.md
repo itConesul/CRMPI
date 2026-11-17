@@ -63,21 +63,43 @@ Dois mecanismos independentes, cada um com uma **função pura** testável sem b
 - **Fonte única:** `organizations.settings.business_hours`, no **mesmo formato** do horário por
   atendente: `{ timezone, windows: [{dow, start, end}] }`. Reaproveita `availabilityScheduleSchema`,
   `localMoment` e `isWithinSchedule`; **não** nasce um segundo conceito de "janela".
-- **Virada de dia (N3).** Hoje `scheduleWindowSchema` exige `start < end` e `isWithinSchedule` avalia
-  `hhmm >= start && hhmm < end`, então `22:00–06:00` é rejeitado. A decisão é **estender a função
-  compartilhada**, e não criar uma segunda, para a regra de janela continuar com **uma só fonte**:
-  - o schema passa a rejeitar só `start == end` (uma janela vazia ou de 24 h ambígua);
-  - se `end < start` a janela vira o dia e **pertence ao `dow` em que começa**: vale
+- **Virada de dia (N3) — só no expediente, com schema próprio (decisão revista em 2026-11-17).**
+  `22:00–06:00` é rejeitado hoje porque `scheduleWindowSchema` exige `start < end`. A versão
+  anterior desta spec **estendia o schema compartilhado**; a revisão do PR (comentário de 19:43) e
+  a medição mostraram que isso **não é retrocompatível com a agenda**, e a decisão mudou:
+  - **Inventário dos 5 consumidores de `availabilityScheduleSchema`** e o que cada um faz com uma
+    janela `end < start`:
+
+    | Consumidor | Como lê | Com `end < start` |
+    |---|---|---|
+    | `lib/agenda/jornada.ts` | `safeParse` | cai no ramo de falha (jornada padrão) |
+    | `lib/agenda/horarios-livres.ts` | `{ inicio, fim }` por `dow` | **descarta** a janela: o cabeçalho do arquivo declara "nada aqui cruza a meia-noite" (`22:00–02:00` é descartada) e a limitação é simétrica |
+    | `lib/routing/eligibles.ts` | `.parse` | **lança** se o dado existisse |
+    | `lib/escalacao/atendentes.ts` | `.parse` | **lança** se o dado existisse |
+    | `lib/escalacao/disponibilidade.ts` | `.parse` | **lança** se o dado existisse |
+
+    Se o schema do atendente aceitasse a virada, o roteamento a trataria e a agenda a descartaria:
+    duas telas divergindo sobre o mesmo dado, e o plantão noturno sumiria da agenda em silêncio.
+  - **A saída adotada:** o horário **por atendente continua rejeitando** `end < start` (nada muda
+    nesses 5 consumidores) e a virada existe **só** no expediente da organização, num schema próprio
+    (`expedienteWindowSchema`/`expedienteConfigSchema`, em `lib/schemas/routing.ts`), que reusa só a
+    validação de fuso. **A lógica de janela continua numa só função** (`janelaContem` em
+    `lib/routing/eligibility.ts`), com a virada como opção `viradaDeDia` **desligada por padrão**:
+    roteamento e agenda não a ligam, então nada neles muda. O que são duas coisas é o *schema* (o que
+    se pode gravar), não a regra de pertencer a uma janela. Isto contraria a leitura literal de "uma só
+    fonte" e por isso **pede confirmação do dono do produto** (ver `05-revisao.md`).
+  - **Semântica:** se `end < start` a janela vira o dia e **pertence ao `dow` em que começa**:
     `(dow == w.dow && hhmm >= start) || (dow == (w.dow + 1) % 7 && hhmm < end)`. Sábado→Domingo
-    incluso (`(6 + 1) % 7 = 0`);
-  - `end` continua **exclusivo**; `end = "00:00"` passa a significar meia-noite (resolve o furo do
-    minuto 23:59, já que `24:00` não passa na regex `HHMM`);
-  - **retrocompatível:** nenhum dado guardado tem `end < start` (o schema atual o rejeita), então o
-    horário por atendente e o roteamento não mudam de comportamento. Efeito colateral aceito: o editor
-    de disponibilidade do atendente passa a aceitar a virada também (útil para plantão noturno);
-  - **bordas que a T1 testa:** `22:00–06:00` às 21:59, 22:00, 23:59, 00:00 e 05:59 (do dia seguinte),
-    06:00 (fora); a virada no sábado; `start == end` inválido; a janela de um `dow` não vaza para o
-    `dow` anterior; fuso com mudança de horário de verão.
+    incluso (`(6 + 1) % 7 = 0`). Só `start == end` é rejeitado. `end` é **exclusivo** e
+    `end = "00:00"` vale meia-noite (resolve o furo do minuto 23:59, já que `24:00` não passa na
+    regex `HHMM`).
+  - **Bordas que a T1 testa (implementadas):** `22:00–06:00` às 21:59, 22:00, 23:59, 00:00, 05:59 e
+    06:00; a virada no sábado; `start == end` inválido; a janela de um `dow` não vaza para o `dow`
+    anterior; **`opens_at`** (terça 06:00 → próxima segunda 22:00; domingo 06:00 → próximo sábado
+    22:00; dentro da madrugada da janela → nada a anunciar; `end = 00:00`); regressão: o schema do
+    atendente segue rejeitando a virada e `isWithinSchedule` sem a opção trata `end < start` como antes.
+    **A faixa da tela (T7)** deve mostrar a janela como o admin a escreveu (`22:00–06:00`) e o
+    `opens_at` do 403, para janela que vira o dia também.
 - **Default = sem restrição** (`windows` vazio = 24/7). Uma instalação que atualiza pelo `update.sh`
   continua operando; o expediente só passa a valer quando o admin o configura (primeira impressão).
 - **Falha aberta:** config ausente, fuso inválido ou shape torto = sem expediente. Uma configuração
@@ -92,19 +114,33 @@ Dois mecanismos independentes, cada um com uma **função pura** testável sem b
   seja `GET`/`HEAD`/`OPTIONS` chamado por um `agent` é barrado **por padrão**, e a rota só escapa
   declarando `expediente: { isenta: "<motivo>" }`. Uma rota nova de escrita nasce **barrada**; esquecer
   de declarar nada abre nada.
-  - **O ponto de aplicação continua sendo `requireRole`** (por onde a rota já passa e onde o 403
-    padrão vive), mas ele **não conhece o método HTTP** (§1). O mecanismo candidato, a confirmar na
-    T0(e): o `proxy.ts` carimba um cabeçalho de requisição com o método (sempre sobrescrevendo o que o
-    cliente mandar, para não ser forjável), e o `requireRole` o lê por `headers()`. Isso não custa
-    consulta ao banco (o proxy roda no Edge) e **não muda as 165 chamadas existentes**. Se a T0
-    mostrar que não serve, a alternativa é exigir `req` nas chamadas com tipo obrigatório, o que
-    quebra a compilação em vez de abrir silenciosamente.
-  - **Isenções (lista com motivo escrito):** a lista nasce vazia de "palpites" e é gerada pela T0(f) a
-    partir das rotas reais. Candidatas já identificadas, **a confirmar com o dono do produto**:
-    `attendants/availability/[user_id]` (o próprio atendente precisa poder ficar indisponível fora do
-    expediente) e `notifications` (inscrição do próprio navegador). Qualquer outra rota de escrita de
-    `agent` — incluindo `leads/*`, `contacts/*`, `tasks/*`, `agenda/*` e `ai/*/reply` — fica **barrada**
-    até alguém justificar por escrito.
+  - **O ponto de aplicação é `requireRole`** (por onde a rota já passa e onde o 403 padrão vive). Ele
+    **não conhece o método HTTP** (§1), então o `proxy.ts` o carimba no cabeçalho de requisição
+    `x-metodo-http` e o `requireRole` o lê por `headers()`. **Medido na T0(e), contra o app real
+    buildado:** o carimbo **chega** ao handler e **não é forjável**. A prova de que chega é indireta e
+    forte: um `GET` de conversas passa fora do expediente, e se o cabeçalho não chegasse o método seria
+    "desconhecido", tratado como escrita, e esse `GET` levaria 403. Um `POST` que mande
+    `x-metodo-http: GET` continua barrado, porque o proxy sempre sobrescreve (`set`). Dois cuidados:
+    os cabeçalhos da requisição são montados **antes** de `NextResponse.next` (o `x-pathname` que o
+    proxy já estampa é mutado **depois**, e a base já não o usa: não é precedente de que funcione), e
+    método ausente conta como escrita. O carimbo não custa consulta ao banco (o proxy roda no Edge) e
+    **não muda nenhuma das 140 rotas de escrita**. Custo no `requireRole`: zero para leitura e para
+    `manager`/`admin`; **uma leitura de `organizations.settings`** por escrita de `agent`.
+  - **T0(a):** `loadAuthUser` **não** carrega `organizations.settings` (seleciona `display_name,
+    locale`), então o gate faz a própria leitura (`carregarExpediente`, falha aberta, service role não
+    usado: é o client do usuário, sob RLS).
+  - **Isenções implementadas (2), cada uma com motivo escrito:** `attendants/availability/[user_id]`
+    ("o atendente gerencia a própria disponibilidade", senão ele ficaria "disponível" no roteamento sem
+    como sair) e `notifications/push` (`PUT`/`DELETE`: "inscrição de push do próprio navegador").
+    Qualquer outra rota de escrita de `agent` — incluindo `leads/*`, `contacts/*`, `tasks/*`,
+    `agenda/*` e `ai/*/reply` — fica **barrada** até alguém justificar. A lista é fixada por teste
+    (`tests/unit/expediente-rotas-de-acao.test.ts`): adicionar uma exige editar o teste.
+  - **Limite do fail-closed (T0(f), inventário):** o gate só alcança rotas que chamam `requireRole`.
+    Das **140** rotas de escrita fora de `cron/*` e `webhooks/*`, **17 não o chamam** (`admin/*`,
+    `system/*`, `marca/logo`, `team/[user_id]*`, `channels/partner/templates*`,
+    `agenda/agendamentos/[id]/google/*`). Ficam numa lista **fixa** em teste (rota nova de escrita sem
+    `requireRole` reprova), mas as de organização (`team`, `channels`, `agenda/google`, `marca`)
+    **precisam de decisão do dono do produto** sobre se um `agent` as alcança.
   - **A varredura de AST cobre `app/api/v1/**`** (e não só `conversations/**`) e reprova: isenção sem
     motivo; rota `cron/*` ou `webhooks/*` ligada ao gate. O que o teste protege deixa de ser "a lista
     de rotas protegidas" (que envelhecia) e passa a ser "a lista de isenções" (que é curta e tem
@@ -177,7 +213,7 @@ Dois mecanismos independentes, cada um com uma **função pura** testável sem b
 | `on delete set null` em `conversations.department_id` | **Recusada em 2026-11-17 (N1).** Apagar um setor devolveria todas as suas conversas a "sem setor", visível a todos os `agent`: uma regressão de privacidade silenciosa. Fica `no action` + 409 + reatribuição explícita (§4.2) |
 | Gate de expediente opt-in por rota (`exigeExpediente: true`) | **Recusada em 2026-11-17.** Rota esquecida fica aberta às 22h. Fail-closed com isenções justificadas (§2.1) |
 | Uma linha de `authz.denied` por tentativa barrada | **Recusada em 2026-11-17 (N4).** Retry e polling inflam o audit log. Contador agregado (§2.1) |
-| Função própria de janela para o expediente (só ela aceita virada de dia) | Duplicaria a regra de janela. Estende-se a compartilhada, retrocompatível com os dados guardados (§2.1, N3) |
+| Estender o `scheduleWindowSchema` compartilhado para aceitar a virada | **Recusada em 2026-11-17** (revisão do PR, 19:43): a agenda (`horarios-livres.ts`) descarta janela com `end < start` e 3 consumidores usam `.parse`; roteamento e agenda divergiriam sobre o mesmo dado. Adotado: schema **próprio** do expediente + a função de janela compartilhada com a virada desligada por padrão (§2.1, N3) |
 | Bloquear a tela inteira fora do expediente (o que o texto pedia) | Perde rascunho e impede consulta. Decidido na Q1: barra-se a ação, não a leitura |
 
 ## 3. Contratos
@@ -187,8 +223,10 @@ Envelope padrão `{ error: { code, message, details? } }` com `details: { opens_
 (próxima abertura no fuso da organização).
 
 **Zod** (em `lib/schemas/`, junto de `routing.ts`):
-- `expedienteConfigSchema = availabilityScheduleSchema` (reuso; mesma validação de fuso). A janela
-  aceita `end < start` (virada de dia) e rejeita `start == end` (N3, §2.1).
+- `expedienteConfigSchema` (próprio, em `lib/schemas/routing.ts`): `{ timezone, windows }` com a MESMA
+  validação de fuso do atendente (`availabilityScheduleSchema.shape.timezone`) e janelas
+  `expedienteWindowSchema`, que aceitam `end < start` (virada de dia) e rejeitam `start == end` (N3, §2.1).
+  O schema do **atendente** não muda.
 - `departamentoInputSchema = { name: string 1..60, trim, único por organização sem diferenciar caixa }`.
 - `vinculoDepartamentoInputSchema = { user_id: uuid }`.
 
