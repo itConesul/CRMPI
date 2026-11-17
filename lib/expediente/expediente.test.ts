@@ -240,3 +240,35 @@ describe("RF-4 / RF-6 / RF-10 · expedienteBarra", () => {
     }
   });
 });
+
+describe("opens_at com janela que VIRA o dia (bordas pedidas na revisão do PR #75)", () => {
+  const plantaoSabado = expedienteConfigSchema.parse({
+    timezone: SP,
+    windows: [{ dow: SAB, start: "22:00", end: "06:00" }],
+  });
+
+  it("às 06:00 da terça (a janela de segunda acabou de fechar) abre na PRÓXIMA segunda 22:00", () => {
+    expect(proximaAbertura(plantaoSegunda, brt(14, "06:00"))?.toISOString()).toBe(brt(20, "22:00").toISOString());
+  });
+  it("durante a madrugada da própria janela (terça 02:00) já está dentro: não há abertura a anunciar", () => {
+    expect(dentroDoExpediente(plantaoSegunda, brt(14, "02:00"))).toBe(true);
+    expect(proximaAbertura(plantaoSegunda, brt(14, "02:00"))).toBeNull();
+  });
+  it("sábado → domingo: domingo às 06:00 abre no próximo sábado 22:00", () => {
+    expect(proximaAbertura(plantaoSabado, brt(19, "06:00"))?.toISOString()).toBe(brt(25, "22:00").toISOString());
+  });
+  it("`end = 00:00`: terça 00:00 já está fora e a próxima abertura é a de terça 08:00", () => {
+    const ateMeiaNoite = expedienteConfigSchema.parse({
+      timezone: SP,
+      windows: [1, 2, 3, 4, 5].map((dow) => ({ dow, start: "08:00", end: "00:00" })),
+    });
+    expect(dentroDoExpediente(ateMeiaNoite, brt(13, "23:30"))).toBe(true);
+    expect(dentroDoExpediente(ateMeiaNoite, brt(14, "00:00"))).toBe(false);
+    expect(proximaAbertura(ateMeiaNoite, brt(14, "00:00"))?.toISOString()).toBe(brt(14, "08:00").toISOString());
+  });
+  it("a decisão do gate para a janela que vira o dia traz o `abreEm` (é o que a faixa e o 403 exibem)", () => {
+    const d = expedienteBarra({ papel: "agent", config: plantaoSegunda, agora: brt(14, "06:00") });
+    expect(d.barrado).toBe(true);
+    expect(d.abreEm?.toISOString()).toBe(brt(20, "22:00").toISOString());
+  });
+});
