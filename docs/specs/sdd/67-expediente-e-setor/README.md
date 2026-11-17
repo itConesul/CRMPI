@@ -1,7 +1,7 @@
 # PRD-01 · Expediente da empresa e isolamento por setor
 
 **Issue:** #67 — https://github.com/itConesul/CRMPI/issues/67
-**Estado:** `rascunho` — **proposta de schema aguardando aprovação do dono do produto**
+**Estado:** `rascunho` — **schema com aprovação condicionada; ajustes incorporados, aguardando o registro da aprovação final**
 **Autor:** cMoreiraSul (com Claude)
 **Medido em:** `eb8bd68` (develop; afirmações sobre o código re-conferidas em 2026-11-17)
 
@@ -34,10 +34,15 @@ Estado de cada uma — a fonte é a tabela de [`05-revisao.md`](05-revisao.md), 
 | Estado | Perguntas |
 |---|---|
 | **Confirmadas pelo dono do produto** (comentário na #67 de 2026-11-13) | Q1, Q7 |
-| **Adotadas pelo autor em 2026-11-16, aguardando confirmação do dono** | Q2, Q3, Q4, Q5, Q6, Q8 |
-| **Abertas** | Q9 (expediente por organização ou por setor; recomendação: por organização agora) |
+| **Aprovadas pelo dono do produto** (comentário na #67 de 2026-11-17) | Q2, Q3, Q4, Q5, Q8, Q9 (por organização agora; por setor é evolução prevista) |
+| **Fora do escopo, com risco aceito** (2026-11-17; mapeado na #80) | Q6 |
+| **Decisões novas** (2026-11-17) | N1 (bloquear apagar setor com conversas), N2 (regra de setor também na escrita), N3 (virada de dia), N4 (sem audit por tentativa) |
+| **Abertas** | nenhuma |
 
-Confirmar Q1 e Q7 **não** aprova a proposta de schema (§4 de [`02-design.md`](02-design.md)).
+A **proposta de schema** (§4 de [`02-design.md`](02-design.md)) tem **aprovação condicionada** (2026-11-17)
+a seis ajustes, **todos incorporados**; falta o revisor registrar a aprovação final em
+[`05-revisao.md`](05-revisao.md), que libera as tarefas 🔒. Aprovar as perguntas **não** libera nada
+sozinho.
 As quatro que mais pesam no schema:
 1. **Q1 — só a ação é bloqueada** (assumir, responder, transferir…); a leitura fica liberada. O texto
    pedia bloqueio total, então RF-4 e RF-5 foram adaptados.
