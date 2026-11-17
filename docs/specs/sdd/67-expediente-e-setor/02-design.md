@@ -139,7 +139,8 @@ empresa, o horário de reabertura e o botão de sair. Configuração em **Config
 ## 4. Dados — PROPOSTA DE SCHEMA (aguarda aprovação)
 
 > Nada abaixo foi escrito como migration. O número `NNNN` é o próximo de `ls supabase/migrations/`
-> no momento de implementar (o último medido em `59c76a3` foi `0238`).
+> no momento de implementar — descubra com `ls supabase/migrations/ | tail -3` (em `eb8bd68`, a mesma
+> base das demais medições desta spec, o último era `0238`).
 
 ### 4.1 Reaproveita o que já existe
 - `organizations.settings.business_hours` (jsonb **já existente**): **sem coluna nova**. Schema Zod
