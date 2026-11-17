@@ -137,3 +137,75 @@ describe("gate de expediente fail-closed — varredura de app/api/v1/**", () => 
     }
   });
 });
+
+/**
+ * ── O que o gate NÃO alcança, por desenho — fixado aqui para ser DECISÃO e não esquecimento ──
+ *
+ * O gate vive em `requireRole`. Duas famílias de chamador não passam por ele:
+ *
+ *  1. CHAMADORES NÃO HUMANOS — o MCP e os tokens Bearer (`dsk_…`) autenticam por `lib/mcp/auth.ts`
+ *     (`ensureRole`) e nunca chamam `requireRole`. O papel padrão de um token MCP é `agent` e ele
+ *     escreve com `mcp:write`. O expediente é uma regra para ATENDENTES HUMANOS; o agente de IA tem a
+ *     própria janela (`lib/agent-engine/agent/janela-de-atendimento.ts`) e uma integração
+ *     servidor-a-servidor não tem "horário". Decisão a CONFIRMAR pelo dono do produto (#67).
+ *  2. AUTOATENDIMENTO — perfil, idioma e MFA são Server Actions que autenticam só por
+ *     `loadAuthUser`/`getUser`. Não chamam `requireRole`, então o gate não as alcança: barrar o
+ *     cadastro de MFA fora do horário trancaria quem a organização OBRIGA a ter MFA.
+ *
+ * Se alguém ligar `requireRole` numa destas, os testes abaixo reprovam e a decisão tem de ser tomada.
+ */
+function arquivos(dir: string, ext: RegExp): string[] {
+  const achados: string[] = [];
+  for (const nome of readdirSync(dir)) {
+    const caminho = join(dir, nome);
+    if (statSync(caminho).isDirectory()) achados.push(...arquivos(caminho, ext));
+    else if (ext.test(nome)) achados.push(caminho);
+  }
+  return achados;
+}
+
+describe("o que o gate NÃO alcança, por desenho", () => {
+  const raiz = process.cwd();
+  const usaRequireRole = (arquivo: string) => /requireRole\s*\(|from\s+["']@\/lib\/auth\/require-role["']/.test(readFileSync(arquivo, "utf8"));
+
+  it("controle positivo: a varredura enxerga o MCP e as Server Actions", () => {
+    expect(arquivos(join(raiz, "lib", "mcp"), /\.ts$/).filter((f) => !f.endsWith(".test.ts")).length).toBeGreaterThan(5);
+    expect(arquivos(join(raiz, "app", "actions"), /\.ts$/).length).toBeGreaterThan(20);
+  });
+
+  it("MCP e tokens Bearer (chamadores não humanos) NÃO passam pelo gate de expediente", () => {
+    const mcp = [
+      ...arquivos(join(raiz, "lib", "mcp"), /\.ts$/),
+      ...arquivos(join(raiz, "app", "api", "mcp"), /\.ts$/),
+    ].filter((f) => !f.endsWith(".test.ts"));
+    expect(mcp.filter(usaRequireRole).map((f) => relative(raiz, f))).toEqual([]);
+  });
+
+  it("autoatendimento (perfil, idioma, MFA, senha) NÃO passa pelo gate: nunca tranca quem tem MFA obrigatório", () => {
+    const pessoais = [
+      "app/actions/settings/updateProfile.ts",
+      "app/actions/settings/trocarIdioma.ts",
+      "app/actions/auth/enrollMfa.ts",
+      "app/actions/auth/confirmMfaEnroll.ts",
+      "app/actions/auth/verifyMfa.ts",
+      "app/actions/auth/useRecoveryCode.ts",
+      "app/actions/auth/updatePassword.ts",
+    ];
+    for (const rel of pessoais) {
+      const arquivo = join(raiz, ...rel.split("/"));
+      expect(statSync(arquivo).isFile(), `${rel} não existe mais: atualize a lista`).toBe(true);
+      expect(usaRequireRole(arquivo), `${rel} passou a chamar requireRole: o gate o alcançaria`).toBe(false);
+    }
+  });
+
+  it("NENHUMA Server Action chama requireRole — logo o gate não alcança nenhuma (a base já documenta: \"Server Action não é rota\")", () => {
+    // Consequência a ter à vista: se uma Server Action passar a fazer trabalho de ATENDIMENTO (assumir,
+    // responder), ela escapa do expediente. Hoje as de app/actions são auth, marca, equipe, integrações,
+    // onboarding e shell; as de agentes de IA ficam em app/app/ai. Quem criar uma de atendimento deve
+    // chamar o gate explicitamente.
+    const chamam = arquivos(join(raiz, "app", "actions"), /.ts$/)
+      .filter(usaRequireRole)
+      .map((f) => relative(raiz, f).split(sep).join("/"));
+    expect(chamam).toEqual([]);
+  });
+});

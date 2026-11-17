@@ -1,14 +1,19 @@
 ---
-impacto: nada_mudou
-secao: alterado
-titulo: Base do expediente da empresa: o servidor já sabe barrar ações fora do horário, mas ainda não há onde configurá-lo
+impacto: capacidade_nova
+secao: adicionado
+titulo: Expediente da empresa: fora do horário o atendente só consulta, e o servidor recusa as ações
 ---
 
-Primeira parte do expediente da empresa (#67). O servidor passa a saber recusar ações de
-atendente fora do horário (`403 OUT_OF_WORK_HOURS`) e a não incluí-lo na distribuição de
-conversas, e a IA deixa de prometer um atendente quando ninguém pode assumir. A leitura das
-conversas continua liberada.
+Primeira parte do expediente da empresa (#67). O administrador define o horário em que a equipe
+atende, e fora dele o atendente continua **vendo** as conversas e o histórico, mas não age:
+assumir, responder, anotar, transferir, adiar e fechar são recusados pelo servidor (`403
+OUT_OF_WORK_HOURS`), e a tela mostra uma faixa com o horário da empresa e quando ele abre, trava o
+campo de resposta e os botões de ação, e abre uma página explicando. `admin` e `manager` nunca são
+barrados. A distribuição de conversas e a promessa da IA ("um atendente vai assumir") também passam a
+respeitar o horário.
 
-Nenhuma instalação muda de comportamento: o expediente só existe quando alguém o configura, e
-a tela e a rota para configurá-lo chegam numa próxima entrega. Sem expediente configurado — ou
-com uma configuração inválida — ninguém é barrado.
+Por enquanto o horário é definido pela API (`PATCH /api/v1/settings/expediente`, só `admin`); a tela
+de configuração chega numa próxima entrega. O expediente aceita janela que vira o dia (22:00–06:00).
+
+Nenhuma instalação muda de comportamento até alguém definir um expediente. Sem expediente — ou com
+um valor inválido — ninguém é barrado.
