@@ -301,7 +301,7 @@ Envelope padrão `{ error: { code, message, details? } }` com `details: { opens_
 nunca do body):
 | Método | Rota | Papel | Observação |
 |---|---|---|---|
-| `GET` | `/settings/expediente` | `agent`+ | Lê a config **e o estado avaliado pelo servidor**: `agora` (`dow`, `hhmm` e ISO no fuso da organização), `dentro` (booleano) e `opens_at`. A tela de "fora de expediente" precisa, e o e2e constrói a janela em torno desse `agora`, sem depender do relógio do runner |
+| `GET` | `/settings/expediente` | `viewer`+ (qualquer membro) | Lê a config **e o estado avaliado pelo servidor**: `agora` (`dow`, `hhmm` e ISO no fuso da organização), `dentro` (booleano) e `opens_at`. A faixa do shell chama esta rota para **todo** usuário logado, e o e2e constrói a janela em torno desse `agora`, sem depender do relógio do runner. **Era `agent`+ e estava errado:** o `viewer` e a sessão de suporte somente-leitura levavam 403 a cada carga de tela, e cada 403 grava um `authz.denied` (medido: 3 linhas em ~70 s; achado pelo `e2e-parte (3)` do CI) |
 | `PATCH` | `/settings/expediente` | `admin` | Audita `expediente.config_changed` |
 | `GET/POST` | `/departments` | leitura `agent`+, escrita `admin` | `Idempotency-Key` no POST |
 | `PATCH/DELETE` | `/departments/[id]` | `admin` | `DELETE` com conversas no setor responde **`409 department_not_empty`** com `details: { conversation_count }` (N1); sem conversas, apaga. Nunca apaga nem desvincula conversa |
