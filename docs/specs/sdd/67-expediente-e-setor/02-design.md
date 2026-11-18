@@ -251,14 +251,31 @@ Dois mecanismos independentes, cada um com uma **função pura** testável sem b
      fica dentro do `audit()` e a linha é gravada sem o campo. Registra `logger.warn`, **sem** alerta
      Sentry por mutação (seria ruído proporcional ao tráfego); falha de *gravação* do audit continua
      alertando, como hoje.
+  - **Uma só verdade para a decisão.** "Fora do expediente **e** `admin`/`manager`" **já é uma função
+    pura**, escrita na T1: `expedienteBarra({ papel, config, agora }).bypassAuditado`
+    (`lib/expediente/expediente.ts`, no PR do gate). O `audit()` **chama essa função**; não reimplementa
+    a conta. Para não pagar a `rpc` do papel dentro do expediente, ele pergunta antes
+    `dentroDoExpediente(config, agora)` (a mesma que `expedienteBarra` usa por dentro) e só busca o
+    papel se estiver fora. Sem isso `bypassAuditado` fica calculado e sem consumidor (anti-pattern 3
+    do `CLAUDE.md`), e a regra existiria em dois lugares que divergem no primeiro ajuste de fuso.
   - **Custo:** dentro do expediente, nenhuma E/S além do cache. Fora dele, **uma** `rpc` por mutação
     auditada de sessão humana — o `audit()` já faz `getUser()` e `readSupportContext` por chamada
     (`lib/audit/index.ts`), então o custo não é categoria nova.
   - **Aceito:** o relógio é o do momento do `audit()`, não o do gate. Na fronteira do expediente uma
     ação iniciada às 17:59:59 e auditada às 18:00:01 sai marcada. Também aceito: até 30 s de atraso
     para a regra enxergar um expediente recém-alterado em OUTRO processo.
-  - **Limite conhecido:** o carimbo do `proxy.ts` cobre `/api/v1`; Server Actions não passam por ele,
-    então não marcam (por 2, método ausente). A implementação mede antes quais ações de audit saem
+  - **Limite conhecido — PONTO 6 da aprovação (`05-revisao.md`), não um detalhe:** o carimbo do
+    `proxy.ts` cobre `/api/v1`; Server Actions não passam por ele, então **não marcam** (por 2, método
+    ausente). Consequência para o dono do produto: um `admin`/`manager` que age fora do expediente
+    **por Server Action** não deixa a marca, e o RF-10 ("bypass, com auditoria") fica **incompleto
+    nesse caminho** até a T2c resolvê-lo. **Tamanho medido** (em `d1d3c30`, 2026-11-18):
+    `grep -rlE "\baudit\(" app/actions --include=*.ts --exclude=*.test.ts | wc -l` → **32 arquivos**, e
+    `grep -rlE "^.use server.;?" app --include=*.ts --include=*.tsx | xargs grep -lE "\baudit\(" | grep -v "^app/actions/"`
+    → **2 mais** (`app/app/ai/agents/_actions.ts` e `app/app/ai/agents/[id]/_actions.ts`). Entre eles há
+    ações de `admin` que importam para a auditoria do bypass, como `apagarDadosOperacionaisDaOrganizacao`,
+    `updateTenant`, `updateBranding` e `updatePipelineConfig`. Fechar o caminho exige carimbar o método
+    também para Server Action (ou ler o expediente sem o carimbo, tratando a chamada como escrita) — a
+    T2c escolhe e registra, e o dono decide se esse caminho entra na primeira entrega ou numa seguinte. A implementação mede antes quais ações de audit saem
     de Server Action (comando em `04-tarefas.md`, T2c) e este texto é corrigido com o resultado.
   - **Decisão aberta (dono do produto):** sessão de suporte/impersonação e platform admin **não**
     marcam nesta proposta (RF-6 fala de `admin`/`manager` do tenant; o suporte já é rastreado por
