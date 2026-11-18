@@ -39,6 +39,8 @@ Os comentários da #67 são postados pela conta do `Sciuba`, que relata a decis�
 | 2026-11-17 | **`conversations_department_fk` `NOT VALID` + `VALIDATE`** | Para o `update.sh` não travar tabela com tráfego ao vivo | §4.2, §4.4 | ✅ 2026-11-17 |
 | 2026-11-17 | **SQL por extenso** | Predicado `A` e `messages_update/delete` escritos antes da migration | §4.3 | ✅ 2026-11-17 |
 | 2026-11-17 | **Sequência de implementação** | PRs separados para a `develop`: (1) gate sem schema, (2) auditoria T0(d)+T3, (3) T4a, (4) T4b só depois da T3. A branch `feat/67-expediente-gate` só vira PR depois da aprovação; nenhum PR traz migration, apêndice de `baseline.sql` ou `MANIFEST.md` antes dela | `04-tarefas.md` | ✅ 2026-11-17 |
+| 2026-11-18 | **Quadro A** — o que a spec tem e a issue não tinha | Confirmado pelo dono do produto: Q1, RF-10, RF-11/12, Q4 e Q5, Q6, Q8 e Q9, N1 a N4, gate fail-closed com as 9 isenções e o schema. **Esta tabela continua sendo a fonte de verdade**; o comentário só a confirma | Nenhum: confirma o que já está acima | ✅ 2026-11-18 ([#67](https://github.com/itConesul/CRMPI/issues/67#issuecomment-6982205363)) |
+| 2026-11-18 | **Item C** — aviso ao lead e ferramenta MCP de escalação respeitando o expediente | **Opção (b):** saem do gate e ficam para a #73 (PRD-07). Motivos: o RF-11 reserva ao PRD-07 o que o cliente recebe fora do horário, a issue pede "zero dependência de LLM nesta fase" e o escopo já virou quatro PRs | A T2b fica só com a distribuição (RF-12). A remoção do código (`aviso-ao-lead.ts`, `escalacao.ts`, commit `1e3ede8`) e o registro na #73 são do PR do gate | ✅ 2026-11-18 ([#67](https://github.com/itConesul/CRMPI/issues/67#issuecomment-6982205363)) |
 
 ## Condições da aprovação do schema (2026-11-17)
 A aprovação do §4 de `02-design.md` é **condicionada** a estes seis ajustes entrarem na spec antes de
@@ -104,9 +106,7 @@ cliente?"* do CRM interno, vale *"ação automática da UI, sem efeito para o cl
 que o inbox disparar sozinho seguem o critério em vez de virar exceção caso a caso. Registrado em
 `02-design.md` §2.1.
 
-**O que fica por decidir** (não é da conferência da T0(f)): se o aviso ao lead e a ferramenta MCP de
-escalação respeitarem o expediente entram na spec (RF-12) ou saem do PR do gate para o #73. Está
-perguntado na #67.
+**Item C** (aviso ao lead e ferramenta MCP de escalação) foi decidido na mesma data e está na tabela de decisões acima: saem do gate e vão para a #73.
 
 ## Aprovação
 **Aprovada em 2026-11-17.** O dono do produto aprovou a spec e a proposta de schema (§4 de
