@@ -155,14 +155,42 @@ Dois mecanismos independentes, cada um com uma **função pura** testável sem b
     só a primeira leitura é a verdadeira. Das rotas de API, as duas
     isenções que existem hoje são `attendants/availability/[user_id]` ("o atendente gerencia a
     própria disponibilidade", senão ficaria "disponível" no roteamento sem como sair) e
-    `notifications/push` (`PUT`/`DELETE`, "inscrição de push do próprio navegador"). A T0(f)
-    confirma, **rota a rota**, "marcar notificação como lida" e "presença": se forem rotas de API que
-    passam por `requireRole`, entram na lista fixa com o motivo escrito.
+    `notifications/push` (`PUT`/`DELETE`, "inscrição de push do próprio navegador").
+  - **T0(f) conferida rota a rota (2026-11-18, no código da branch `feat/67-expediente-gate`).** Os 9
+    itens da lista fixa escapam do gate por **três mecanismos**, e a conta fecha assim:
+
+    | Mecanismo | Itens |
+    |---|---|
+    | **Método:** `GET`/`HEAD`/`OPTIONS` nunca são barrados | leitura |
+    | **Por construção:** não passam por `requireRole` | login/logout (`app/actions/auth/signOut.ts`), troca de organização (Server Action `setActiveOrg`), perfil, preferências, MFA (Server Actions, acima) e "marcar notificação como lida" (não há rota de API para isso: `app/api/v1/notifications/` só tem `push`) |
+    | **Isenção declarada** em `expediente: { isenta }` | **presença e `attendants/availability` são a MESMA rota**: `PATCH attendants/availability/[user_id]` grava o `is_available` e, quando `true`, o `last_heartbeat_at` |
+
+    Fora dos 9 há uma isenção declarada a mais, `notifications/push`, **ratificada** em 2026-11-18
+    (abaixo), e a isenção do `mark-read` (P1) entra com o PR do gate. Quantas rotas declaram isenção é
+    **estado, não prosa** (DoD 16): para saber, na branch que tem o gate,
+    `grep -rn "expediente: { isenta:" app/api/v1 --include=route.ts` lista as declarações, e
+    `pnpm vitest run tests/unit/expediente-rotas-de-acao.test.ts` **falha** se a lista de isenções, a de
+    rotas fora do alcance do gate ou o motivo escrito mudarem sem decisão.
+  - **Decidido pelo dono do produto em 2026-11-18** ([#67](https://github.com/itConesul/CRMPI/issues/67#issuecomment-6980072775)).
+    **P1:** `POST conversations/[id]/mark-read` (zera `unread_count_for_assignee`) passava por
+    `requireRole("agent")` e era barrada fora do expediente. O inbox a dispara sozinho 1,5 s depois de a
+    conversa ficar em foco (`hooks/inbox/useMarkAsRead.ts`), então o `agent` que abre uma conversa para
+    **ler** — o que a Q1 e o RF-4 garantem — levaria 403 a cada abertura, e o contador de não lidas nunca
+    zeraria. **Decisão: isentar**, com o motivo escrito "ação automática da UI, sem efeito para o
+    cliente". É uma regressão funcional **do próprio gate**, por isso **bloqueia o merge do PR do gate**,
+    que leva a isenção e o e2e dela (`agent` abre a conversa fora do expediente, lê, sem 403, com o
+    Composer travado). **P2:** `notifications/push` **ratificada** e passa a fazer parte da lista fixa.
   - **CRM interno (leads, contatos, tarefas, agenda): barrado POR PADRÃO e liberado rota a rota**
-    (decisão do dono do produto), com o **motivo escrito** e um único critério: **"esta rota dispara
-    mensagem ao cliente?"** Se dispara, continua barrada. A lista de liberações sai da T0(f), gerada
-    por script a partir das rotas reais, e entra no teste. Hoje está **vazia de propósito**: nada do
-    CRM interno é liberado sem essa justificativa.
+    (decisão do dono do produto), com o **motivo escrito** e um critério. Há **dois critérios de
+    isenção**, e a rota precisa cumprir o que se aplica a ela:
+    1. **CRM interno:** *"esta rota dispara mensagem ao cliente?"* Se dispara, continua barrada.
+    2. **Rotas de conversa** (decisão de 2026-11-18): *"é ação automática da UI, sem efeito para o
+       cliente?"* — a que o inbox dispara sozinho, como `mark-read`, não vira exceção caso a caso. Uma
+       rota que o usuário aciona de propósito (assumir, responder, transferir, encerrar) **não** é
+       "automática" e segue barrada.
+
+    A lista de liberações sai da T0(f), gerada por script a partir das rotas reais, e entra no teste.
+    Do CRM interno, hoje está **vazia de propósito**: nada é liberado sem essa justificativa.
   - **FORA do gate — por escrito e com teste de varredura:** token **Bearer**, **MCP**, **agente de
     IA**, **webhooks**, **cron** e a **ingestão de mensagens**. A IA cobre a noite e a mensagem do
     cliente tem de entrar na fila (RF-11). O motivo: o expediente é uma regra para **atendente

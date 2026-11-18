@@ -39,6 +39,8 @@ Os comentários da #67 são postados pela conta do `Sciuba`, que relata a decis�
 | 2026-11-17 | **`conversations_department_fk` `NOT VALID` + `VALIDATE`** | Para o `update.sh` não travar tabela com tráfego ao vivo | §4.2, §4.4 | ✅ 2026-11-17 |
 | 2026-11-17 | **SQL por extenso** | Predicado `A` e `messages_update/delete` escritos antes da migration | §4.3 | ✅ 2026-11-17 |
 | 2026-11-17 | **Sequência de implementação** | PRs separados para a `develop`: (1) gate sem schema, (2) auditoria T0(d)+T3, (3) T4a, (4) T4b só depois da T3. A branch `feat/67-expediente-gate` só vira PR depois da aprovação; nenhum PR traz migration, apêndice de `baseline.sql` ou `MANIFEST.md` antes dela | `04-tarefas.md` | ✅ 2026-11-17 |
+| 2026-11-18 | **Quadro A** — o que a spec tem e a issue não tinha | Confirmado pelo dono do produto: Q1, RF-10, RF-11/12, Q4 e Q5, Q6, Q8 e Q9, N1 a N4, gate fail-closed com as 9 isenções e o schema. **Esta tabela continua sendo a fonte de verdade**; o comentário só a confirma | Nenhum: confirma o que já está acima | ✅ 2026-11-18 ([#67](https://github.com/itConesul/CRMPI/issues/67#issuecomment-6982205363)) |
+| 2026-11-18 | **Item C** — aviso ao lead e ferramenta MCP de escalação respeitando o expediente | **Opção (b):** saem do gate e ficam para a #73 (PRD-07). Motivos: o RF-11 reserva ao PRD-07 o que o cliente recebe fora do horário, a issue pede "zero dependência de LLM nesta fase" e o escopo já virou quatro PRs | A T2b fica só com a distribuição (RF-12). A remoção do código (`aviso-ao-lead.ts`, `escalacao.ts`, commit `1e3ede8`) e o registro na #73 são do PR do gate | ✅ 2026-11-18 ([#67](https://github.com/itConesul/CRMPI/issues/67#issuecomment-6982205363)) |
 
 ## Condições da aprovação do schema (2026-11-17)
 A aprovação do §4 de `02-design.md` é **condicionada** a estes seis ajustes entrarem na spec antes de
@@ -88,6 +90,23 @@ Todos incorporados em 2026-11-17 e **aprovados pelo revisor às 20:44**.
 | 2026-11-17 19:43 | Sciuba, review geral — pontos "para a T0/T1/T4b" | Autoatendimento (perfil, MFA, preferências, notificação lida) é escrita de `agent`; chamadores não humanos (Bearer, MCP); `INSERT` em `conversations`; trigger do `department_id`; SQL por extenso; `NOT VALID`; `drop function` no `update.sh`; corrida do e2e | Todos tratados em 2026-11-17 (ver a "Segunda rodada" acima). **Medido:** perfil, idioma e MFA são Server Actions sem `requireRole`, então o gate não as alcança; MCP e Bearer autenticam por `lib/mcp/auth.ts` e nunca chamam `requireRole` |
 | 2026-11-17 20:20 | Sciuba, comentário geral — 9 itens para registrar a aprovação final | Ver "Segunda rodada" | Todos incorporados; as 8 threads que o commit `02ee709` cobria foram resolvidas pelo revisor. **Aprovado por ele às 20:44** ([review](https://github.com/itConesul/CRMPI/pull/75#pullrequestreview-5946320660)); a aprovação final está registrada abaixo |
 | 2026-11-17 20:44 | Sciuba, aviso de aprovação na #67 — 3 ajustes de texto antes do merge | (1) corrigir a frase sobre Server Actions ("duas chamam `requireRole`, ambas de admin"); (2) marcar os checkboxes de aprovação; (3) registrar na T4b o `INSERT` manual por `agent` com `visibility_mode = own` | **(1) Parcialmente atendido, de propósito.** A frase não foi trocada, porque seria falsa: re-medido, **nenhuma** Server Action chama nem importa `requireRole` (o `grep -l` casa `updateBranding.ts` e `updateMarcaDaOrganizacao.ts` só por **comentário**, e o próprio código diz que não o usa; cada uma faz gate próprio). O que o pedido quer — que ninguém leia errado — foi atendido: a spec agora explica as duas leituras e dá o comando que as separa, **testado** (devolve vazio nas Server Actions e encontra a chamada numa rota; uma primeira versão do comando casava dois comentários e foi corrigida antes de publicar) (§2.1). **(2) Feito** (abaixo). **(3) Feito:** §4.3, `03-testes.md` e T4b; a rota de produto `open-with-contact` usa o client admin e não é afetada |
+
+## Decisões pós-aprovação (T0(f), 2026-11-18)
+A conferência rota a rota das isenções fixas (`02-design.md` §2.1) achou dois pontos que a aprovação de
+2026-11-17 não cobria. O dono do produto decidiu os dois em 2026-11-18, relatados pelo `Sciuba` na
+[#67](https://github.com/itConesul/CRMPI/issues/67#issuecomment-6980072775).
+
+| # | Ponto | Decisão do dono do produto (2026-11-18) | Dono da implementação e prazo |
+|---|---|---|---|
+| P1 | `POST conversations/[id]/mark-read` é barrada fora do expediente, e o inbox a dispara sozinho ao abrir a conversa: o `agent` que só lê leva 403 a cada abertura e o contador de não lidas não zera | **Isentar**, com o motivo escrito "ação automática da UI, sem efeito para o cliente". **Bloqueia o merge do PR do gate** | cMoreiraSul, **no próprio PR do gate**: a isenção, o ajuste de `ISENCOES_ESPERADAS` em `expediente-rotas-de-acao.test.ts` e o e2e `agent` abre a conversa fora do expediente, lê, sem 403, com o Composer travado. Sem isso o PR do gate não é mergeado |
+| P2 | `notifications/push` está isenta no código e estava fora da lista aprovada | **Ratificada**: entra na lista fixa (inscrição do próprio navegador, sem efeito sobre o cliente) | Nada a implementar; já está no código e no teste |
+
+**Critério geral para as rotas de conversa** (decidido junto com a P1): além do *"dispara mensagem ao
+cliente?"* do CRM interno, vale *"ação automática da UI, sem efeito para o cliente"*. As próximas rotas
+que o inbox disparar sozinho seguem o critério em vez de virar exceção caso a caso. Registrado em
+`02-design.md` §2.1.
+
+**Item C** (aviso ao lead e ferramenta MCP de escalação) foi decidido na mesma data e está na tabela de decisões acima: saem do gate e vão para a #73.
 
 ## Aprovação
 **Aprovada em 2026-11-17.** O dono do produto aprovou a spec e a proposta de schema (§4 de
