@@ -221,13 +221,87 @@ Dois mecanismos independentes, cada um com uma **função pura** testável sem b
 - **Na tela:** uma faixa no shell do app (mesmo lugar de `FaixaDeAvisos`) mostra a janela da empresa
   e a próxima abertura, e os controles de ação ficam desabilitados com o motivo. Calculado no
   servidor pela mesma função pura, para cliente e servidor não divergirem.
-- **Bypass auditado (RF-10).** Quando `admin`/`manager` passam pelo gate **fora do expediente**,
-  `requireRole` devolve `foraDoExpediente: true` no resultado, e a rota o repassa para o `audit()` que
-  **já** grava a mutação (`metadata.fora_do_expediente = true`). Não há linha nova: a doutrina de
-  audit manda auditar quando há efeito, e uma linha emitida no gate registraria tentativas que a
-  rota depois recusa por outro motivo. Dentro do expediente nada é acrescentado. Como as rotas de
-  ação já chamam `audit()` após o sucesso, o custo é um campo; se alguma não chamar, a varredura de
-  T2 a reprova.
+- **Bypass auditado (RF-10) — mecanismo PROPOSTO em 2026-11-18, pendente do ok do dono do produto
+  (`05-revisao.md`); troca o texto anterior, "o `requireRole` devolve `foraDoExpediente` e a rota o
+  repassa ao `audit()`".** Quem decide é o próprio `audit()` (`lib/audit/index.ts`), na hora de gravar
+  a linha da mutação que **já** vai gravar: acrescenta `metadata.fora_do_expediente = true`. Não há
+  linha nova — a doutrina de audit manda auditar quando há efeito, e uma linha emitida no gate
+  registraria tentativas que a rota depois recusa por outro motivo. Dentro do expediente nada é
+  acrescentado. O `requireRole` **não muda** por causa do RF-10 e nenhuma rota é editada.
+
+  **Regra, na ordem em que é avaliada (do barato ao caro; a primeira que falhar encerra sem marcar):**
+  1. **Ator humano de sessão numa organização:** `actorUserId` e `organizationId` presentes e
+     `actorApiTokenId` ausente. Worker, cron, Bearer, MCP, IA e ingestão ficam de fora.
+  2. **É uma mutação:** o método HTTP carimbado pelo `proxy.ts` (T0(e), mesmo cabeçalho que o gate
+     lê) é de escrita. **Método ausente NÃO marca** — o oposto do gate: o gate é fail-closed para
+     barrar, o campo é fail-open para marcar. Isso deixa de fora, sem regra extra, tudo o que roda sem
+     requisição (workers) e as rotas `GET` que auditam leitura. A linha de recusa `authz.denied`
+     (emitida pelo `requireRole`) é excluída por nome: é a recusa, não a ação.
+  3. **O expediente da organização**, lido pelo **mesmo carregador do gate** (`carregarExpediente`),
+     com **cache por organização e TTL curto — proposta: 30 s**, em memória do processo, descartado
+     quando `PATCH /settings/expediente` roda no mesmo processo. Sem expediente configurado, ou
+     inválido, ou dentro do horário: não marca. Dentro do expediente o custo é só o acerto de cache.
+  4. **O papel, só se já estiver fora do expediente:** `rpc("fn_user_role_in_org", { p_org })` com o
+     client da sessão — a **mesma fonte** que o `requireRole` usa (`lib/auth/require-role.ts`), nunca
+     um snapshot. Só `admin` e `manager` marcam. **`agent` nunca marca, nem em rota isenta**
+     (`mark-read`, `attendants/availability`): isenção é "o `agent` não é barrado ali", não é bypass.
+     Platform admin sem vínculo com a organização devolve papel `null` e não marca; a sessão de suporte
+     já carrega `support_session_id` no `metadata` (decisão **aberta** para o dono do produto, abaixo).
+  5. **Falha nunca atrapalha:** erro ou tempo esgotado em 3 ou 4 → não marca e segue; o `try/catch`
+     fica dentro do `audit()` e a linha é gravada sem o campo. Registra `logger.warn`, **sem** alerta
+     Sentry por mutação (seria ruído proporcional ao tráfego); falha de *gravação* do audit continua
+     alertando, como hoje.
+  - **Custo:** dentro do expediente, nenhuma E/S além do cache. Fora dele, **uma** `rpc` por mutação
+    auditada de sessão humana — o `audit()` já faz `getUser()` e `readSupportContext` por chamada
+    (`lib/audit/index.ts`), então o custo não é categoria nova.
+  - **Aceito:** o relógio é o do momento do `audit()`, não o do gate. Na fronteira do expediente uma
+    ação iniciada às 17:59:59 e auditada às 18:00:01 sai marcada. Também aceito: até 30 s de atraso
+    para a regra enxergar um expediente recém-alterado em OUTRO processo.
+  - **Limite conhecido:** o carimbo do `proxy.ts` cobre `/api/v1`; Server Actions não passam por ele,
+    então não marcam (por 2, método ausente). A implementação mede antes quais ações de audit saem
+    de Server Action (comando em `04-tarefas.md`, T2c) e este texto é corrigido com o resultado.
+  - **Decisão aberta (dono do produto):** sessão de suporte/impersonação e platform admin **não**
+    marcam nesta proposta (RF-6 fala de `admin`/`manager` do tenant; o suporte já é rastreado por
+    `support_session_id`). Se o dono quiser marcá-los também, é uma linha na regra 4.
+  - **Vigia:** só `lib/audit/index.ts` pode inserir em `api_audit_log`; hoje há **um escritor que o
+    contorna**, `lib/ai/handoff/orchestrator.ts` (ação da IA, sem ator humano, fora da regra por
+    construção). A varredura de `03-testes.md` o nomeia numa allowlist com motivo que só encolhe.
+
+  **Alternativas recusadas, com a medida que as recusa** (rode os comandos; os números envelhecem,
+  os comandos não):
+  - **"A rota repassa" (a letra da spec anterior).** Reprovada por tamanho e por modo de falha.
+    `grep -rlE "requireRole\(" app/api/v1 --include=route.ts | wc -l` → **168** rotas;
+    `grep -rhoE "\baudit\(" app/api/v1 --include=route.ts | wc -l` → **187** chamadas nelas, mas
+    `grep -rhoE "\baudit\(" app lib workers --include=*.ts --include=*.tsx --exclude=*.test.ts --exclude=*.test.tsx | wc -l`
+    → **315** no total, e `grep -rlE "\baudit\(" app lib workers --include=*.ts --include=*.tsx --exclude=*.test.ts --exclude=*.test.tsx | grep -v "/route.ts$" | wc -l`
+    → **68 arquivos fora de `route.ts`** chamam `audit()` (helpers e libs). Repassar exigiria alterar
+    centenas de pontos e as assinaturas desses helpers, e **a rota esquecida gera bypass sem rastro**:
+    nada falha, a marca só não existe. É o modo de falha que a doutrina de audit mais teme.
+    (Medido em `d1d3c30`, `develop`, em 2026-11-18.)
+  - **Canal por requisição com `AsyncLocalStorage.enterWith()` dentro do `requireRole`.** Recusado
+    porque o resultado **depende da versão do Node e a falha é silenciosa** (o campo nunca é gravado,
+    nenhum teste de unidade acusa). Medido com o script abaixo, em Node 22.23.5 (`.nvmrc` = 22):
+    sem flag, o valor **volta** ao chamador depois do `await` nas quatro variantes (I/O real, três
+    níveis, dentro de outro `als.run()`, lido num `setImmediate` como o `void audit()`); com
+    `--experimental-async-context-frame`, **não volta em nenhuma** (`null` nas quatro). Essa flag
+    liga a implementação `AsyncContextFrame`, que o Node 24 adota por padrão (informação da
+    documentação do Node, **não medida aqui**), e `package.json` declara `"node": ">=22"` e as imagens
+    usam `node:22-alpine`. Ou seja: funciona hoje, e para de funcionar numa troca de base de imagem.
+    Não foi medido dentro do runtime do Next.
+    ```js
+    // als-prova.mjs — rode: node als-prova.mjs  e  node --experimental-async-context-frame als-prova.mjs
+    import { AsyncLocalStorage } from "node:async_hooks";
+    import { setTimeout as sleep } from "node:timers/promises";
+    const als = new AsyncLocalStorage();
+    async function nivel2() { await sleep(5); als.enterWith({ fora: true }); }
+    async function requireRoleFake() { await sleep(5); await nivel2(); }
+    async function handler() { await requireRoleFake(); return als.getStore(); }
+    console.log(process.version, JSON.stringify((await handler()) ?? null));
+    // Node 22.23.5 sem flag → {"fora":true}   |   com a flag → null
+    ```
+    (As quatro variantes citadas acima foram medidas num script descartável, não commitado; o bloco é
+    a forma mínima, **rodada nas duas formas em 2026-11-18**, e reproduz a divergência. Quem
+    implementar roda as duas antes de confiar.)
 - **Distribuição (RF-12).** `eligibility.ts` hoje decide "disponível ∧ janela própria ∧ folga"
   (`isWithinSchedule` sobre `attendant_availability.schedule`). O expediente da organização entra
   como **mais uma conjunção**, via parâmetro opcional `expediente` em `lib/routing/eligibility.ts`
