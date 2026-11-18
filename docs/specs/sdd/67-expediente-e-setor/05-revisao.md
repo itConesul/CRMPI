@@ -89,15 +89,24 @@ Todos incorporados em 2026-11-17 e **aprovados pelo revisor às 20:44**.
 | 2026-11-17 20:20 | Sciuba, comentário geral — 9 itens para registrar a aprovação final | Ver "Segunda rodada" | Todos incorporados; as 8 threads que o commit `02ee709` cobria foram resolvidas pelo revisor. **Aprovado por ele às 20:44** ([review](https://github.com/itConesul/CRMPI/pull/75#pullrequestreview-5946320660)); a aprovação final está registrada abaixo |
 | 2026-11-17 20:44 | Sciuba, aviso de aprovação na #67 — 3 ajustes de texto antes do merge | (1) corrigir a frase sobre Server Actions ("duas chamam `requireRole`, ambas de admin"); (2) marcar os checkboxes de aprovação; (3) registrar na T4b o `INSERT` manual por `agent` com `visibility_mode = own` | **(1) Parcialmente atendido, de propósito.** A frase não foi trocada, porque seria falsa: re-medido, **nenhuma** Server Action chama nem importa `requireRole` (o `grep -l` casa `updateBranding.ts` e `updateMarcaDaOrganizacao.ts` só por **comentário**, e o próprio código diz que não o usa; cada uma faz gate próprio). O que o pedido quer — que ninguém leia errado — foi atendido: a spec agora explica as duas leituras e dá o comando que as separa, **testado** (devolve vazio nas Server Actions e encontra a chamada numa rota; uma primeira versão do comando casava dois comentários e foi corrigida antes de publicar) (§2.1). **(2) Feito** (abaixo). **(3) Feito:** §4.3, `03-testes.md` e T4b; a rota de produto `open-with-contact` usa o client admin e não é afetada |
 
-## Pendências pós-aprovação (T0(f), 2026-11-18)
-A conferência rota a rota das isenções fixas (`02-design.md` §2.1) achou dois pontos que a aprovação
-de 2026-11-17 não cobre. **Nenhum bloqueia o PR do gate**; os dois precisam de decisão do dono do produto
-e entram no teste `expediente-rotas-de-acao` conforme a resposta.
+## Decisões pós-aprovação (T0(f), 2026-11-18)
+A conferência rota a rota das isenções fixas (`02-design.md` §2.1) achou dois pontos que a aprovação de
+2026-11-17 não cobria. O dono do produto decidiu os dois em 2026-11-18, relatados pelo `Sciuba` na
+[#67](https://github.com/itConesul/CRMPI/issues/67#issuecomment-6980072775).
 
-| # | Ponto | Recomendação do autor | Decisão do dono do produto |
+| # | Ponto | Decisão do dono do produto (2026-11-18) | Dono da implementação e prazo |
 |---|---|---|---|
-| P1 | `POST conversations/[id]/mark-read` é barrada fora do expediente, e o inbox a dispara sozinho ao abrir a conversa: o `agent` que só lê leva 403 a cada abertura | Isentar, com motivo escrito (não dispara mensagem ao cliente) | pendente |
-| P2 | `notifications/push` está isenta no código e fora da lista aprovada | Ratificar | pendente |
+| P1 | `POST conversations/[id]/mark-read` é barrada fora do expediente, e o inbox a dispara sozinho ao abrir a conversa: o `agent` que só lê leva 403 a cada abertura e o contador de não lidas não zera | **Isentar**, com o motivo escrito "ação automática da UI, sem efeito para o cliente". **Bloqueia o merge do PR do gate** | cMoreiraSul, **no próprio PR do gate**: a isenção, o ajuste de `ISENCOES_ESPERADAS` em `expediente-rotas-de-acao.test.ts` e o e2e `agent` abre a conversa fora do expediente, lê, sem 403, com o Composer travado. Sem isso o PR do gate não é mergeado |
+| P2 | `notifications/push` está isenta no código e estava fora da lista aprovada | **Ratificada**: entra na lista fixa (inscrição do próprio navegador, sem efeito sobre o cliente) | Nada a implementar; já está no código e no teste |
+
+**Critério geral para as rotas de conversa** (decidido junto com a P1): além do *"dispara mensagem ao
+cliente?"* do CRM interno, vale *"ação automática da UI, sem efeito para o cliente"*. As próximas rotas
+que o inbox disparar sozinho seguem o critério em vez de virar exceção caso a caso. Registrado em
+`02-design.md` §2.1.
+
+**O que fica por decidir** (não é da conferência da T0(f)): se o aviso ao lead e a ferramenta MCP de
+escalação respeitarem o expediente entram na spec (RF-12) ou saem do PR do gate para o #73. Está
+perguntado na #67.
 
 ## Aprovação
 **Aprovada em 2026-11-17.** O dono do produto aprovou a spec e a proposta de schema (§4 de
