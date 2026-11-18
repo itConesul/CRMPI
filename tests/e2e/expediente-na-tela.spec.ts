@@ -254,6 +254,39 @@ test.describe("expediente na tela do atendente", () => {
     await captura(page, "04-manager-fora-do-horario-sem-trava");
   });
 
+  test("viewer (o piso) com o app aberto: a faixa lê o expediente sem 403 e sem gravar authz.denied", async ({ page }) => {
+    // Regressão medida na CI: a faixa do shell chama `GET /settings/expediente` para TODO usuário
+    // logado, e a rota exigia `agent`. O `viewer` (e o suporte somente-leitura) levava 403 a cada
+    // carga, e cada 403 por papel grava uma linha `authz.denied` em `api_audit_log`.
+    const viewer = creds.users.viewer!;
+    const contarNegados = async (): Promise<number> => {
+      const { count } = await admin
+        .from("api_audit_log")
+        .select("id", { count: "exact", head: true })
+        .eq("organization_id", creds.org_id)
+        .eq("action", "authz.denied")
+        .eq("resource_type", "settings_expediente")
+        .eq("actor_user_id", viewer.id);
+      return count ?? 0;
+    };
+    await gravarExpediente(expedienteFora());
+    const antes = await contarNegados();
+
+    const status: number[] = [];
+    page.on("response", (r) => {
+      if (r.url().includes("/api/v1/settings/expediente") && r.request().method() === "GET") status.push(r.status());
+    });
+    await login(page, viewer.email);
+    await page.goto("/app/inbox?filter=all");
+    await expect.poll(() => status.length, { timeout: 20_000 }).toBeGreaterThan(0);
+    await page.waitForTimeout(4_000); // o suficiente para as repetições do React Query, se houvesse 403
+
+    expect(status, "a leitura do expediente não pode ser negada ao piso").toEqual(status.map(() => 200));
+    expect(await contarNegados(), "nenhum authz.denied novo por ler o expediente").toBe(antes);
+    // Quem nunca é barrado não vê faixa: o `viewer` lê, não age.
+    await expect(page.getByTestId("faixa-de-expediente")).toHaveCount(0);
+  });
+
   test("agent DENTRO do expediente (janela que vira o dia): nenhuma faixa, campo de resposta de sempre", async ({ page }) => {
     await gravarExpediente(expedienteDentro());
     await login(page, creds.users.agent!.email);

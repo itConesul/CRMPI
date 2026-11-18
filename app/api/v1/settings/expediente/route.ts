@@ -1,8 +1,8 @@
 /**
  * GET   /api/v1/settings/expediente — lê o expediente da organização E o estado avaliado pelo
- *       servidor (`agora`, `dentro`, `opens_at`). `agent`+: o atendente precisa ver a janela da empresa
- *       (a faixa e a página "fora de expediente"), e o e2e constrói a janela em torno do `agora` do
- *       SERVIDOR, sem depender do relógio do runner.
+ *       servidor (`agora`, `dentro`, `opens_at`). `viewer`+ (qualquer membro): a faixa do shell chama
+ *       esta rota para todo usuário logado, e o e2e constrói a janela em torno do `agora` do SERVIDOR,
+ *       sem depender do relógio do runner.
  * PATCH /api/v1/settings/expediente — grava `organizations.settings.business_hours` (`admin`).
  *
  * PRD-01 (#67). O expediente mora no jsonb que já existe (`settings.business_hours`, Q2 aprovada):
@@ -32,7 +32,12 @@ export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest): Promise<Response> {
   const requestId = requestIdDe(req);
-  const authz = await requireRole("agent", { requestId, resource: "settings_expediente" });
+  // `viewer`, o PISO: a faixa do shell (`useExpediente`) chama esta rota para TODO usuário logado, e
+  // leitura é liberada fora do expediente (Q1). Com `agent` aqui, o `viewer` e a sessão de suporte
+  // somente-leitura (que vira `viewer`) levavam 403 a cada carga de tela — e cada 403 por papel grava
+  // uma linha `authz.denied` em `api_audit_log` (medido: 3 linhas em ~70 s com o inbox aberto). O dado
+  // é o horário da PRÓPRIA organização, que o usuário já enxerga na faixa.
+  const authz = await requireRole("viewer", { requestId, resource: "settings_expediente" });
   if (!authz.ok) return authz.response;
 
   const supabase = await createClient();

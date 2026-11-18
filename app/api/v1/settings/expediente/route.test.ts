@@ -68,11 +68,13 @@ beforeEach(() => {
 });
 
 describe("GET — lê o expediente e o estado avaliado pelo servidor", () => {
-  it("exige `agent`+ (o atendente precisa ver a janela da empresa)", async () => {
+  it("exige só o PISO (`viewer`): a faixa do shell chama a rota para todo usuário logado", async () => {
+    // Regressão medida na CI (suporte-temporario.spec.ts): com `agent` aqui, o `viewer` e o suporte
+    // somente-leitura levavam 403 a cada carga de tela, e cada 403 por papel grava `authz.denied`.
     const { client } = clienteComSettings({ business_hours: comercial });
     vi.mocked(createClient).mockResolvedValue(client);
     await GET(get());
-    expect(vi.mocked(requireRole).mock.calls[0]![0]).toBe("agent");
+    expect(vi.mocked(requireRole).mock.calls[0]![0]).toBe("viewer");
   });
 
   it("devolve a config, `dentro`, `opens_at` e o `agora` do servidor", async () => {
