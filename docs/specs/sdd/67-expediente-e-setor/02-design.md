@@ -218,6 +218,32 @@ Dois mecanismos independentes, cada um com uma **função pura** testável sem b
   com validade de 48 h) no mesmo Redis que o app já exige (`serverless-redis-http`; sem env nova). O
   contador alimenta o cabeçalho da seção Expediente (§7). **Se o Redis não responder, o contador fica
   em `—` e a regra continua valendo**: contar nunca pode bloquear nem liberar ninguém.
+  - **A chave nunca fica sem validade (invariante).** Foi a forma que o primeiro `contador.ts`
+    escolheu — `INCR` e, **só quando o total é 1**, `EXPIRE` — que não a garante: se o `EXPIRE` do
+    primeiro incremento falhar (Redis cai entre os dois comandos), a chave fica **para sempre sem
+    validade**, e o incremento seguinte já devolve 2 e nunca mais tenta pôr a validade. A spec exige a
+    invariante, não um comando: **nenhuma falha parcial pode deixar a chave sem validade, nem
+    perpetuamente**. Formas que a cumprem: (1) `INCR` e `EXPIRE` na mesma transação/`pipeline`, ou (2)
+    `EXPIRE <chave> <48 h> NX` depois de **todo** `INCR` (idempotente: só age quando a chave ainda não
+    tem validade, e por isso **se cura sozinho** no incremento seguinte). `NX` exige Redis 7.0 — o
+    `docker-compose.prod.yml` fixa `redis:7-alpine` (`grep -n "image:.*redis" docker-compose.prod.yml`).
+    **Não medido aqui:** se o `serverless-redis-http` fixado por digest aceita transação (`MULTI`); a
+    implementação **prova** a forma escolhida contra o Redis do compose, não contra um mock.
+  - **O contador tem leitor nomeado, ou não é escrito.** O leitor é `lerBarradosDoDia`
+    (`lib/expediente/contador.ts`), lido pelo cabeçalho da seção Expediente (T6). Só que a T6 é a
+    quinta na ordem de `04-tarefas.md` (depois de T4a, T3, T4b e T5): sem decisão, o contador seria
+    **escrito e não lido** por vários PRs — "evento sem consumer", o anti-pattern 3 do `CLAUDE.md`, e
+    o DoD 13 ("aparece na tela") sem resposta. Como o contador só guarda "hoje" (validade de 48 h),
+    escrever antes da T6 **não preserva histórico nenhum**. Três saídas, **pendentes do dono do
+    produto** (`05-revisao.md`):
+    - **(a)** Aceitar o intervalo, com o leitor (T6) e o prazo escritos. Sem nada visível até lá.
+    - **(b) — recomendada:** o `GET /api/v1/settings/expediente` devolve `barrados_hoje` (número, ou
+      `null` com o Redis fora) **só a `admin`/`manager`**; `agent` e `viewer` recebem `null`. O laço fecha
+      já, o código existente é reaproveitado, e a tela da T6 só passa a consumir o que a API já dá.
+      Custo: o contrato da rota ganha um campo que depende do papel.
+    - **(c)** Tirar a escrita do contador do PR do gate e entregá-la **junto com** o leitor, na T6.
+      Nada escrito sem leitor e nada se perde (só "hoje"); o custo é descartar código já escrito e
+      testado para reescrevê-lo depois.
 - **Na tela:** uma faixa no shell do app (mesmo lugar de `FaixaDeAvisos`) mostra a janela da empresa
   e a próxima abertura, e os controles de ação ficam desabilitados com o motivo. Calculado no
   servidor pela mesma função pura, para cliente e servidor não divergirem.

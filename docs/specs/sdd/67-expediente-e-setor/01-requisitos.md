@@ -28,7 +28,7 @@ departamentos e do expediente definidos aqui.
 | RNF-2 | Isolamento entre organizações continua intacto; a mudança de RLS passa no teste de 2 organizações e ganha um caso por setor | "Melhorias propostas" 5 |
 | RNF-3 | Mudança de schema sai como migration versionada + apêndice idempotente no `baseline.sql` + linha no MANIFEST, e **só após a aprovação** | "Regra desta issue" |
 | RNF-4 | Zero dependência de LLM nesta fase | rodapé da issue |
-| RNF-5 | A tentativa barrada pelo expediente **não grava uma linha de audit por tentativa** (retry e polling da UI inflariam o log, como nas rodadas de cron vazias). Conta-se em contador agregado por organização e dia; a falta do contador (Redis fora) nunca bloqueia nem barra ninguém (N4) | Decisão do dono do produto (2026-11-17) + CLAUDE.md ("auditar quando houve efeito") |
+| RNF-5 | A tentativa barrada pelo expediente **não grava uma linha de audit por tentativa** (retry e polling da UI inflariam o log, como nas rodadas de cron vazias). Conta-se em contador agregado por organização e dia; a falta do contador (Redis fora) nunca bloqueia nem barra ninguém (N4). **A chave do contador nunca fica sem validade por falha parcial**, e o contador **tem leitor nomeado** (ou não é escrito) — ambos em `02-design.md` §2.1; o segundo pende da escolha do dono do produto (`05-revisao.md`) | Decisão do dono do produto (2026-11-17) + CLAUDE.md ("auditar quando houve efeito") |
 
 ## Critérios de aceite (verbatim da issue)
 
