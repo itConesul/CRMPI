@@ -20,8 +20,9 @@ import { execFileSync } from "node:child_process";
 import * as fs from "node:fs";
 import * as path from "node:path";
 
-import { expect, type Page } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
+import { esperarProximaJanelaTotp, type TesteQueEstende } from "../utils/espera-totp";
 import { generateTotp, msUntilNextTotpWindow } from "../utils/totp";
 
 const CREDS_PATH = path.join(process.cwd(), ".e2e-creds.json");
@@ -68,10 +69,19 @@ export function semearCredenciais(): CredsE2E {
 
 let ultimoCodigoEnviado: string | null = null;
 
+/** O teste em execução, ou `null` se o helper rodou fora de um (script, seed). */
+function testeAtual(): TesteQueEstende | null {
+  try {
+    return test.info();
+  } catch {
+    return null;
+  }
+}
+
 async function tentarMfa(page: Page, secret: string, tentativas: number): Promise<boolean> {
   for (let i = 0; i < tentativas; i++) {
     if (msUntilNextTotpWindow() < 3_000 || generateTotp(secret) === ultimoCodigoEnviado) {
-      await page.waitForTimeout(msUntilNextTotpWindow() + 300);
+      await esperarProximaJanelaTotp(page, testeAtual());
     }
     const codigo = generateTotp(secret);
     ultimoCodigoEnviado = codigo;
@@ -88,7 +98,7 @@ async function tentarMfa(page: Page, secret: string, tentativas: number): Promis
       await page.waitForURL(/\/app\//, { timeout: 10_000 });
       return true;
     } catch {
-      await page.waitForTimeout(msUntilNextTotpWindow() + 300);
+      await esperarProximaJanelaTotp(page, testeAtual());
     }
   }
   return false;
