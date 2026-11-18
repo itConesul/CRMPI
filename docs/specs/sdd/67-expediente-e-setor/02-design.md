@@ -262,7 +262,9 @@ Dois mecanismos independentes, cada um com uma **função pura** testável sem b
      lê) é de escrita. **Método ausente NÃO marca** — o oposto do gate: o gate é fail-closed para
      barrar, o campo é fail-open para marcar. Isso deixa de fora, sem regra extra, tudo o que roda sem
      requisição (workers) e as rotas `GET` que auditam leitura. A linha de recusa `authz.denied`
-     (emitida pelo `requireRole`) é excluída por nome: é a recusa, não a ação.
+     (emitida pelo `requireRole`) é excluída por nome: é a recusa, não a ação. O carimbo **chega às
+     Server Actions** (`POST`, medido — ver "Server Actions" abaixo), por isso a família de sessão
+     `auth.` também é excluída por nome (proposta pendente do dono).
   3. **O expediente da organização**, lido pelo **mesmo carregador do gate** (`carregarExpediente`),
      com **cache por organização e TTL curto — proposta: 30 s**, em memória do processo, descartado
      quando `PATCH /settings/expediente` roda no mesmo processo. Sem expediente configurado, ou
@@ -290,19 +292,28 @@ Dois mecanismos independentes, cada um com uma **função pura** testável sem b
   - **Aceito:** o relógio é o do momento do `audit()`, não o do gate. Na fronteira do expediente uma
     ação iniciada às 17:59:59 e auditada às 18:00:01 sai marcada. Também aceito: até 30 s de atraso
     para a regra enxergar um expediente recém-alterado em OUTRO processo.
-  - **Limite conhecido — PONTO 6 da aprovação (`05-revisao.md`), não um detalhe:** o carimbo do
-    `proxy.ts` cobre `/api/v1`; Server Actions não passam por ele, então **não marcam** (por 2, método
-    ausente). Consequência para o dono do produto: um `admin`/`manager` que age fora do expediente
-    **por Server Action** não deixa a marca, e o RF-10 ("bypass, com auditoria") fica **incompleto
-    nesse caminho** até a T2c resolvê-lo. **Tamanho medido** (em `d1d3c30`, 2026-11-18):
-    `grep -rlE "\baudit\(" app/actions --include=*.ts --exclude=*.test.ts | wc -l` → **32 arquivos**, e
-    `grep -rlE "^.use server.;?" app --include=*.ts --include=*.tsx | xargs grep -lE "\baudit\(" | grep -v "^app/actions/"`
-    → **2 mais** (`app/app/ai/agents/_actions.ts` e `app/app/ai/agents/[id]/_actions.ts`). Entre eles há
-    ações de `admin` que importam para a auditoria do bypass, como `apagarDadosOperacionaisDaOrganizacao`,
-    `updateTenant`, `updateBranding` e `updatePipelineConfig`. Fechar o caminho exige carimbar o método
-    também para Server Action (ou ler o expediente sem o carimbo, tratando a chamada como escrita) — a
-    T2c escolhe e registra, e o dono decide se esse caminho entra na primeira entrega ou numa seguinte. A implementação mede antes quais ações de audit saem
-    de Server Action (comando em `04-tarefas.md`, T2c) e este texto é corrigido com o resultado.
+  - **Server Actions: medido, o carimbo CHEGA. Uma versão anterior deste texto (e do comentário na
+    #67) afirmava o contrário e foi retratada em 2026-11-18.** Ela dizia que o carimbo cobre só
+    `/api/v1` e que Server Actions "não marcam". Falso, por duas medidas:
+    (1) **o matcher do `proxy.ts` cobre tudo, menos estáticos** —
+    `git show feat/67-expediente-gate:proxy.ts | grep -n -A3 "matcher"` →
+    `"/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js)$).*)"`
+    — e o carimbo é posto **antes** do retorno de rota pública; (2) **medido contra o app real**
+    (build de produção, Supabase local, 2026-11-18): uma Server Action de sonda descartável, não
+    commitada, leu `(await headers()).get("x-metodo-http")` e recebeu **`"POST"`**. A regra 2 portanto
+    **alcança** as Server Actions, sem código extra: `grep -rlE "\baudit\(" app/actions --include=*.ts --exclude=*.test.ts | wc -l`
+    → **32 arquivos** (em `d1d3c30`), mais **2** (`grep -rlE "^.use server.;?" app --include=*.ts --include=*.tsx | xargs grep -lE "\baudit\(" | grep -v "^app/actions/"`
+    → `app/app/ai/agents/_actions.ts` e `app/app/ai/agents/[id]/_actions.ts`), incluindo as de `admin`
+    que mais importam (`apagarDadosOperacionaisDaOrganizacao`, `updateTenant`, `updateBranding`,
+    `updatePipelineConfig`). **Não foi medido** se o carimbo também chega a uma Server Action
+    disparada por navegação sem JavaScript (envio nativo de formulário); a T2c prova com o e2e.
+  - **O que sobra no lugar do "ponto 6" antigo — ruído, não furo:** Server Actions de **sessão e
+    perfil** (logout, idioma, o próprio perfil) também são `POST` com ator humano, então um `admin` que
+    sai do sistema às 23h teria a linha de `auth.logout` marcada como "fora do expediente". Isso não é
+    bypass de ação de atendimento, é ruído que desvaloriza a marca. **Proposta (pendente do dono):** a
+    regra 2 exclui por nome a família `auth.` (`grep -c '^  "auth\.' lib/audit/actions.ts` → 19
+    códigos) além de `authz.denied`; a T2c mede que outras famílias de sessão/perfil entram
+    (`profile.*`, `onboarding.*`) e fecha a lista numa **constante compartilhada**, com teste.
   - **Decisão aberta (dono do produto):** sessão de suporte/impersonação e platform admin **não**
     marcam nesta proposta (RF-6 fala de `admin`/`manager` do tenant; o suporte já é rastreado por
     `support_session_id`). Se o dono quiser marcá-los também, é uma linha na regra 4.
