@@ -25,7 +25,6 @@
  */
 import { ROLE_RANK, type Role } from "@/lib/auth/types";
 import { isAttendantEligible, OPEN_LOAD_STATUSES } from "@/lib/routing/eligibility";
-import { lerExpediente } from "@/lib/expediente/expediente";
 import { availabilityScheduleSchema } from "@/lib/schemas/routing";
 
 import type { Queryable } from "../agent-engine/queue/queue";
@@ -43,8 +42,6 @@ interface LinhaDeDisponibilidade {
   capacity: number | null;
   schedule: unknown;
   carga: string;
-  /** `organizations.settings.business_hours` — o mesmo valor em todas as linhas (é da organização). */
-  business_hours: unknown;
 }
 
 /**
@@ -66,10 +63,7 @@ export async function quemPodeAssumirAgora(
                from conversations c
               where c.organization_id = uo.organization_id
                 and c.assigned_to_user_id = uo.user_id
-                and c.status = any($2::text[])) as carga,
-            (select o.settings -> 'business_hours'
-               from organizations o
-              where o.id = uo.organization_id) as business_hours
+                and c.status = any($2::text[])) as carga
        from user_organizations uo
        left join attendant_availability aa
          on aa.organization_id = uo.organization_id
@@ -85,10 +79,6 @@ export async function quemPodeAssumirAgora(
     (r) => ROLE_RANK[r.role as Role] !== undefined && ROLE_RANK[r.role as Role] >= ROLE_RANK.agent,
   );
 
-  // Expediente da organização (PRD-01 / #67): a mesma camada que o roteamento aplica. Ilegível ou
-  // ausente = sem restrição (`lerExpediente` nunca lança).
-  const expediente = lerExpediente(rows[0]?.business_hours);
-
   const disponiveis = atendentes.filter((r) => {
     // capacity null = quem nunca configurou disponibilidade, ou está offline (o
     // LEFT JOIN só traz a linha quando `is_available`). O worker de roteamento
@@ -101,7 +91,6 @@ export async function quemPodeAssumirAgora(
         capacity: r.capacity,
         currentLoad: Number(r.carga),
         schedule: availabilityScheduleSchema.parse(r.schedule ?? {}),
-        expediente,
       },
       now,
     );

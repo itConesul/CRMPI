@@ -45,7 +45,6 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { sendMessageHandler } from "@/app/api/v1/messages/_handler";
 import { motivoDoAviso, textoDoAviso } from "@/lib/escalacao/aviso-ao-lead";
 import { carregarRosterDeAtendimento, podeAssumirAgora } from "@/lib/escalacao/atendentes";
-import { carregarExpediente } from "@/lib/expediente/carregar";
 import type { QuemPodeAssumir } from "@/lib/escalacao/disponibilidade";
 import { logger } from "@/lib/logger";
 
@@ -127,13 +126,10 @@ async function quemPodeAssumir(
 ): Promise<QuemPodeAssumir | null> {
   try {
     const roster = await carregarRosterDeAtendimento(admin, organizationId);
-    // Mesma régua do roteamento, inclusive o expediente da organização (PRD-01 / #67): sem ele o
-    // aviso prometeria prazo a um cliente que, fora do expediente, ninguém vai assumir.
-    const expediente = await carregarExpediente(admin, organizationId);
     const agora = new Date();
     return {
       total: roster.length,
-      disponiveis: roster.filter((a) => podeAssumirAgora(a, agora, expediente)).length,
+      disponiveis: roster.filter((a) => podeAssumirAgora(a, agora)).length,
     };
   } catch (err) {
     logger.warn("[handoff-orchestrator] disponibilidade não lida — aviso sem prazo", {
