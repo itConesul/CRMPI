@@ -53,7 +53,7 @@ A parte desta lista que **não toca o banco** está implementada na branch `feat
 | T7 | **Feita:** faixa no shell (`FaixaDeExpediente`), página `/app/fora-de-expediente` com porta em `navegacao-completude`, Composer e cabeçalho da conversa travados fora do horário | `tests/unit/expediente-ui-trava-as-acoes.test.tsx`, `tests/e2e/expediente-na-tela.spec.ts` |
 | T10 | **Parcial:** fragmento `.changes/expediente-gate-e-distribuicao-dormentes.md` (`capacidade_nova`). Falta procurar afirmações de estado nos docs de autoridade (DoD 16) | `pnpm release:conferir` |
 
-**Ainda bloqueadas (🔒, dependem de migration):** T3, T4a, T4b, T6 e T8 — cada uma em PR próprio, na ordem desta spec.
-**Sem início:** T9 (mapa vivo `expediente-e-setor`).
+**Não iniciadas, mas LIBERADAS pela aprovação de 2026-11-17 (não estão mais bloqueadas):** T3, T4a, T4b, T5 (`/departments*` e `reassign`), T6 e T8 — as 🔒 tocam o banco e vão cada uma em PR próprio, na ordem desta spec: **T4a → T3 → T4b** (a RLS de setor só liga depois que nenhuma rota a contorna), depois T5, T6 e T8. Entregam o que a issue #67 pede e o gate sozinho não cobre: departamentos e vínculo de operadores (RF-1, RF-2), visibilidade por setor na leitura e na escrita (RF-7, RF-8, RF-14), Realtime por setor (RF-9, T0(c)), tela de configuração do expediente (RF-3) e o aceite 2 (CA-2).
+**Sem início, sem dependência de banco:** T9 (mapa vivo `expediente-e-setor`) e o registro da jornada em `docs/testing/user-journey-map.md`.
 
 Esta spec só marca as caixas da coluna "Feito" quando o PR do gate for mergeado na `develop`.
