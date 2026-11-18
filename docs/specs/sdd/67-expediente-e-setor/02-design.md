@@ -164,6 +164,7 @@ Dois mecanismos independentes, cada um com uma **função pura** testável sem b
     | **Método:** `GET`/`HEAD`/`OPTIONS` nunca são barrados | leitura |
     | **Por construção:** não passam por `requireRole` | login/logout (`app/actions/auth/signOut.ts`), troca de organização (Server Action `setActiveOrg`), perfil, preferências, MFA (Server Actions, acima) e "marcar notificação como lida" (não há rota de API para isso: `app/api/v1/notifications/` só tem `push`) |
     | **Isenção declarada** em `expediente: { isenta }` | **presença e `attendants/availability` são a MESMA rota**: `PATCH attendants/availability/[user_id]` grava o `is_available` e, quando `true`, o `last_heartbeat_at` |
+
     Fora dos 9 há uma isenção declarada a mais, `notifications/push`, **ratificada** em 2026-11-18
     (abaixo), e a isenção do `mark-read` (P1) entra com o PR do gate. Quantas rotas declaram isenção é
     **estado, não prosa** (DoD 16): para saber, na branch que tem o gate,
