@@ -89,6 +89,16 @@ Todos incorporados em 2026-11-17 e **aprovados pelo revisor às 20:44**.
 | 2026-11-17 20:20 | Sciuba, comentário geral — 9 itens para registrar a aprovação final | Ver "Segunda rodada" | Todos incorporados; as 8 threads que o commit `02ee709` cobria foram resolvidas pelo revisor. **Aprovado por ele às 20:44** ([review](https://github.com/itConesul/CRMPI/pull/75#pullrequestreview-5946320660)); a aprovação final está registrada abaixo |
 | 2026-11-17 20:44 | Sciuba, aviso de aprovação na #67 — 3 ajustes de texto antes do merge | (1) corrigir a frase sobre Server Actions ("duas chamam `requireRole`, ambas de admin"); (2) marcar os checkboxes de aprovação; (3) registrar na T4b o `INSERT` manual por `agent` com `visibility_mode = own` | **(1) Parcialmente atendido, de propósito.** A frase não foi trocada, porque seria falsa: re-medido, **nenhuma** Server Action chama nem importa `requireRole` (o `grep -l` casa `updateBranding.ts` e `updateMarcaDaOrganizacao.ts` só por **comentário**, e o próprio código diz que não o usa; cada uma faz gate próprio). O que o pedido quer — que ninguém leia errado — foi atendido: a spec agora explica as duas leituras e dá o comando que as separa, **testado** (devolve vazio nas Server Actions e encontra a chamada numa rota; uma primeira versão do comando casava dois comentários e foi corrigida antes de publicar) (§2.1). **(2) Feito** (abaixo). **(3) Feito:** §4.3, `03-testes.md` e T4b; a rota de produto `open-with-contact` usa o client admin e não é afetada |
 
+## Pendências pós-aprovação (T0(f), 2026-11-18)
+A conferência rota a rota das isenções fixas (`02-design.md` §2.1) achou dois pontos que a aprovação
+de 2026-11-17 não cobre. **Nenhum bloqueia o PR do gate**; os dois precisam de decisão do dono do produto
+e entram no teste `expediente-rotas-de-acao` conforme a resposta.
+
+| # | Ponto | Recomendação do autor | Decisão do dono do produto |
+|---|---|---|---|
+| P1 | `POST conversations/[id]/mark-read` é barrada fora do expediente, e o inbox a dispara sozinho ao abrir a conversa: o `agent` que só lê leva 403 a cada abertura | Isentar, com motivo escrito (não dispara mensagem ao cliente) | pendente |
+| P2 | `notifications/push` está isenta no código e fora da lista aprovada | Ratificar | pendente |
+
 ## Aprovação
 **Aprovada em 2026-11-17.** O dono do produto aprovou a spec e a proposta de schema (§4 de
 `02-design.md`) no [review do PR #75](https://github.com/itConesul/CRMPI/pull/75#pullrequestreview-5946320660), registrado por `Sciuba` e anunciado na

@@ -155,9 +155,27 @@ Dois mecanismos independentes, cada um com uma **função pura** testável sem b
     só a primeira leitura é a verdadeira. Das rotas de API, as duas
     isenções que existem hoje são `attendants/availability/[user_id]` ("o atendente gerencia a
     própria disponibilidade", senão ficaria "disponível" no roteamento sem como sair) e
-    `notifications/push` (`PUT`/`DELETE`, "inscrição de push do próprio navegador"). A T0(f)
-    confirma, **rota a rota**, "marcar notificação como lida" e "presença": se forem rotas de API que
-    passam por `requireRole`, entram na lista fixa com o motivo escrito.
+    `notifications/push` (`PUT`/`DELETE`, "inscrição de push do próprio navegador").
+  - **T0(f) conferida rota a rota (2026-11-18, no código da branch `feat/67-expediente-gate`).** Das 9
+    isenções fixas, **7 escapam do gate por construção** (não passam por `requireRole`): login/logout
+    (`app/actions/auth/signOut.ts`), troca de organização (Server Action `setActiveOrg`), perfil,
+    preferências e MFA (Server Actions, acima) e "marcar notificação como lida" — **não existe rota de
+    API para isso** (`app/api/v1/notifications/` só tem `push`). Presença e `attendants/availability`
+    escapam por **isenção declarada**. Das 57 rotas com método de escrita e `requireRole` de piso
+    `viewer`/`agent`, só 2 declaram isenção; as outras 55 são barradas.
+  - **Lacuna achada pela conferência — decisão pendente do dono do produto.**
+    `POST conversations/[id]/mark-read` (zera `unread_count_for_assignee`) passa por `requireRole("agent")`
+    e **é barrada** fora do expediente. O inbox a dispara sozinho 1,5 s depois de a conversa ficar em
+    foco (`hooks/inbox/useMarkAsRead.ts`), então o `agent` que abre uma conversa para **ler** — o que a
+    Q1 e o RF-4 garantem — leva 403 a cada abertura, e o contador de não lidas não zera. A rota **não
+    dispara mensagem ao cliente**, então pelo critério acima ela é liberável; mas a lista de isenções é
+    fixa e acrescentá-la é decisão visível. Duas saídas: **(a)** entra na lista fixa, com o motivo "o
+    atendente marca como lida a conversa que está lendo" (o inbox a chama sem ação do usuário) e o
+    teste `expediente-rotas-de-acao` a passa a fixar; **(b)** continua barrada e a tela deixa de
+    chamá-la fora do expediente (o contador fica sem zerar). Recomendação do autor: **(a)**.
+  - **Ratificação pendente:** `notifications/push` está isenta no código e descrita acima, mas **não
+    consta** da lista aprovada em `05-revisao.md`. O motivo é do mesmo tipo de perfil e preferências
+    (inscrição do próprio navegador, sem efeito sobre o cliente).
   - **CRM interno (leads, contatos, tarefas, agenda): barrado POR PADRÃO e liberado rota a rota**
     (decisão do dono do produto), com o **motivo escrito** e um único critério: **"esta rota dispara
     mensagem ao cliente?"** Se dispara, continua barrada. A lista de liberações sai da T0(f), gerada
