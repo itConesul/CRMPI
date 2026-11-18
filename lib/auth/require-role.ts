@@ -20,6 +20,7 @@ import type { NextResponse } from "next/server";
 
 import { ApiErrorCodes } from "@/lib/api/errors";
 import { fail, type ApiError } from "@/lib/api/wrappers";
+import { contarBarrado } from "@/lib/expediente/contador";
 import { avaliarGateDeExpediente, type IsencaoDeExpediente } from "@/lib/expediente/gate";
 import { audit } from "@/lib/audit";
 import { loadAuthUser, mfaEmDivida, resolveActiveOrg } from "@/lib/auth/server";
@@ -172,6 +173,9 @@ export async function requireRole(min: Role, opts: RequireRoleOpts = {}): Promis
       isencao: expediente,
     });
     if (gate.barrado) {
+      // RNF-5 / N4: tentativa barrada NÃO vira linha de audit; só soma no contador agregado. Sem
+      // await: contar nunca atrasa nem decide o 403, e a função nunca lança.
+      void contarBarrado(org.orgId, gate.timezone);
       return {
         ok: false,
         response: fail(

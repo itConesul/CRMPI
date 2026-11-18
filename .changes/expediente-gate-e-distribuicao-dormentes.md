@@ -9,8 +9,8 @@ atende, e fora dele o atendente continua **vendo** as conversas e o histórico, 
 assumir, responder, anotar, transferir, adiar e fechar são recusados pelo servidor (`403
 OUT_OF_WORK_HOURS`), e a tela mostra uma faixa com o horário da empresa e quando ele abre, trava o
 campo de resposta e os botões de ação, e abre uma página explicando. `admin` e `manager` nunca são
-barrados. A distribuição de conversas e a promessa da IA ("um atendente vai assumir") também passam a
-respeitar o horário.
+barrados. A distribuição automática de conversas também passa a respeitar o horário. O aviso que a
+IA dá ao cliente fora do horário não muda nesta entrega: fica para o PRD-07 (#73).
 
 Por enquanto o horário é definido pela API (`PATCH /api/v1/settings/expediente`, só `admin`); a tela
 de configuração chega numa próxima entrega. O expediente aceita janela que vira o dia (22:00–06:00).

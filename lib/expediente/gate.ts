@@ -35,7 +35,7 @@ export async function lerMetodoDaRequisicao(): Promise<string | null> {
 
 export type ResultadoDoGate =
   | { barrado: false }
-  | { barrado: true; abreEm: Date | null };
+  | { barrado: true; abreEm: Date | null; timezone: string };
 
 /**
  * Esta ação, feita por este papel, agora, é barrada pelo expediente?
@@ -66,5 +66,7 @@ export async function avaliarGateDeExpediente(input: {
     config,
     agora: input.agora ?? new Date(),
   });
-  return decisao.barrado ? { barrado: true, abreEm: decisao.abreEm } : { barrado: false };
+  return decisao.barrado
+    ? { barrado: true, abreEm: decisao.abreEm, timezone: config?.timezone ?? "UTC" }
+    : { barrado: false };
 }

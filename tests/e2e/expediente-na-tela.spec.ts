@@ -175,6 +175,57 @@ test.describe("expediente na tela do atendente", () => {
     await captura(page, "02-conversa-com-acoes-travadas");
   });
 
+  test("[P1] agent FORA do expediente abre uma conversa com não lidas: lê, o mark-read NÃO leva 403 e o Composer segue travado", async ({ page }) => {
+    // O inbox dispara `POST …/mark-read` sozinho, 1,5 s depois de abrir a conversa, e só quando há
+    // não lidas. É uma escrita: sem a isenção declarada na rota, o gate fail-closed a barraria e o
+    // atendente que só lê levaria 403 a cada conversa aberta (e o contador nunca zeraria).
+    const { error } = await admin
+      .from("conversations")
+      .update({ unread_count_for_assignee: 1 } as never)
+      .eq("id", conversationId);
+    if (error) throw new Error(`semear não lida: ${error.message}`);
+
+    await gravarExpediente(expedienteFora());
+    await login(page, creds.users.agent!.email);
+
+    const respostas: { status: number; codigo: string | null }[] = [];
+    page.on("response", async (r) => {
+      if (r.request().method() !== "POST" || !r.url().includes(`/api/v1/conversations/${conversationId}/mark-read`)) return;
+      let codigo: string | null = null;
+      try {
+        codigo = ((await r.json()) as { error?: { code?: string } }).error?.code ?? null;
+      } catch {
+        /* corpo vazio ou não-JSON: o status é o que importa */
+      }
+      respostas.push({ status: r.status(), codigo });
+    });
+
+    const markRead = page.waitForResponse(
+      (r) => r.request().method() === "POST" && r.url().includes(`/api/v1/conversations/${conversationId}/mark-read`),
+      { timeout: 30_000 },
+    );
+    await page.goto(`/app/inbox?id=${conversationId}&filter=all`);
+    const resposta = await markRead;
+
+    // O servidor aceitou: nem 403, nem OUT_OF_WORK_HOURS.
+    expect(resposta.status(), "mark-read é isento do gate de expediente").toBe(200);
+    expect(respostas.map((x) => x.codigo)).not.toContain("OUT_OF_WORK_HOURS");
+
+    // E o efeito é real: o contador zerou no banco.
+    await expect
+      .poll(async () => {
+        const { data } = await admin.from("conversations").select("unread_count_for_assignee").eq("id", conversationId).single();
+        return (data as { unread_count_for_assignee: number } | null)?.unread_count_for_assignee;
+      }, { timeout: 15_000 })
+      .toBe(0);
+
+    // Enquanto isso o resto continua travado: a leitura abriu, a escrita ao cliente não.
+    await expect(page.getByTestId("composer-barrado-por-expediente")).toBeVisible();
+    await expect(page.getByLabel(/mensagem/i)).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /^assumir$/i })).toBeDisabled();
+    await captura(page, "07-agent-fora-do-horario-le-sem-403");
+  });
+
   test("a página 'fora de expediente' é informativa, mostra a janela e a abertura, e leva de volta às conversas", async ({ page }) => {
     await gravarExpediente(expedienteFora());
     await login(page, creds.users.agent!.email);

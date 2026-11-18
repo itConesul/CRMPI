@@ -42,6 +42,8 @@ const escrita = TODAS.filter((r) => TEM_ESCRITA.test(r.fonte));
 /** As isenções conhecidas, com o motivo que cada uma declara. */
 const ISENCOES_ESPERADAS: Record<string, string[]> = {
   "attendants/availability/[user_id]": ["o atendente gerencia a própria disponibilidade"],
+  // P1 (decisão do dono do produto, #67): ação automática da UI, não fala com o cliente.
+  "conversations/[id]/mark-read": ["ação automática da UI, sem efeito para o cliente"],
   "notifications/push": [
     "inscrição de push do próprio navegador",
     "inscrição de push do próprio navegador",
