@@ -40,20 +40,12 @@ em **PRs separados, todos para a `develop`**, nesta ordem:
 
 **Nenhum PR traz migration, apêndice de `baseline.sql` ou linha de `MANIFEST.md` antes da aprovação final.**
 
-## Andamento (atualizado em 2026-11-18)
-A parte desta lista que **não toca o banco** está implementada na branch `feat/67-expediente-gate` (a partir da `develop`), em PR separado deste, que foi só de spec. A spec foi aprovada e mergeada (PR #75); o PR do gate **ainda não foi aberto**. A tabela descreve o que a branch contém, não o que já está na `develop`:
+## Andamento (2026-11-17)
+A parte desta lista que **não toca o banco** foi implementada na branch `feat/67-expediente-gate` (a partir da `develop`), em PR separado deste, que é só de spec:
 
-| Tarefa | Estado na branch | Evidência |
-|---|---|---|
-| T0 | **Parcial.** (a), (e) medidas e (f) inventariada — resultados em `02-design.md` §2.1. **Abertas:** (c) Realtime com transferência e (d) rotas com client admin | §2.1 |
-| T1 | **Feita** (regra pura, virada de dia só no expediente, `opens_at`) | `lib/expediente/expediente.test.ts`, `formatar.test.ts`, `descrever.test.ts` |
-| T2 | **Parcial.** Gate fail-closed e `403 OUT_OF_WORK_HOURS` prontos; isenções declaradas em código: `attendants/availability/[user_id]` e `notifications/push`. **Falta:** o contador agregado de barrados (RNF-5, alimenta a T6), o repasse do `foraDoExpediente` ao audit das mutações de `admin`/`manager` (RF-10) a decisão sobre as 2 pontas soltas abaixo. **Conferência das 9 isenções fixas (2026-11-18, medida no código):** 7 escapam do gate **por construção**, porque não passam por `requireRole` — login/logout (`app/actions/auth/signOut.ts`, Supabase Auth), troca de organização (Server Action `setActiveOrg`), perfil, preferências e MFA (Server Actions, ver §2.1), e "marcar notificação como lida" (não há rota em `app/api/v1/notifications/`, só `push`); presença e `attendants/availability` escapam por **isenção declarada**. **Pontas soltas, para o dono do produto decidir:** (1) `POST conversations/[id]/mark-read` (zera o contador de não lidas) **é barrada hoje** e é disparada pelo inbox sozinho 1,5 s depois de abrir a conversa (`hooks/inbox/useMarkAsRead.ts`) — fora do expediente o `agent` abre a conversa para ler, como a Q1 permite, e a chamada devolve 403 a cada abertura; não dispara mensagem ao cliente, então cai no critério de liberação, mas a lista de isenções é fixa e acrescentar exige decisão visível (o teste `expediente-rotas-de-acao` a fixa); (2) `notifications/push` está isenta no código e **não consta** da lista aprovada — o motivo escrito ("inscrição de push do próprio navegador") é do mesmo tipo de perfil/preferências, mas é isenção a mais do que o dono aprovou. Das 57 rotas com método de escrita cujo `requireRole` tem piso `viewer`/`agent`, só 2 declaram isenção (3 declarações: o `push` tem duas); as outras 55 são barradas, como o fail-closed manda (a contagem inclui `settings/expediente`, cujo `PATCH` é de `admin`) | `lib/expediente/gate.test.ts`, `tests/unit/expediente-rotas-de-acao.test.ts` |
-| T2b | **Feita** (distribuição, aviso ao lead e ferramenta MCP de escalação respeitam o expediente) | `lib/routing/eligibility.test.ts`, `decide.test.ts` |
-| T5 | **Só a rota `GET/PATCH /api/v1/settings/expediente`**, que não exige migration (`business_hours` já mora em `organizations.settings`) e audita `expediente.config_changed`. `/departments*` e `reassign` seguem 🔒 | `app/api/v1/settings/expediente/route.test.ts` |
-| T7 | **Feita:** faixa no shell (`FaixaDeExpediente`), página `/app/fora-de-expediente` com porta em `navegacao-completude`, Composer e cabeçalho da conversa travados fora do horário | `tests/unit/expediente-ui-trava-as-acoes.test.tsx`, `tests/e2e/expediente-na-tela.spec.ts` |
-| T10 | **Parcial:** fragmento `.changes/expediente-gate-e-distribuicao-dormentes.md` (`capacidade_nova`). Falta procurar afirmações de estado nos docs de autoridade (DoD 16) | `pnpm release:conferir` |
+- **T0:** (a) e (e) medidas e (f) inventariada — resultados em `02-design.md` §2.1. Seguem abertas (c) Realtime com transferência e (d) rotas com client admin.
+- **T1 e T2b:** feitas (regra pura, virada de dia, distribuição, aviso ao lead, ferramenta MCP de escalação).
+- **T2:** o gate fail-closed e as 2 isenções estão feitos e provados contra o app real (e2e 7/7). **Falta:** o contador agregado de barrados (RNF-5, alimenta a T6) e o repasse do `foraDoExpediente` ao audit das mutações de `admin`/`manager` (RF-10).
+- **T7:** não iniciada.
 
-**Ainda bloqueadas (🔒, dependem de migration):** T3, T4a, T4b, T6 e T8 — cada uma em PR próprio, na ordem desta spec.
-**Sem início:** T9 (mapa vivo `expediente-e-setor`).
-
-Esta spec só marca as caixas da coluna "Feito" quando o PR do gate for mergeado na `develop`.
+Esta spec só passa a poder marcar estas tarefas como feitas quando aquele PR for mergeado.
