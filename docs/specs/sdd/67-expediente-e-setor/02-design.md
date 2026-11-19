@@ -100,6 +100,21 @@ Dois mecanismos independentes, cada um com uma **função pura** testável sem b
     atendente segue rejeitando a virada e `isWithinSchedule` sem a opção trata `end < start` como antes.
     **A faixa da tela (T7)** deve mostrar a janela como o admin a escreveu (`22:00–06:00`) e o
     `opens_at` do 403, para janela que vira o dia também.
+- **Fora desta entrega, registrado a pedido do review do #88 (menores 1, 3 e 4; medido em 2026-11-19):**
+  - **Sem cache da leitura do expediente.** Cada escrita de `agent` faz 1 SELECT em `organizations`
+    (`gate.ts:63`, em até 169 rotas com `requireRole`) e `loadEligibleAttendants` faz 1 por chamada
+    (`eligibles.ts:109`). `business_hours` só é gravado por `PATCH /settings/expediente`. Um cache em
+    memória não é invalidado entre processos (`app` e `worker` são separados), então só um TTL
+    funcionaria, e com ele um expediente alterado leva até o TTL para valer. **TTL e invalidação são
+    decisão de produto que esta spec não tem**; fica para issue.
+  - **A UI trava só parte das ações.** A trava está em `Composer.tsx` e `ConversationHeader.tsx`. Os
+    arquivos de UI que escrevem em lead, tag, contato ou tarefa — `CRMSidePanel`, `useBoard`,
+    `useTasks`, `PropostasDeDado` — não a têm: o `agent` fora do horário pode clicar e recebe o 403
+    `OUT_OF_WORK_HOURS` cru. **A contagem é por padrão de texto (`method: "POST"` etc.) e pode estar
+    incompleta.** O servidor barra do mesmo jeito; o que falta é a UI avisar antes do clique.
+  - **Dicionário `es`:** faltam `sáb`, `a` e `e` em `lib/i18n/dicionario.ts` (`seg` e `dom` existem), então
+    a frase do horário em espanhol sai com esses termos em português. Antes de acrescentar `a` e `e`,
+    conferir se as chaves curtas não traduzem outra string igual.
 - **Default = sem restrição** (`windows` vazio = 24/7). Uma instalação que atualiza pelo `update.sh`
   continua operando; o expediente só passa a valer quando o admin o configura (primeira impressão).
 - **Falha aberta:** config ausente, fuso inválido ou shape torto = sem expediente. Uma configuração
@@ -712,5 +727,5 @@ rota contorna a regra, depois a regra é ligada.
 | **Cliente escreve às 22h e ninguém é barrado nem avisado** | Fora deste PRD: o que o cliente recebe é PRD-07 (#73). Até lá a conversa fica sem dono até a abertura — a IA, se ativa, mantém a própria janela |
 | **Realtime não remover da tela** a conversa que saiu do escopo por transferência (não há evento para quem perdeu o acesso), e `DELETE` que não passa pela RLS (só leva o id) | Medir na T0 e provar na T8 com 2 navegadores (§1). Mitigação desenhada: refetch ao voltar o foco da janela, que a lista já faz |
 | **Função por linha lenta** com volume | `explain (analyze, buffers)` da listagem com ~100 mil conversas na T4b; se não bastar, policy com `exists` inline (§1) |
-| **Fuso/horário de verão** | `localMoment` usa `Intl` com o fuso IANA; teste com data de virada |
+| **Fuso/horário de verão** | `localMoment` usa `Intl` com o fuso IANA; teste com data de virada. **Limitação conhecida e medida (2026-11-19):** `proximaAbertura` soma minutos corridos, então numa semana com virada de horário de verão a abertura anunciada erra **60 min** (sonda descartável: `Europe/Madrid`, sábado 27/03/2027 20:00, janela seg 09:00 → erro 60 min; a mesma conta sem virada e em `America/Sao_Paulo` → 0 min). Só afeta **exibição** (`opens_at` do 403 e `descreverExpediente`); a decisão de barrar usa `dentroDoExpediente`, que não soma minutos. Não corrigido neste PR (review do #88, menor 2); consertar é calcular no fuso da organização e testar com fusos de horário de verão |
 | **Escopo crescer** (leads, contatos, expediente por setor) | Fora de escopo explícito: Q6 (risco aceito, #80) e Q9 (evolução prevista, §4.1) |
