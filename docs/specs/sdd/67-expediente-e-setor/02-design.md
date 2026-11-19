@@ -218,16 +218,160 @@ Dois mecanismos independentes, cada um com uma **função pura** testável sem b
   com validade de 48 h) no mesmo Redis que o app já exige (`serverless-redis-http`; sem env nova). O
   contador alimenta o cabeçalho da seção Expediente (§7). **Se o Redis não responder, o contador fica
   em `—` e a regra continua valendo**: contar nunca pode bloquear nem liberar ninguém.
+  - **A chave nunca fica sem validade (invariante).** Foi a forma que o primeiro `contador.ts`
+    escolheu — `INCR` e, **só quando o total é 1**, `EXPIRE` — que não a garante: se o `EXPIRE` do
+    primeiro incremento falhar (Redis cai entre os dois comandos), a chave fica **para sempre sem
+    validade**, e o incremento seguinte já devolve 2 e nunca mais tenta pôr a validade. A spec exige a
+    invariante, não um comando: **nenhuma falha parcial pode deixar a chave sem validade, nem
+    perpetuamente**. Formas que a cumprem: (1) `INCR` e `EXPIRE` na mesma transação/`pipeline`, ou (2)
+    `EXPIRE <chave> <48 h> NX` depois de **todo** `INCR` (idempotente: só age quando a chave ainda não
+    tem validade, e por isso **se cura sozinho** no incremento seguinte). `NX` exige Redis 7.0 — o
+    `docker-compose.prod.yml` fixa `redis:7-alpine` (`grep -n "image:.*redis" docker-compose.prod.yml`).
+    **Não medido aqui:** se o `serverless-redis-http` fixado por digest aceita transação (`MULTI`); a
+    implementação **prova** a forma escolhida contra o Redis do compose, não contra um mock.
+    **Estado em 2026-11-19:** o PR do gate (#88, `b8d6886`) adotou `INCR` + `EXPIRE … NX` num
+    `pipeline` em **toda** contagem, com teste de unidade que usa um Redis falso. **A prova contra o
+    Redis do compose ainda não foi feita** — o teste do #88 é mock, e é exatamente o que este
+    parágrafo diz que não basta.
+  - **O contador tem leitor nomeado, ou não é escrito.** O leitor é `lerBarradosDoDia`
+    (`lib/expediente/contador.ts`), lido pelo cabeçalho da seção Expediente (T6). Só que a T6 é a
+    quinta na ordem de `04-tarefas.md` (depois de T4a, T3, T4b e T5): sem decisão, o contador seria
+    **escrito e não lido** por vários PRs — "evento sem consumer", o anti-pattern 3 do `CLAUDE.md`, e
+    o DoD 13 ("aparece na tela") sem resposta. Como o contador só guarda "hoje" (validade de 48 h),
+    escrever antes da T6 **não preserva histórico nenhum**. Três saídas, **pendentes do dono do
+    produto** (`05-revisao.md`):
+    - **(a)** Aceitar o intervalo, com o leitor (T6) e o prazo escritos. Sem nada visível até lá.
+    - **(b) — recomendada:** o `GET /api/v1/settings/expediente` devolve `barrados_hoje` (número, ou
+      `null` com o Redis fora) **só a `admin`/`manager`**; `agent` e `viewer` recebem `null`. O laço fecha
+      já, o código existente é reaproveitado, e a tela da T6 só passa a consumir o que a API já dá.
+      Custo: o contrato da rota ganha um campo que depende do papel.
+    - **(c)** Tirar a escrita do contador do PR do gate e entregá-la **junto com** o leitor, na T6.
+      Nada escrito sem leitor e nada se perde (só "hoje"); o custo é descartar código já escrito e
+      testado para reescrevê-lo depois.
 - **Na tela:** uma faixa no shell do app (mesmo lugar de `FaixaDeAvisos`) mostra a janela da empresa
   e a próxima abertura, e os controles de ação ficam desabilitados com o motivo. Calculado no
   servidor pela mesma função pura, para cliente e servidor não divergirem.
-- **Bypass auditado (RF-10).** Quando `admin`/`manager` passam pelo gate **fora do expediente**,
-  `requireRole` devolve `foraDoExpediente: true` no resultado, e a rota o repassa para o `audit()` que
-  **já** grava a mutação (`metadata.fora_do_expediente = true`). Não há linha nova: a doutrina de
-  audit manda auditar quando há efeito, e uma linha emitida no gate registraria tentativas que a
-  rota depois recusa por outro motivo. Dentro do expediente nada é acrescentado. Como as rotas de
-  ação já chamam `audit()` após o sucesso, o custo é um campo; se alguma não chamar, a varredura de
-  T2 a reprova.
+- **Bypass auditado (RF-10) — mecanismo PROPOSTO em 2026-11-18, pendente do ok do dono do produto
+  (`05-revisao.md`); troca o texto anterior, "o `requireRole` devolve `foraDoExpediente` e a rota o
+  repassa ao `audit()`".** Quem decide é o próprio `audit()` (`lib/audit/index.ts`), na hora de gravar
+  a linha da mutação que **já** vai gravar: acrescenta `metadata.fora_do_expediente = true`. Não há
+  linha nova — a doutrina de audit manda auditar quando há efeito, e uma linha emitida no gate
+  registraria tentativas que a rota depois recusa por outro motivo. Dentro do expediente nada é
+  acrescentado. O `requireRole` **não muda** por causa do RF-10 e nenhuma rota é editada.
+
+  **Regra, na ordem em que é avaliada (do barato ao caro; a primeira que falhar encerra sem marcar):**
+  1. **Ator humano de sessão numa organização:** `actorUserId` e `organizationId` presentes e
+     `actorApiTokenId` ausente. Worker, cron, Bearer, MCP, IA e ingestão ficam de fora.
+  2. **É uma mutação:** o método HTTP carimbado pelo `proxy.ts` (T0(e), mesmo cabeçalho que o gate
+     lê) é de escrita. **Método ausente NÃO marca** — o oposto do gate: o gate é fail-closed para
+     barrar, o campo é fail-open para marcar. Isso deixa de fora, sem regra extra, tudo o que roda sem
+     requisição (workers) e as rotas `GET` que auditam leitura. A linha de recusa `authz.denied`
+     (emitida pelo `requireRole`) é excluída por nome: é a recusa, não a ação. O carimbo **chega às
+     Server Actions** (`POST`, medido — ver "Server Actions" abaixo), por isso a família de sessão
+     `auth.` também é excluída por nome (proposta pendente do dono).
+  3. **O expediente da organização**, lido pelo **mesmo carregador do gate** (`carregarExpediente`),
+     com **cache por organização e TTL curto — proposta: 30 s**, em memória do processo, descartado
+     quando `PATCH /settings/expediente` roda no mesmo processo. Sem expediente configurado, ou
+     inválido, ou dentro do horário: não marca. Dentro do expediente o custo é só o acerto de cache.
+  4. **O papel, só se já estiver fora do expediente:** `rpc("fn_user_role_in_org", { p_org })` com o
+     client da sessão — a **mesma fonte** que o `requireRole` usa (`lib/auth/require-role.ts`), nunca
+     um snapshot. **Guarda de identidade, antes da `rpc`:** a sessão tem de SER o ator —
+     `(await db.auth.getUser()).data.user?.id === entry.actorUserId`, a mesma conferência que o
+     `audit()` já faz antes de `readSupportContext` (`lib/audit/index.ts:73-74`, medido em
+     2026-11-19). A `rpc` usa o `auth.uid()` da sessão, então sem a guarda um `actorUserId` diferente
+     do usuário da sessão leria o papel de OUTRA pessoa: a marca sairia errada, ou deixaria de sair.
+     Sessão que não é o ator → não marca (e a linha segue sendo gravada). Só `admin` e `manager`
+     marcam. **`agent` nunca marca, nem em rota isenta**
+     (`mark-read`, `attendants/availability`): isenção é "o `agent` não é barrado ali", não é bypass.
+     Platform admin sem vínculo com a organização devolve papel `null` e não marca; a sessão de suporte
+     já carrega `support_session_id` no `metadata` (decisão **aberta** para o dono do produto, abaixo).
+  5. **Falha nunca atrapalha:** erro ou tempo esgotado em 3 ou 4 → não marca e segue; o `try/catch`
+     fica dentro do `audit()` e a linha é gravada sem o campo. Registra `logger.warn`, **sem** alerta
+     Sentry por mutação (seria ruído proporcional ao tráfego); falha de *gravação* do audit continua
+     alertando, como hoje. **Sinal agregado (proposta, review do #87 item 4):** só o `warn` não
+     basta — se a leitura falhar sempre, a marca nunca sai e ninguém percebe. Além do `warn` por
+     falha, o `audit()` emite **um** aviso por organização e por dia, por processo ("a marca do RF-10
+     está falhando"), com a contagem acumulada, guardado no mesmo mapa em memória do cache da regra 3.
+     Não é alerta por mutação: o ruído fica limitado a 1 por organização/dia/processo. A prova de que
+     o caminho marca continua sendo o e2e da T2c; o aviso cobre o que o e2e não vê, a falha em
+     produção depois do deploy.
+  - **Uma só verdade para a decisão.** "Fora do expediente **e** `admin`/`manager`" **já é uma função
+    pura**, escrita na T1: `expedienteBarra({ papel, config, agora }).bypassAuditado`
+    (`lib/expediente/expediente.ts`, no PR do gate). O `audit()` **chama essa função**; não reimplementa
+    a conta. Para não pagar a `rpc` do papel dentro do expediente, ele pergunta antes
+    `dentroDoExpediente(config, agora)` (a mesma que `expedienteBarra` usa por dentro) e só busca o
+    papel se estiver fora. Sem isso `bypassAuditado` fica calculado e sem consumidor (anti-pattern 3
+    do `CLAUDE.md`), e a regra existiria em dois lugares que divergem no primeiro ajuste de fuso.
+  - **Custo:** dentro do expediente, nenhuma E/S além do cache. Fora dele, **uma** `rpc` por mutação
+    auditada de sessão humana — o `audit()` já faz `getUser()` e `readSupportContext` por chamada
+    (`lib/audit/index.ts`), então o custo não é categoria nova.
+  - **Aceito:** o relógio é o do momento do `audit()`, não o do gate. Na fronteira do expediente uma
+    ação iniciada às 17:59:59 e auditada às 18:00:01 sai marcada. Também aceito: até 30 s de atraso
+    para a regra enxergar um expediente recém-alterado em OUTRO processo.
+  - **Server Actions: medido, o carimbo CHEGA. Uma versão anterior deste texto (e do comentário na
+    #67) afirmava o contrário e foi retratada em 2026-11-18.** Ela dizia que o carimbo cobre só
+    `/api/v1` e que Server Actions "não marcam". Falso, por duas medidas:
+    (1) **o matcher do `proxy.ts` cobre tudo, menos estáticos** —
+    `git show feat/67-expediente-gate:proxy.ts | grep -n -A3 "matcher"` →
+    `"/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js)$).*)"`
+    — e o carimbo é posto **antes** do retorno de rota pública; (2) **medido contra o app real**
+    (build de produção, Supabase local, 2026-11-18): uma Server Action de sonda descartável, não
+    commitada, leu `(await headers()).get("x-metodo-http")` e recebeu **`"POST"`**. A regra 2 portanto
+    **alcança** as Server Actions, sem código extra: `grep -rlE "\baudit\(" app/actions --include=*.ts --exclude=*.test.ts | wc -l`
+    → **32 arquivos** (em `d1d3c30`), mais **2** (`grep -rlE "^.use server.;?" app --include=*.ts --include=*.tsx | xargs grep -lE "\baudit\(" | grep -v "^app/actions/"`
+    → `app/app/ai/agents/_actions.ts` e `app/app/ai/agents/[id]/_actions.ts`), incluindo as de `admin`
+    que mais importam (`apagarDadosOperacionaisDaOrganizacao`, `updateTenant`, `updateBranding`,
+    `updatePipelineConfig`). **Não foi medido** se o carimbo também chega a uma Server Action
+    disparada por navegação sem JavaScript (envio nativo de formulário); a T2c prova com o e2e.
+  - **O que sobra no lugar do "ponto 6" antigo — ruído, não furo:** Server Actions de **sessão e
+    perfil** (logout, idioma, o próprio perfil) também são `POST` com ator humano, então um `admin` que
+    sai do sistema às 23h teria a linha de `auth.logout` marcada como "fora do expediente". Isso não é
+    bypass de ação de atendimento, é ruído que desvaloriza a marca. **Proposta (pendente do dono):** a
+    regra 2 exclui por nome a família `auth.` (`grep -c '^  "auth\.' lib/audit/actions.ts` → 19
+    códigos) além de `authz.denied`; a T2c mede que outras famílias de sessão/perfil entram
+    (`profile.*`, `onboarding.*`) e fecha a lista numa **constante compartilhada**, com teste.
+  - **Decisão aberta (dono do produto):** sessão de suporte/impersonação e platform admin **não**
+    marcam nesta proposta (RF-6 fala de `admin`/`manager` do tenant; o suporte já é rastreado por
+    `support_session_id`). Se o dono quiser marcá-los também, é uma linha na regra 4.
+  - **Vigia:** só `lib/audit/index.ts` pode inserir em `api_audit_log`; hoje há **um escritor que o
+    contorna**, `lib/ai/handoff/orchestrator.ts` (ação da IA, sem ator humano, fora da regra por
+    construção). A varredura de `03-testes.md` o nomeia numa allowlist com motivo que só encolhe.
+
+  **Alternativas recusadas, com a medida que as recusa** (rode os comandos; os números envelhecem,
+  os comandos não):
+  - **"A rota repassa" (a letra da spec anterior).** Reprovada por tamanho e por modo de falha.
+    `grep -rlE "requireRole\(" app/api/v1 --include=route.ts | wc -l` → **168** rotas;
+    `grep -rhoE "\baudit\(" app/api/v1 --include=route.ts | wc -l` → **187** chamadas nelas, mas
+    `grep -rhoE "\baudit\(" app lib workers --include=*.ts --include=*.tsx --exclude=*.test.ts --exclude=*.test.tsx | wc -l`
+    → **315** no total, e `grep -rlE "\baudit\(" app lib workers --include=*.ts --include=*.tsx --exclude=*.test.ts --exclude=*.test.tsx | grep -v "/route.ts$" | wc -l`
+    → **68 arquivos fora de `route.ts`** chamam `audit()` (helpers e libs). Repassar exigiria alterar
+    centenas de pontos e as assinaturas desses helpers, e **a rota esquecida gera bypass sem rastro**:
+    nada falha, a marca só não existe. É o modo de falha que a doutrina de audit mais teme.
+    (Medido em `d1d3c30`, `develop`, em 2026-11-18.)
+  - **Canal por requisição com `AsyncLocalStorage.enterWith()` dentro do `requireRole`.** Recusado
+    porque o resultado **depende da versão do Node e a falha é silenciosa** (o campo nunca é gravado,
+    nenhum teste de unidade acusa). Medido com o script abaixo, em Node 22.23.5 (`.nvmrc` = 22):
+    sem flag, o valor **volta** ao chamador depois do `await` nas quatro variantes (I/O real, três
+    níveis, dentro de outro `als.run()`, lido num `setImmediate` como o `void audit()`); com
+    `--experimental-async-context-frame`, **não volta em nenhuma** (`null` nas quatro). Essa flag
+    liga a implementação `AsyncContextFrame`, que o Node 24 adota por padrão (informação da
+    documentação do Node, **não medida aqui**), e `package.json` declara `"node": ">=22"` e as imagens
+    usam `node:22-alpine`. Ou seja: funciona hoje, e para de funcionar numa troca de base de imagem.
+    Não foi medido dentro do runtime do Next.
+    ```js
+    // als-prova.mjs — rode: node als-prova.mjs  e  node --experimental-async-context-frame als-prova.mjs
+    import { AsyncLocalStorage } from "node:async_hooks";
+    import { setTimeout as sleep } from "node:timers/promises";
+    const als = new AsyncLocalStorage();
+    async function nivel2() { await sleep(5); als.enterWith({ fora: true }); }
+    async function requireRoleFake() { await sleep(5); await nivel2(); }
+    async function handler() { await requireRoleFake(); return als.getStore(); }
+    console.log(process.version, JSON.stringify((await handler()) ?? null));
+    // Node 22.23.5 sem flag → {"fora":true}   |   com a flag → null
+    ```
+    (As quatro variantes citadas acima foram medidas num script descartável, não commitado; o bloco é
+    a forma mínima, **rodada nas duas formas em 2026-11-18**, e reproduz a divergência. Quem
+    implementar roda as duas antes de confiar.)
 - **Distribuição (RF-12).** `eligibility.ts` hoje decide "disponível ∧ janela própria ∧ folga"
   (`isWithinSchedule` sobre `attendant_availability.schedule`). O expediente da organização entra
   como **mais uma conjunção**, via parâmetro opcional `expediente` em `lib/routing/eligibility.ts`
