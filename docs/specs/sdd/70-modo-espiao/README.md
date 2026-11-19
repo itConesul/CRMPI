@@ -1,7 +1,7 @@
 # PRD-04 · Modo espião: supervisão sem zerar o não lido do titular
 
 **Issue:** #70 — https://github.com/itConesul/CRMPI/issues/70
-**Estado:** `rascunho`  <!-- rascunho | em-revisao | aprovada | implementando | concluida | substituida -->
+**Estado:** `em-revisao`  <!-- rascunho | em-revisao | aprovada | implementando | concluida | substituida -->
 **Autor:** cMoreiraSul (com Claude)
 **Medido em:** `365a670` (develop, 2026-11-19)
 
