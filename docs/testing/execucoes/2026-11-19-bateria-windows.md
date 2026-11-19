@@ -29,6 +29,201 @@ codigo_alterado: nenhum
 
 Prova o quê: tipagem, lint, unitários, baseline do banco (install e update), isolamento RLS entre organizações, kit de instalação e uma parte do frontend. **Não prova**: a instalação fresca (`vps-fresh-onboarding`, a P0), nem as 51 specs da seção 6.
 
+### 1.1 Matriz do que foi testado
+
+**Por camada** — o que cada comando exercita e o que ficou de fora.
+
+| Camada | Comando | Exercita | Executado | ✅ | ❌ | Não coberto nesta rodada |
+|---|---|---|---|---|---|---|
+| Tipagem | `pnpm typecheck` | TypeScript estrito | sim | passou | — | — |
+| Estilo e regras | `pnpm lint`, `lint:channels`, `lint:role-rank` | ESLint, restrição de canal, ordem dos papéis | sim | 3 de 3 | — | — |
+| Release | `pnpm release:conferir` | forma dos fragmentos `.changes/` | sim | — | — | código 1 esperado (branch só de docs) |
+| Unitário | `pnpm test:unit` | 758 arquivos, 8103 casos (1 expected fail) | sim, integral | 8096 | 6 | só no Windows; o CI Linux não foi consultado |
+| Banco | `pnpm test:db` | baseline install e update, RLS entre 2 organizações, varredura de `security definer` | sim, integral | 1483 | 0 | — |
+| Kit de instalação | `pnpm test:shell` | `update.sh`, entrypoint do scheduler, validadores | sim (6 scripts, um a um) | 5 de 6 scripts | 1 prova | — |
+| Build | `pnpm e2e:build` | build de produção com o Supabase local; host de produção fora do bundle | sim | passou | — | — |
+| E2E (frontend) | `playwright test` | jornadas pela tela | **parcial: 50 de 101 specs** | 133 | 15 | 51 specs não carregaram (`npx` no Windows) |
+| Instalação fresca | `vps-fresh-onboarding` (P0) | onboarding do dono num banco novo | **não** | — | — | precisa de banco recém-instalado; `FORA_DO_CI` |
+
+**Por área do E2E** — agrupado pelo prefixo do nome da spec.
+
+| Área | Specs | Rodaram | Não rodaram | ✅ | ❌ | ⏭️ |
+|---|---|---|---|---|---|---|
+| agenda | 18 | 11 | 7 | 44 | 2 | 2 |
+| followup | 8 | 2 | 6 | 2 | 0 | 0 |
+| inbox | 5 | 4 | 1 | 5 | 0 | 2 |
+| agente | 4 | 1 | 3 | 4 | 1 | 0 |
+| central | 3 | 3 | 0 | 6 | 2 | 0 |
+| j20 | 3 | 0 | 3 | 0 | 0 | 0 |
+| qa | 3 | 1 | 2 | 1 | 0 | 0 |
+| gatilho | 2 | 0 | 2 | 0 | 0 | 0 |
+| vps | 2 | 1 | 1 | 0 | 1 | 11 |
+| acervo | 1 | 1 | 0 | 2 | 0 | 4 |
+| auth | 1 | 1 | 0 | 4 | 0 | 0 |
+| automacao | 1 | 0 | 1 | 0 | 0 | 0 |
+| autonomia | 1 | 1 | 0 | 0 | 1 | 0 |
+| cadastro | 1 | 1 | 0 | 0 | 1 | 1 |
+| capacidades | 1 | 0 | 1 | 0 | 0 | 0 |
+| confirmar | 1 | 0 | 1 | 0 | 0 | 0 |
+| contato | 1 | 0 | 1 | 0 | 0 | 0 |
+| conversa | 1 | 0 | 1 | 0 | 0 | 0 |
+| credenciais | 1 | 1 | 0 | 1 | 0 | 0 |
+| degradacao | 1 | 0 | 1 | 0 | 0 | 0 |
+| distribuicao | 1 | 0 | 1 | 0 | 0 | 0 |
+| encerramento | 1 | 1 | 0 | 2 | 0 | 0 |
+| error | 1 | 1 | 0 | 7 | 0 | 0 |
+| escalacao | 1 | 0 | 1 | 0 | 0 | 0 |
+| escopo | 1 | 0 | 1 | 0 | 0 | 0 |
+| historico | 1 | 0 | 1 | 0 | 0 | 0 |
+| i18n | 1 | 1 | 0 | 0 | 1 | 0 |
+| icone | 1 | 1 | 0 | 3 | 0 | 0 |
+| importar | 1 | 0 | 1 | 0 | 0 | 0 |
+| interface | 1 | 1 | 0 | 1 | 0 | 0 |
+| invite | 1 | 0 | 1 | 0 | 0 | 0 |
+| juntar | 1 | 0 | 1 | 0 | 0 | 0 |
+| kanban | 1 | 0 | 1 | 0 | 0 | 0 |
+| lote | 1 | 0 | 1 | 0 | 0 | 0 |
+| marca | 1 | 0 | 1 | 0 | 0 | 0 |
+| mfa | 1 | 1 | 0 | 4 | 0 | 0 |
+| moeda | 1 | 1 | 0 | 1 | 1 | 0 |
+| navegacao | 1 | 1 | 0 | 12 | 0 | 0 |
+| notificacoes | 1 | 1 | 0 | 2 | 0 | 0 |
+| olhar | 1 | 1 | 0 | 1 | 0 | 0 |
+| organizacoes | 1 | 1 | 0 | 1 | 0 | 0 |
+| password | 1 | 1 | 0 | 1 | 0 | 0 |
+| pipelines | 1 | 0 | 1 | 0 | 0 | 0 |
+| pre | 1 | 1 | 0 | 0 | 1 | 0 |
+| primeiro | 1 | 1 | 0 | 6 | 0 | 0 |
+| prova | 1 | 1 | 0 | 5 | 3 | 0 |
+| queue | 1 | 0 | 1 | 0 | 0 | 0 |
+| rbac | 1 | 0 | 1 | 0 | 0 | 0 |
+| relatorio | 1 | 0 | 1 | 0 | 0 | 0 |
+| relogio | 1 | 1 | 0 | 0 | 1 | 1 |
+| reset | 1 | 1 | 0 | 1 | 0 | 0 |
+| retorno | 1 | 0 | 1 | 0 | 0 | 0 |
+| risk | 1 | 0 | 1 | 0 | 0 | 0 |
+| roteamento | 1 | 1 | 0 | 1 | 0 | 0 |
+| signup | 1 | 1 | 0 | 1 | 0 | 0 |
+| smoke | 1 | 1 | 0 | 1 | 0 | 0 |
+| suporte | 1 | 1 | 0 | 1 | 0 | 0 |
+| system | 1 | 0 | 1 | 0 | 0 | 0 |
+| troca | 1 | 0 | 1 | 0 | 0 | 0 |
+| webhooks | 1 | 0 | 1 | 0 | 0 | 0 |
+| wizard | 1 | 1 | 0 | 13 | 0 | 0 |
+| zona | 1 | 0 | 1 | 0 | 0 | 0 |
+| **Total** | **101** | **50** | **51** | **133** | **15** | **21** |
+
+<details>
+<summary><b>Por spec</b> — as 101 specs de `tests/e2e/`, com a situação de cada uma</summary>
+
+| Spec | Situação | ✅ | ❌ | ⏭️ |
+|---|---|---|---|---|
+| `acervo-de-conhecimento.spec.ts` | ⚠️ passou com skipped | 2 | 0 | 4 |
+| `agenda-caminho-ate-os-horarios.spec.ts` | ✅ passou | 2 | 0 | 0 |
+| `agenda-conectar-google.spec.ts` | ⚠️ passou com skipped | 1 | 0 | 1 |
+| `agenda-escopo-da-organizacao.spec.ts` | 🚫 não carregou (`npx` no Windows) | | | |
+| `agenda-google-meet.spec.ts` | ✅ passou | 2 | 0 | 0 |
+| `agenda-google-sync.spec.ts` | ✅ passou | 2 | 0 | 0 |
+| `agenda-google-volta-do-consentimento.spec.ts` | ⚠️ passou com skipped | 2 | 0 | 1 |
+| `agenda-google-volta-nao-desloga.spec.ts` | ✅ passou | 1 | 0 | 0 |
+| `agenda-grade-interativa.spec.ts` | 🚫 não carregou (`npx` no Windows) | | | |
+| `agenda-kit-visual.spec.ts` | ✅ passou | 20 | 0 | 0 |
+| `agenda-marcar-pela-tela.spec.ts` | 🚫 não carregou (`npx` no Windows) | | | |
+| `agenda-ocupacao-do-google-na-grade.spec.ts` | 🚫 não carregou (`npx` no Windows) | | | |
+| `agenda-ocupacao-do-google-no-historico.spec.ts` | ✅ passou | 1 | 0 | 0 |
+| `agenda-painel-cabe-na-tela.spec.ts` | 🚫 não carregou (`npx` no Windows) | | | |
+| `agenda-presenca-recuperacao.spec.ts` | ❌ falhou | 6 | 1 | 0 |
+| `agenda-remarcar-e-cancelar.spec.ts` | 🚫 não carregou (`npx` no Windows) | | | |
+| `agenda-tela-do-produto.spec.ts` | ✅ passou | 7 | 0 | 0 |
+| `agenda-tipos-de-agendamento.spec.ts` | 🚫 não carregou (`npx` no Windows) | | | |
+| `agenda-ver-na-agenda.spec.ts` | ❌ falhou | 0 | 1 | 0 |
+| `agente-marca-consulta.spec.ts` | 🚫 não carregou (`npx` no Windows) | | | |
+| `agente-novo-e-uso.spec.ts` | ❌ falhou | 4 | 1 | 0 |
+| `agente-organiza-operacao.spec.ts` | 🚫 não carregou (`npx` no Windows) | | | |
+| `agente-papeis-operador.spec.ts` | 🚫 não carregou (`npx` no Windows) | | | |
+| `auth.spec.ts` | ✅ passou | 4 | 0 | 0 |
+| `automacao-diz-a-verdade.spec.ts` | 🚫 não carregou (`npx` no Windows) | | | |
+| `autonomia-assistida.spec.ts` | ❌ falhou | 0 | 1 | 0 |
+| `cadastro-sem-confirmacao-de-email.spec.ts` | ❌ falhou | 0 | 1 | 1 |
+| `capacidades-do-agente.spec.ts` | 🚫 não carregou (`npx` no Windows) | | | |
+| `central-avisos-destino.spec.ts` | ✅ passou | 4 | 0 | 0 |
+| `central-avisos-resolver-em-lote.spec.ts` | ✅ passou | 2 | 0 | 0 |
+| `central-de-avisos-capacidades.spec.ts` | ❌ falhou | 0 | 2 | 0 |
+| `confirmar-dado-do-contato.spec.ts` | 🚫 não carregou (`npx` no Windows) | | | |
+| `contato-salva-email.spec.ts` | 🚫 não carregou (`npx` no Windows) | | | |
+| `conversa-vira-lead.spec.ts` | 🚫 não carregou (`npx` no Windows) | | | |
+| `credenciais-de-ia.spec.ts` | ✅ passou | 1 | 0 | 0 |
+| `degradacao-silenciosa.spec.ts` | 🚫 não carregou (`npx` no Windows) | | | |
+| `distribuicao-atendimento.spec.ts` | 🚫 não carregou (`npx` no Windows) | | | |
+| `encerramento-atendimento.spec.ts` | ✅ passou | 2 | 0 | 0 |
+| `error-pages.spec.ts` | ✅ passou | 7 | 0 | 0 |
+| `escalacao-ciclo.spec.ts` | 🚫 não carregou (`npx` no Windows) | | | |
+| `escopo-de-funil-do-agente.spec.ts` | 🚫 não carregou (`npx` no Windows) | | | |
+| `followup-builder.spec.ts` | 🚫 não carregou (`npx` no Windows) | | | |
+| `followup-dossie.spec.ts` | 🚫 não carregou (`npx` no Windows) | | | |
+| `followup-journey.spec.ts` | 🚫 não carregou (`npx` no Windows) | | | |
+| `followup-linguagem.spec.ts` | ✅ passou | 1 | 0 | 0 |
+| `followup-publicado-abre-no-construtor.spec.ts` | ✅ passou | 1 | 0 | 0 |
+| `followup-queue.spec.ts` | 🚫 não carregou (`npx` no Windows) | | | |
+| `followup-ramos.spec.ts` | 🚫 não carregou (`npx` no Windows) | | | |
+| `followup-tempo-adaptativo.spec.ts` | 🚫 não carregou (`npx` no Windows) | | | |
+| `gatilho-de-caso.spec.ts` | 🚫 não carregou (`npx` no Windows) | | | |
+| `gatilho-de-etapa.spec.ts` | 🚫 não carregou (`npx` no Windows) | | | |
+| `historico-de-captacao.spec.ts` | 🚫 não carregou (`npx` no Windows) | | | |
+| `i18n-espanhol-na-tela.spec.ts` | ❌ falhou | 0 | 1 | 0 |
+| `icone-da-marca.spec.ts` | ✅ passou | 3 | 0 | 0 |
+| `importar-leads-planilha.spec.ts` | 🚫 não carregou (`npx` no Windows) | | | |
+| `inbox-abas-espelham-o-comando.spec.ts` | ✅ passou | 1 | 0 | 0 |
+| `inbox-quem-manda.spec.ts` | 🚫 não carregou (`npx` no Windows) | | | |
+| `inbox-responder-citando.spec.ts` | ⏭️ só skipped | 0 | 0 | 2 |
+| `inbox-scope.spec.ts` | ✅ passou | 3 | 0 | 0 |
+| `inbox-tempo-real.spec.ts` | ✅ passou | 1 | 0 | 0 |
+| `interface-por-vinculo.spec.ts` | ✅ passou | 1 | 0 | 0 |
+| `invite-lifecycle.spec.ts` | 🚫 não carregou (`npx` no Windows) | | | |
+| `j20-elegibilidade-atendimento-manual.spec.ts` | 🚫 não carregou (`npx` no Windows) | | | |
+| `j20-elegibilidade-followup.spec.ts` | 🚫 não carregou (`npx` no Windows) | | | |
+| `j20-elegibilidade-respondi.spec.ts` | 🚫 não carregou (`npx` no Windows) | | | |
+| `juntar-contatos-duplicados.spec.ts` | 🚫 não carregou (`npx` no Windows) | | | |
+| `kanban-owner-filter.spec.ts` | 🚫 não carregou (`npx` no Windows) | | | |
+| `lote-no-quadro-do-funil.spec.ts` | 🚫 não carregou (`npx` no Windows) | | | |
+| `marca-logo.spec.ts` | 🚫 não carregou (`npx` no Windows) | | | |
+| `mfa-opcional.spec.ts` | ✅ passou | 4 | 0 | 0 |
+| `moeda-da-organizacao.spec.ts` | ❌ falhou | 1 | 1 | 0 |
+| `navegacao.spec.ts` | ✅ passou | 12 | 0 | 0 |
+| `notificacoes-diz-o-que-falta.spec.ts` | ✅ passou | 2 | 0 | 0 |
+| `olhar-telas-do-epico.spec.ts` | ✅ passou | 1 | 0 | 0 |
+| `organizacoes-criacao-convite-e-cache.spec.ts` | ✅ passou | 1 | 0 | 0 |
+| `password-recovery.spec.ts` | ✅ passou | 1 | 0 | 0 |
+| `pipelines-gestao.spec.ts` | 🚫 não carregou (`npx` no Windows) | | | |
+| `pre-go-live-whatsapp.spec.ts` | ❌ falhou | 0 | 1 | 0 |
+| `primeiro-acesso-sem-organizacao.spec.ts` | ✅ passou | 6 | 0 | 0 |
+| `prova-painel-provedores.spec.ts` | ❌ falhou | 5 | 3 | 0 |
+| `qa-agente-usa-as-maos.spec.ts` | 🚫 não carregou (`npx` no Windows) | | | |
+| `qa-selo-no-funil-usado.spec.ts` | ✅ passou | 1 | 0 | 0 |
+| `qa-telas-descobertas-w4.spec.ts` | 🚫 não carregou (`npx` no Windows) | | | |
+| `queue-assign.spec.ts` | 🚫 não carregou (`npx` no Windows) | | | |
+| `rbac-roles.spec.ts` | 🚫 não carregou (`npx` no Windows) | | | |
+| `relatorio-de-atividades.spec.ts` | 🚫 não carregou (`npx` no Windows) | | | |
+| `relogio-http-cron-externo.spec.ts` | ❌ falhou | 0 | 1 | 1 |
+| `reset-password-mfa.spec.ts` | ✅ passou | 1 | 0 | 0 |
+| `retorno-anti-morte.spec.ts` | 🚫 não carregou (`npx` no Windows) | | | |
+| `risk-radar.spec.ts` | 🚫 não carregou (`npx` no Windows) | | | |
+| `roteamento-por-canal.spec.ts` | ✅ passou | 1 | 0 | 0 |
+| `signup-journey.spec.ts` | ✅ passou | 1 | 0 | 0 |
+| `smoke.spec.ts` | ✅ passou | 1 | 0 | 0 |
+| `suporte-temporario.spec.ts` | ✅ passou | 1 | 0 | 0 |
+| `system-update.spec.ts` | 🚫 não carregou (`npx` no Windows) | | | |
+| `troca-de-organizacao-tem-volta.spec.ts` | 🚫 não carregou (`npx` no Windows) | | | |
+| `vps-fresh-onboarding.spec.ts` | ❌ falhou | 0 | 1 | 11 |
+| `vps-webhook-outbound-ssrf.spec.ts` | 🚫 não carregou (`npx` no Windows) | | | |
+| `webhooks.spec.ts` | 🚫 não carregou (`npx` no Windows) | | | |
+| `wizard-do-funcionario.spec.ts` | ✅ passou | 13 | 0 | 0 |
+| `zona-de-perigo-apaga-dados-de-teste.spec.ts` | 🚫 não carregou (`npx` no Windows) | | | |
+
+</details>
+
+Legenda: ✅ passou · ❌ falhou · ⏭️ skipped ou não rodou · 🚫 a spec não chegou a carregar.
+
 ## 2. Ambiente desta rodada (o que NÃO estava de pé)
 
 - Sem WAHA e sem Redis: o limite de requisições caiu para o contador em memória (`redis incr failed; falling back to in-memory` no log do servidor).
@@ -165,6 +360,55 @@ Marque ao reexecutar (comando abaixo) e anote a causa (ambiente ou defeito) e o 
 - [ ] `autonomia-assistida.spec.ts:252` — testa sem enviar, pausa preserva publicação e duas aprovações entregam texto revisado sem silenciar assistência — causa: _?_ — PR: _?_
 
 Reexecutar uma spec: `pnpm e2e:build` (se o código mudou) e `pnpm exec playwright test tests/e2e/<spec>.spec.ts --workers=1 --reporter=list`.
+
+## 7.1 Possíveis soluções por falha
+
+> **São propostas, não correções.** Nada foi implementado nem reexecutado depois da leitura do erro. A coluna **Base** diz o que sustenta cada proposta: *medido* = está no erro do log ou no código lido; *hipótese* = plausível, ainda sem prova. Antes de aplicar qualquer uma, reexecute a spec isolada.
+>
+> Classes: **L** limitação do Windows · **P** precondição de ambiente ou de dado que esta rodada não montou · **D** dependência de ordem (seed que outra spec faz) · **?** causa ainda desconhecida · **B?** candidato a defeito de produto.
+
+### E2E (15)
+
+| # | Spec | Classe | O que o erro mostra | Possível solução | Base |
+|---|---|---|---|---|---|
+| 1 | `agenda-presenca-recuperacao:634` | ? | `enviarTextoFixoPendente(...)` devolveu `0`, esperado `1` (linha 817) | Reexecutar isolada, com banco limpo; abrir o `trace.zip` e conferir se o receiver chegou a ser chamado antes da linha 817. Se persistir sozinha, depurar a fixture montada nas linhas ~800–816 | hipótese |
+| 2 | `agenda-ver-na-agenda:64` | D | `.e2e-creds.json sem o bloco 'agenda' — rode scripts/seed-e2e-agenda.ts` | Rodar `pnpm exec tsx scripts/seed-e2e-agenda.ts` antes. As specs que fariam esse seed usam `npx` e não rodaram no Windows. Melhoria possível na spec: semear sozinha, em vez de depender de outra | medido |
+| 3 | `agente-novo-e-uso:189` | ? | Timeout de 267 s no `beforeEach`, preso em `esperarProximaJanelaTotp` no login do admin; "browser has been closed". O arquivo levou 12,1 min | Conferir se o relógio do Windows está sincronizado (o TOTP depende dele); reexecutar sozinha; se a espera do TOTP continuar estourando, o teto de tempo da spec precisa cobrir a espera (o PR #86 já mexeu nisso) | hipótese |
+| 4 | `autonomia-assistida:252` | P | `process.env.INTERNAL_AGENT_RUN_STUB` esperado `"true"`, veio `"false"` | Exportar `INTERNAL_AGENT_RUN_STUB=true` ao rodar. O CI já faz isso (`e2e.yml:276`). Melhoria de tooling: `gerar-env-e2e.sh` poderia gravar a variável no `.env.e2e` local | medido |
+| 5 | `cadastro-sem-confirmacao-de-email:98` | P | "o provedor local ainda exige confirmação de e-mail (`GOTRUE_MAILER_AUTOCONFIRM=false`)" | Subir o Supabase local com `GOTRUE_MAILER_AUTOCONFIRM=true` e rodar **só** este arquivo, como o cabeçalho da spec manda. A spec está em `FORA_DO_CI` de propósito: na suíte inteira ela sempre falha localmente. Não é defeito | medido |
+| 6 | `central-de-avisos-capacidades:57` | D | O texto "Um atendimento saiu sem as ferramentas que você ligou" não apareceu em 30 s | O cabeçalho da spec lista o pré-requisito `scripts/seed-e2e-capacidades-ausentes.ts` (emissor real do aviso), que esta rodada não executou. Rodar o seed e reexecutar | medido (pré-requisito) / hipótese (que é só isso) |
+| 7 | `central-de-avisos-capacidades:100` | D | Mesma ausência do aviso, no teste de "resolver" | Mesma solução do item 6; os dois dependem do mesmo seed | idem |
+| 8 | `i18n-espanhol-na-tela:282` | **B?** | Com a interface em espanhol, `/app/metrics` mostrou em português `"Novo"`, `"Em andamento"` e `"Ganho"` | `app/app/metrics/_components/MetricsClient.tsx:105` renderiza `{s.stage_name}` sem passar por `t()`, enquanto o rótulo `Ganhos` na linha 135 passa. Provável correção: traduzir o nome da etapa quando ele for um dos nomes padrão do dicionário. Reproduzir isolada antes, porque pode ser decisão de produto (nome de etapa é dado do usuário) | medido (linha) / hipótese (causa) |
+| 9 | `moeda-da-organizacao:87` | ? | Após salvar a moeda MXN, "organização atualizada" não apareceu em 10 s; o log traz `Protocol error ... Internal server error, session closed`. O arquivo levou 5,2 min | O navegador de teste caiu no meio. Reexecutar isolada, com a máquina ociosa; se passar, é instabilidade de recurso. Se repetir, abrir o trace | hipótese |
+| 10 | `pre-go-live-whatsapp:9` | L | `spawnSync pnpm ENOENT` ao chamar `pnpm exec tsx scripts/bootstrap-owner.ts` | No Windows o executável é `pnpm.cmd`. Rodar no WSL/Linux ou no CI. Correção de código possível: `execFileSync` com `shell: true` (mexe na spec) | medido |
+| 11 | `prova-painel-provedores:104` | P? | O seletor de modelos da OpenRouter veio sem nenhuma `option` (esperado > 50) | A spec espera o catálogo sincronizado da OpenRouter. Verificar de onde o catálogo vem (job de sincronização) e se precisa de rede ou `OPENROUTER_API_KEY`, ausente neste ambiente. Sincronizar e reexecutar | hipótese |
+| 12 | `prova-painel-provedores:122` | P? | Esperando a opção `Llama 3.3 70B Instruct` por 90 s | Mesma causa do item 11: sem catálogo não há modelo para escolher | hipótese |
+| 13 | `prova-painel-provedores:188` | P | `agent_turn` veio `mandadoPeloAgente: true`, esperado `false` ("instalação sem agente publicado") | O banco local **tem** agente publicado (`default_agent_id` nas creds), então a resposta `true` é a esperada para esse estado. Rodar num banco sem agente publicado (instalação fresca), ou despublicar antes. Só viraria defeito se `true` aparecesse numa instalação sem publicação | medido (estado do banco) / hipótese (conclusão) |
+| 14 | `relogio-http-cron-externo:238` | L | `curl ... -o /dev/null` → `curl: (23) client returned ERROR on write` | `/dev/null` não existe no `curl.exe` do Windows. Rodar no WSL/Linux ou no CI. Correção de código possível: `-o NUL` condicional por plataforma. O 2º teste do arquivo ficou skipped em consequência | medido (erro 23 = falha de escrita) |
+| 15 | `vps-fresh-onboarding:142` | P | "não achou o dono (`dono@qa.local`)" — a spec se recusa a agir em outra organização | Montar a instalação fresca de verdade: baseline limpo + `OWNER_EMAIL=dono@qa.local ... scripts/bootstrap-owner.ts`, com WAHA e Redis de pé. É a **P0** da doutrina e está em `FORA_DO_CI`. A recusa da spec é correta: protege dados de uma instalação real | medido |
+
+**Skipped e did not run:** os de `vps-fresh-onboarding` e `relogio-http-cron-externo` acompanham a falha anterior do mesmo arquivo (itens 14 e 15). Os de `acervo-de-conhecimento`, `agenda-*-google`, `cadastro-sem-confirmacao-de-email` e `inbox-responder-citando` não foram investigados — provavelmente são skips declarados nas próprias specs (hipótese). A distribuição por spec está na matriz da seção 1.1.
+
+### `test:unit` (6 casos)
+
+| Arquivo | Classe | Possível solução | Base |
+|---|---|---|---|
+| `lgpd-pdf-meet` (3), `lgpd-pdf-replies` (1) | L | Registrado como `pdfjs ... trailing slash`: caminho de fontes com barra no Windows. Rodar no WSL/Linux ou no CI; ou ajustar o caminho nos testes | registro anterior, **não remedido** |
+| `rascunho-superado-nao-e-regravado` (1), `suporte-cobertura-de-efeitos` (1) | L | Registrado como separador `\` de caminho: a varredura compara caminhos com `/`. Normalizar o separador nos testes ou rodar no Linux | registro anterior, **não remedido** |
+
+Os 4 arquivos falham de forma idêntica na `develop` limpa, segundo as anotações do ambiente; a confirmação definitiva é o job `verify` do CI Linux.
+
+### `test:shell` (1 prova)
+
+| Prova | Classe | Possível solução | Base |
+|---|---|---|---|
+| `.env continua 600 (só o dono lê)` | L | NTFS não guarda permissão POSIX (`chmod 600` → `stat` devolve `644`). Rodar no WSL/Linux ou no CI. Não é defeito do kit | medido |
+
+### Leitura do conjunto
+
+Das 15 falhas do E2E, por classe: **2 limitação do Windows** (10, 14) · **4 precondição de ambiente ou de dado** (4, 5, 13, 15) · **3 dependência de ordem** (2, 6, 7) · **2 provável precondição ainda não provada** (11, 12) · **3 causa desconhecida** (1, 3, 9) · **1 candidato direto a defeito de produto** (8). Somam 15.
+
+Além dessas, **51 specs nem carregaram** no Windows por causa do `npx` (seção 6). Reexecutar nas condições do CI — Linux, `INTERNAL_AGENT_RUN_STUB=true`, seeds rodados, banco fresco para a `vps-fresh-onboarding` — é o passo que separa ambiente de defeito. Só depois dele a lista de defeitos reais fica confiável.
 
 ## 8. E2E — todos os testes executados (169)
 
