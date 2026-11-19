@@ -57,7 +57,7 @@ Acréscimos da spec (a issue deixou implícitos):
 - Avisar o **autor** de quem foi de fato notificado.
 
 ## Perguntas em aberto
-**Todas decididas em 2026-11-19, conforme a proposta** — ver [`05-revisao.md`](05-revisao.md).
+**Decididas em 2026-11-19 por cMoreiraSul, conforme a proposta; confirmação do dono do produto pendente no PR #89** — ver [`05-revisao.md`](05-revisao.md).
 O texto abaixo é mantido como o registro da pergunta.
 
 | # | Pergunta | Proposta da spec |
