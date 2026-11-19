@@ -46,6 +46,56 @@ expediente da organização; rota ou tela `/app/fora-de-expediente`; erro `OUT_O
   organização) mas, com `REPLICA IDENTITY DEFAULT`, só leva o id. A mitigação desenhada é o refetch
   que a lista já faz ao voltar o foco da janela; a T0 mede e a T8 prova com **transferência entre
   setores em dois navegadores**.
+  **MEDIDO em 2026-11-19 (T0(c) e T0(b)).** Sonda descartável, **não commitada**, contra o Supabase
+  local (`realtime:v2.147.1`, `postgres:15.19.0.007`, baseline aplicada), na organização do e2e com
+  `visibility_mode = own_and_unassigned`; 3 sessões reais (`agent` A, `agent` B criado só para a
+  sonda e removido ao fim, `manager`) assinando `postgres_changes` de `conversations` **com o filtro
+  que o app usa** (`organization_id=eq.<org>`, `hooks/inbox/useConversationsRealtime.ts`); as escritas
+  vieram por service role. **A conversa mudou de dono (`assigned_to_user_id`) no lugar de mudar de
+  setor**, porque a RLS de setor ainda não existe: o mecanismo (a RLS avaliada por assinante) é o mesmo,
+  mas **a T8 tem de provar com setores de verdade, em dois navegadores**. 3 execuções (R1 e R2 com o
+  filtro do app; R3 sem filtro).
+
+  | Caso | `agent` A (dono) | `agent` B | `manager` | Execuções |
+  |---|---|---|---|---|
+  | `INSERT` atribuída ao A | 1 evento em **2 de 3** (**0 em R1**) | 0 | 1 | R1–R3 |
+  | `UPDATE` que não muda o escopo | 1 | 0 | 1 | R1–R3 |
+  | **Transferência A→B** (a linha **sai** do escopo do A e **entra** no do B) | **nenhum evento** | `UPDATE` | `UPDATE` | R1–R3 |
+  | `SELECT` depois da transferência | **0 linhas** | 1 linha | — | R1–R3 |
+  | `UPDATE` depois, em conversa que o A já perdeu | 0 | 1 | 1 | R1–R3 |
+  | **`DELETE`, com o filtro do app** | **nenhum** | **nenhum** | **nenhum** | R1, R2 |
+  | **`DELETE`, sem filtro** | `DELETE` (só `id`) | `DELETE` (só `id`) | `DELETE` (só `id`) | R3 |
+
+  - **(i) confirmado:** quem **perde** o acesso por transferência não recebe nenhum evento, e o `SELECT`
+    dele já devolve 0 linhas — a lista dele fica com a conversa até recarregar. Quem **ganha** recebe o
+    `UPDATE`. A mitigação desenhada (refetch ao voltar o foco, `useConversationsRealtime.ts`) existe,
+    e o hook tem também uma rede de segurança que compara a contagem de conversas e o maior
+    `last_message_at`. **Não medido:** se essa rede detecta a saída de uma conversa (a contagem cai) e
+    em quanto tempo; a T8 mede pela tela.
+  - **(ii) corrigido — a premissa acima estava errada para o app.** O texto dizia que o `DELETE` "é
+    entregue a todos os assinantes da organização". **Com o filtro `organization_id=eq.<org>` que o
+    app usa, o `DELETE` não chegou a ninguém, nem ao `manager`** (R1 e R2): com `REPLICA IDENTITY
+    DEFAULT` a linha antiga só traz o `id`, e o filtro não consegue ser avaliado sobre ela. Então uma
+    conversa apagada por outra pessoa **permanece na lista até o refetch**. **Sem filtro** o `DELETE`
+    chega a **todos**, inclusive a quem nunca enxergou a conversa, **sem RLS e só com o `id`** (R3): quem
+    montar à mão uma assinatura sem filtro obtém os ids das conversas apagadas de outros setores. É
+    vazamento de **ids**, não de conteúdo, como a spec já afirmava; o que muda é que o app comum não o
+    recebe e também não recebe o próprio `DELETE`.
+  - **(b) `broadcast`: o canal `org:<org>:queue` é público e ninguém no app o assina.**
+    `lib/ai/handoff/orchestrator.ts:259` envia `handoff_pending` com `{ conversation_id, reason }`, e
+    `grep -rnE ":queue|handoff_pending" app components hooks lib` só acha **emissores**, nenhum
+    assinante. Na sonda (**R1 apenas, não repetida**), tanto o `agent` B autenticado quanto um **cliente
+    anônimo, só com a anon key e sem login**, receberam o payload (`conversation_id,reason`). Ou seja,
+    quem souber o id da organização escuta os handoffs dela, **de qualquer setor e de qualquer
+    organização**, e a anon key é pública. O conteúdo da conversa não vai no payload. **Não é corrigido
+    aqui** (esta tarefa só mede); é decisão do dono do produto (canal privado com autorização, ou
+    remover o envio já que ninguém o consome). **Não medido:** os `broadcast` de `useAlertsRealtime.ts` e
+    `useTenantHealth.ts` (parecem de plataforma, não li os payloads) e se o Realtime do ambiente de
+    produção tem acesso público desligado (a sonda foi no local, com o padrão).
+  - **Limites da medição:** o `INSERT` do A não chegou na R1 e chegou na R2 e R3 (**perda não
+    determinística, causa não investigada**); aguardei 2,5 s por escrita; o Realtime foi o do Supabase
+    local, e o de um self-host pode ter outra versão; a sonda não está no repositório, então
+    **reproduzir exige reescrevê-la** a partir desta descrição.
 - **Desempenho da função por linha (condição 6):** `fn_can_view_conversation` roda por linha
   (um `exists` em `department_members` e um `select` em `organizations.settings`). A T4b registra o
   plano de `explain (analyze, buffers)` da listagem de conversas como `agent`, com volume (ordem de
@@ -297,9 +347,11 @@ Dois mecanismos independentes, cada um com uma **função pura** testável sem b
   se **é o dono**, **ou** (`department_id` é nulo **ou** está entre os seus setores) **e** a regra de
   `visibility_mode` já existente a admite. As duas restrições **somam**; nenhuma substitui a outra.
 - **Realtime:** `postgres_changes` aplica a RLS de SELECT ao assinante, então a mudança de policy
-  cobre RF-9 sem código novo — **desde que não haja canal de broadcast** (NÃO VERIFICADO acima).
-  Limites conhecidos, a medir na T0 e provar na T8: a conversa que **sai** do escopo não gera evento
-  de remoção, e o `DELETE` não passa pela RLS (mas só leva o id).
+  cobre RF-9 sem código novo — **desde que não haja canal de broadcast**. **Medido em 2026-11-19 (§1,
+  T0(b)): há um** (`org:<org>:queue`, público, sem assinante no app, com `conversation_id` e `reason`),
+  então esta frase **não vale sem a decisão do dono do produto sobre esse canal**.
+  Limites medidos na T0 (§1) e a provar na T8: a conversa que **sai** do escopo não gera evento
+  de remoção; o `DELETE` não passa pela RLS e só leva o id, mas **com o filtro que o app usa nem chega**.
 - **Escrita (N2, RF-14):** a mesma regra vale em `UPDATE`/`DELETE` de `conversations` e em
   `INSERT`/`UPDATE`/`DELETE` de `messages` (§4.3). A alternativa recusada na versão anterior
   ("a issue pede só leitura") deixou de valer: o dono do produto decidiu o contrário e a medição
