@@ -229,6 +229,10 @@ Dois mecanismos independentes, cada um com uma **função pura** testável sem b
     `docker-compose.prod.yml` fixa `redis:7-alpine` (`grep -n "image:.*redis" docker-compose.prod.yml`).
     **Não medido aqui:** se o `serverless-redis-http` fixado por digest aceita transação (`MULTI`); a
     implementação **prova** a forma escolhida contra o Redis do compose, não contra um mock.
+    **Estado em 2026-11-19:** o PR do gate (#88, `b8d6886`) adotou `INCR` + `EXPIRE … NX` num
+    `pipeline` em **toda** contagem, com teste de unidade que usa um Redis falso. **A prova contra o
+    Redis do compose ainda não foi feita** — o teste do #88 é mock, e é exatamente o que este
+    parágrafo diz que não basta.
   - **O contador tem leitor nomeado, ou não é escrito.** O leitor é `lerBarradosDoDia`
     (`lib/expediente/contador.ts`), lido pelo cabeçalho da seção Expediente (T6). Só que a T6 é a
     quinta na ordem de `04-tarefas.md` (depois de T4a, T3, T4b e T5): sem decisão, o contador seria
@@ -271,14 +275,26 @@ Dois mecanismos independentes, cada um com uma **função pura** testável sem b
      inválido, ou dentro do horário: não marca. Dentro do expediente o custo é só o acerto de cache.
   4. **O papel, só se já estiver fora do expediente:** `rpc("fn_user_role_in_org", { p_org })` com o
      client da sessão — a **mesma fonte** que o `requireRole` usa (`lib/auth/require-role.ts`), nunca
-     um snapshot. Só `admin` e `manager` marcam. **`agent` nunca marca, nem em rota isenta**
+     um snapshot. **Guarda de identidade, antes da `rpc`:** a sessão tem de SER o ator —
+     `(await db.auth.getUser()).data.user?.id === entry.actorUserId`, a mesma conferência que o
+     `audit()` já faz antes de `readSupportContext` (`lib/audit/index.ts:73-74`, medido em
+     2026-11-19). A `rpc` usa o `auth.uid()` da sessão, então sem a guarda um `actorUserId` diferente
+     do usuário da sessão leria o papel de OUTRA pessoa: a marca sairia errada, ou deixaria de sair.
+     Sessão que não é o ator → não marca (e a linha segue sendo gravada). Só `admin` e `manager`
+     marcam. **`agent` nunca marca, nem em rota isenta**
      (`mark-read`, `attendants/availability`): isenção é "o `agent` não é barrado ali", não é bypass.
      Platform admin sem vínculo com a organização devolve papel `null` e não marca; a sessão de suporte
      já carrega `support_session_id` no `metadata` (decisão **aberta** para o dono do produto, abaixo).
   5. **Falha nunca atrapalha:** erro ou tempo esgotado em 3 ou 4 → não marca e segue; o `try/catch`
      fica dentro do `audit()` e a linha é gravada sem o campo. Registra `logger.warn`, **sem** alerta
      Sentry por mutação (seria ruído proporcional ao tráfego); falha de *gravação* do audit continua
-     alertando, como hoje.
+     alertando, como hoje. **Sinal agregado (proposta, review do #87 item 4):** só o `warn` não
+     basta — se a leitura falhar sempre, a marca nunca sai e ninguém percebe. Além do `warn` por
+     falha, o `audit()` emite **um** aviso por organização e por dia, por processo ("a marca do RF-10
+     está falhando"), com a contagem acumulada, guardado no mesmo mapa em memória do cache da regra 3.
+     Não é alerta por mutação: o ruído fica limitado a 1 por organização/dia/processo. A prova de que
+     o caminho marca continua sendo o e2e da T2c; o aviso cobre o que o e2e não vê, a falha em
+     produção depois do deploy.
   - **Uma só verdade para a decisão.** "Fora do expediente **e** `admin`/`manager`" **já é uma função
     pura**, escrita na T1: `expedienteBarra({ papel, config, agora }).bypassAuditado`
     (`lib/expediente/expediente.ts`, no PR do gate). O `audit()` **chama essa função**; não reimplementa
