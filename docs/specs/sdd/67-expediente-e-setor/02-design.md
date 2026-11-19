@@ -129,6 +129,26 @@ Dois mecanismos independentes, cada um com uma **função pura** testável sem b
   - **T0(a):** `loadAuthUser` **não** carrega `organizations.settings` (seleciona `display_name,
     locale`), então o gate faz a própria leitura (`carregarExpediente`, falha aberta, service role não
     usado: é o client do usuário, sob RLS).
+    - **Por que a RLS não esconde a linha de quem chega ao gate (medido em 2026-11-19, banco local com
+      a `baseline.sql`, JWT simulado por papel, transação desfeita com `ROLLBACK`).** O gate só roda
+      para quem `fn_user_role_in_org` devolveu `agent`, e essa função e `fn_user_org_ids` (a da policy
+      `orgs_select`) filtram as duas `revoked_at is null`. Resultado: `admin`, `manager`, `agent` e
+      `viewer` ativos leem `organizations.settings` da própria organização e **nunca** a de outra;
+      um `agent` com vínculo revogado lê `NULL` mas também leva `NULL` em `fn_user_role_in_org`, então
+      o `requireRole` o barra por papel (403 `forbidden_role`) **antes** do gate. Platform admin e
+      sessão de suporte não passam pelo gate (`!user.is_platform_admin && !user.support`). **Não
+      medido:** o `requireRole` de ponta a ponta (a sonda foi em SQL) e chamadores de
+      `loadEligibleAttendants` além do MCP (`createAdminClient()` em `lib/mcp/server.ts`) e do
+      `routing/worker.ts`, que passam o client admin.
+    - **A premissa é frágil e a spec a vigia.** O gate só enxerga a linha enquanto as duas funções
+      coincidirem. Se divergirem (uma ganha condição que a outra não tem) ou a policy `orgs_select`
+      passar a exigir papel mínimo, `maybeSingle` devolve `null` **sem erro** e o gate falha aberto
+      para todos, em silêncio. Duas travas: (1) em `carregarExpediente`, linha **ausente sem erro**
+      é logada com `logger.warn` — o chamador acabou de resolver a organização, então "ausente" não é
+      estado normal; segue falhando aberto (a regra acima não muda), só deixa de ser invisível;
+      (2) o invariante de `03-testes.md` amarra `fn_user_role_in_org` à leitura de `organizations`.
+      O comentário de `lib/expediente/carregar.ts` ("Service role e `organization_id` explícito")
+      contradiz esta spec e o código; deve passar a dizer "client do usuário, sob RLS".
   - **Isenções FIXAS (decisão do dono do produto, 2026-11-17).** Fora do expediente, o `agent` em
     sessão humana continua podendo: **ler**; **login e logout**; **trocar de organização**;
     **perfil**; **preferências**; **cadastro e verificação de MFA**; **marcar notificação como lida**;
