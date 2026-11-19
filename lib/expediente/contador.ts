@@ -3,8 +3,8 @@
  *
  * A tentativa barrada NÃO grava linha em `api_audit_log`: retry e polling da UI inflariam o log como
  * as rodadas de cron vazias inflaram (CLAUDE.md, "auditar quando houve efeito"). Em vez disso conta-se
- * `expediente:barrados:<organization_id>:<AAAA-MM-DD no fuso da organização>` (`INCR` + validade de
- * 48 h) no mesmo Redis que o app já exige — sem env nova.
+ * `expediente:barrados:<organization_id>:<AAAA-MM-DD no fuso da organização>` (`INCR` + `EXPIRE NX` de
+ * 48 h, num pipeline) no mesmo Redis que o app já exige — sem env nova.
  *
  * **Contar nunca decide nada.** Redis ausente, malformado ou fora do ar ⇒ não conta e segue: a
  * requisição já foi barrada por quem chamou, e a leitura devolve `null` (a tela mostra `—`). Nenhuma
@@ -67,10 +67,12 @@ export async function contarBarrado(
   if (!cliente) return false;
   try {
     const chave = chaveDoContador(organizationId, agora, timezone);
-    const total = await cliente.incr(chave);
-    // A validade só é posta na primeira contagem do dia: reaplicar a cada tentativa empurraria a
-    // expiração para sempre num dia de rajada.
-    if (total === 1) await cliente.expire(chave, VALIDADE_SEGUNDOS);
+    // `INCR` e `EXPIRE ... NX` vão na MESMA ida ao Redis (pipeline). `NX` põe a validade só se a chave
+    // ainda não tem uma: numa rajada ela não é empurrada para sempre, e se uma contagem anterior
+    // perdeu o `EXPIRE`, a próxima corrige — a chave nunca fica sem validade. (Antes: `EXPIRE` só
+    // quando o `INCR` devolvia 1; se esse `EXPIRE` falhasse, a chave ficava para sempre.)
+    // `EXPIRE NX` pede Redis 7+: o `redis:7-alpine` do compose de produção e o Upstash atendem.
+    await cliente.pipeline().incr(chave).expire(chave, VALIDADE_SEGUNDOS, "NX").exec();
     return true;
   } catch (err) {
     logger.warn("[expediente] contador de barrados indisponível; a tentativa foi barrada do mesmo jeito", {

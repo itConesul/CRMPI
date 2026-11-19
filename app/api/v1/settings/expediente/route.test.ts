@@ -159,7 +159,7 @@ describe("PATCH — só `admin`, valida, preserva o resto do settings e audita",
     expect(vi.mocked(audit)).not.toHaveBeenCalled();
   });
 
-  it("audita `expediente.config_changed` (sem o conteúdo das janelas) e só quando gravou", async () => {
+  it("audita `expediente.config_changed` com o valor anterior e o novo, e só quando gravou", async () => {
     const { client } = clienteComSettings({});
     vi.mocked(createAdminClient).mockReturnValue(client);
     await PATCH(patch(comercial));
@@ -168,7 +168,17 @@ describe("PATCH — só `admin`, valida, preserva o resto do settings e audita",
       action: "expediente.config_changed",
       actorUserId: USER,
       organizationId: ORG,
-      metadata: { timezone: "America/Sao_Paulo", windows: 5 },
+      metadata: { timezone: "America/Sao_Paulo", windows: 5, previous: null, new: comercial },
+    });
+  });
+
+  it("o audit carrega o expediente ANTERIOR quando já havia um", async () => {
+    const anterior = { timezone: "America/Sao_Paulo", windows: [{ dow: 1, start: "09:00", end: "12:00" }] };
+    const { client } = clienteComSettings({ business_hours: anterior });
+    vi.mocked(createAdminClient).mockReturnValue(client);
+    await PATCH(patch(comercial));
+    expect(vi.mocked(audit).mock.calls[0]![0]).toMatchObject({
+      metadata: { previous: anterior, new: comercial },
     });
   });
 });

@@ -97,7 +97,14 @@ export async function PATCH(req: NextRequest): Promise<Response> {
     resourceType: "organization",
     resourceId: org.orgId,
     requestId,
-    metadata: { timezone: input.timezone, windows: input.windows.length },
+    // Antes e depois: é uma regra que trava o trabalho dos outros, então quem revisa o audit precisa ver
+    // o que mudou e não só que mudou. `previous` é `null` na primeira configuração.
+    metadata: {
+      timezone: input.timezone,
+      windows: input.windows.length,
+      previous: atual.business_hours ?? null,
+      new: input,
+    },
   });
 
   return ok(descreverExpediente(input, new Date()), { requestId });

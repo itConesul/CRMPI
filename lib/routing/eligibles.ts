@@ -50,10 +50,12 @@ export async function loadEligibleAttendants(
     }
   }
   const { data: members, error: memberError } = await supabase.from("user_organizations")
-    .select("user_id").eq("organization_id", organizationId).is("revoked_at", null)
+    .select("user_id, role").eq("organization_id", organizationId).is("revoked_at", null)
     .in("role", ["agent", "manager", "admin"]);
   if (memberError) throw new Error(memberError.message);
-  const active = new Set((members ?? []).map((r: { user_id: string }) => r.user_id));
+  const membersTyped = (members ?? []) as Array<{ user_id: string; role?: string }>;
+  const active = new Set(membersTyped.map((r) => r.user_id));
+  const roleByUser = new Map(membersTyped.map((r) => [r.user_id, r.role] as const));
   const { data: avail, error: availabilityError } = await supabase
     .from("attendant_availability").select("user_id, capacity, schedule")
     .eq("organization_id", organizationId).eq("is_available", true);
@@ -101,6 +103,9 @@ export async function loadEligibleAttendants(
 
   // Expediente da organização (RF-12): lido UMA vez por chamada, não por atendente. Ausente ou
   // ilegível = sem restrição (falha aberta), então uma org sem `business_hours` roteia como antes.
+  // **Só o `agent` é alcançado** (RF-12 e RF-6): `admin` e `manager` nunca são barrados pelo
+  // expediente, então continuam elegíveis fora do horário — o expediente é passado só às linhas
+  // cuja role é `agent`.
   const expediente = await carregarExpediente(supabase, organizationId);
 
   const candidates: RoutingCandidate[] = [];
@@ -108,7 +113,13 @@ export async function loadEligibleAttendants(
     const currentLoad = loadByUser.get(r.user_id) ?? 0;
     const schedule = availabilityScheduleSchema.parse(r.schedule ?? {});
     const eligible = isAttendantEligible(
-      { isAvailable: true, capacity: r.capacity, currentLoad, schedule, expediente },
+      {
+        isAvailable: true,
+        capacity: r.capacity,
+        currentLoad,
+        schedule,
+        expediente: roleByUser.get(r.user_id) === "agent" ? expediente : null,
+      },
       now,
     );
     if (eligible) {

@@ -39,6 +39,15 @@ export async function carregarExpediente(
       });
       return null;
     }
+    // Linha AUSENTE sem erro: o chamador acabou de resolver esta organização, então não é um estado
+    // normal — é o que a RLS devolve quando esconde a linha. Segue falhando aberto (a regra não muda),
+    // mas deixa de ser invisível. Organização sem `business_hours` NÃO cai aqui: a linha existe.
+    if (data === null) {
+      logger.warn("[expediente] linha da organização ausente (RLS escondendo?); seguindo sem expediente", {
+        organization_id: organizationId,
+      });
+      return null;
+    }
     const settings = (data as { settings?: Record<string, unknown> | null } | null)?.settings;
     return lerExpediente(settings?.business_hours);
   } catch (err) {

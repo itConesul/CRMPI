@@ -6,11 +6,20 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const incr = vi.fn();
 const expire = vi.fn();
+const exec = vi.fn();
 const get = vi.fn();
+/** Pipeline falso: `incr`/`expire` registram a chamada e devolvem o próprio pipeline; `exec` fecha. */
+const pipeline = vi.fn(() => {
+  const p = {
+    incr: (...a: unknown[]) => (incr(...a), p),
+    expire: (...a: unknown[]) => (expire(...a), p),
+    exec: () => exec(),
+  };
+  return p;
+});
 vi.mock("@upstash/redis", () => ({
   Redis: class {
-    incr = incr;
-    expire = expire;
+    pipeline = pipeline;
     get = get;
   },
 }));
@@ -47,24 +56,35 @@ describe("chave do contador", () => {
 });
 
 describe("contarBarrado", () => {
-  it("uma rajada de N tentativas incrementa N vezes e põe a validade de 48 h só na primeira", async () => {
-    let n = 0;
-    incr.mockImplementation(async () => ++n);
+  it("uma rajada de N tentativas manda INCR + EXPIRE NX (48 h) num pipeline por tentativa", async () => {
+    exec.mockResolvedValue([1, 1]);
     for (let i = 0; i < 5; i++) expect(await contarBarrado(ORG, "America/Sao_Paulo", AGORA)).toBe(true);
+    const chave = `expediente:barrados:${ORG}:2026-07-13`;
+    expect(pipeline).toHaveBeenCalledTimes(5);
+    expect(exec).toHaveBeenCalledTimes(5);
     expect(incr).toHaveBeenCalledTimes(5);
-    expect(incr).toHaveBeenCalledWith(`expediente:barrados:${ORG}:2026-07-13`);
-    expect(expire).toHaveBeenCalledTimes(1);
-    expect(expire).toHaveBeenCalledWith(`expediente:barrados:${ORG}:2026-07-13`, 172800);
+    expect(incr).toHaveBeenCalledWith(chave);
+    // NX: a validade só entra se a chave ainda não tem — a rajada não a empurra para sempre.
+    expect(expire).toHaveBeenCalledTimes(5);
+    expect(expire).toHaveBeenCalledWith(chave, 172800, "NX");
+  });
+
+  it("a chave nunca fica sem validade: o EXPIRE vai junto de TODO INCR, não só do primeiro", async () => {
+    // Regressão do defeito que o review do #88 apontou: o EXPIRE só rodava quando o INCR devolvia 1,
+    // então um EXPIRE perdido nessa primeira vez deixava a chave para sempre.
+    exec.mockResolvedValue([2, 0]);
+    await contarBarrado(ORG, "America/Sao_Paulo", AGORA);
+    expect(expire).toHaveBeenCalledWith(expect.any(String), 172800, "NX");
   });
 
   it("sem Redis configurado não conta e não lança", async () => {
     delete process.env.UPSTASH_REDIS_REST_URL;
     expect(await contarBarrado(ORG, "America/Sao_Paulo", AGORA)).toBe(false);
-    expect(incr).not.toHaveBeenCalled();
+    expect(pipeline).not.toHaveBeenCalled();
   });
 
   it("Redis que lança não conta e não lança (a regra não depende do contador)", async () => {
-    incr.mockRejectedValue(new Error("redis fora"));
+    exec.mockRejectedValue(new Error("redis fora"));
     await expect(contarBarrado(ORG, "America/Sao_Paulo", AGORA)).resolves.toBe(false);
   });
 });

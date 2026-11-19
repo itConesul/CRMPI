@@ -229,6 +229,27 @@ describe("requireRole + expediente (ponta a ponta, relógio fixado em segunda 22
     if (!r.ok) expect(((await r.response.json()) as { error: { code: string } }).error.code).toBe("forbidden_role");
   });
 
+  it("membro REVOGADO (JWT ainda válido): 403 forbidden_role e o gate NEM CHEGA a ler o expediente", async () => {
+    // Review do #88, item 2: o gate só vê quem `fn_user_role_in_org` reconhece. Revogado devolve
+    // vazio ⇒ rank 0 ⇒ barrado por PAPEL antes do gate, então a RLS esconder a linha dele não vira
+    // "falha aberta silenciosa". A prova é que `organizations` não foi lida.
+    const leituras = sessao("agent", { business_hours: comercial });
+    vi.mocked(createClient).mockResolvedValue({
+      rpc: vi.fn(async () => ({ data: null, error: null })),
+      from: (tabela: string) => {
+        if (tabela === "organizations") leituras.organizations++;
+        return { select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null, error: null }) }) }) };
+      },
+    } as never);
+    const r = await requireRole("agent", { requestId: "req-revogado" });
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.response.status).toBe(403);
+      expect(((await r.response.json()) as { error: { code: string } }).error.code).toBe("forbidden_role");
+    }
+    expect(leituras.organizations, "o gate não pode ter lido o expediente").toBe(0);
+  });
+
   it("N4 · a tentativa barrada NÃO grava linha de audit (retry/polling não inflam o log)", async () => {
     sessao("agent", { business_hours: comercial });
     for (let i = 0; i < 5; i++) await requireRole("agent");
