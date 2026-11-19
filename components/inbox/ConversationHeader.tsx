@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { JanelaSelo } from "@/components/inbox/JanelaSelo";
 import { Phone, ArrowRight } from "@/lib/ui/icons";
 import { useAuth } from "@/hooks/auth/AuthProvider";
+import { useExpedienteBarra } from "@/hooks/expediente/useExpediente";
 import { useClaimConversation } from "@/hooks/inbox/useClaimConversation";
 import { useReleaseConversation } from "@/hooks/inbox/useReleaseConversation";
 import { useCloseConversation, useReopenConversation } from "@/hooks/inbox/useCloseConversation";
@@ -58,6 +59,12 @@ export function ConversationHeader({ conversation }: Props) {
   const release = useReleaseConversation();
   const close = useCloseConversation();
   const reopen = useReopenConversation();
+  // PRD-01 (#67): fora do expediente o `agent` LÊ, mas as ações abaixo são recusadas pelo servidor
+  // (403 OUT_OF_WORK_HOURS). Ficam desabilitadas com o motivo à vista, em vez de falhar depois do clique.
+  const { barrado: foraDoExpediente } = useExpedienteBarra();
+  const motivoExpediente = foraDoExpediente
+    ? t("Fora do expediente da empresa: você pode consultar, mas só consegue agir quando o expediente abrir.")
+    : undefined;
   const retomar = useResumeAiAttendance();
   const pausar = usePauseAiAttendance();
   // "Existe automático nesta org?" — sem isto o selo afirmava que o robô estava
@@ -204,12 +211,15 @@ export function ConversationHeader({ conversation }: Props) {
           <Button
             size="sm"
             variant="default"
-            disabled={claim.isPending}
+            disabled={claim.isPending || foraDoExpediente}
             // O rótulo NÃO muda (é contrato: `inbox-header-nao-trava` e o
             // dicionário de espanhol o citam). O que faltava era a consequência
             // dita: desde a 0173 assumir também para o atendimento automático, e
             // um botão que muda duas coisas precisa anunciar as duas.
-            title={t("Você passa a responder esta conversa e o atendimento automático para aqui.")}
+            title={
+              motivoExpediente ??
+              t("Você passa a responder esta conversa e o atendimento automático para aqui.")
+            }
             onClick={() =>
               claim.mutate({
                 conversation_id: conversation.id,
@@ -224,7 +234,8 @@ export function ConversationHeader({ conversation }: Props) {
           <Button
             size="sm"
             variant="outline"
-            disabled={release.isPending}
+            disabled={release.isPending || foraDoExpediente}
+            title={motivoExpediente}
             onClick={() => release.mutate({ conversation_id: conversation.id })}
           >
             {t("Liberar")}
@@ -246,7 +257,7 @@ export function ConversationHeader({ conversation }: Props) {
           <Button
             size="sm"
             variant="outline"
-            disabled={retomar.isPending}
+            disabled={retomar.isPending || foraDoExpediente}
             data-testid="devolver-ao-automatico"
             // O ALCANCE DA VOLTA NÃO É SEMPRE O MESMO, e a tela precisa dizer qual é.
             //
@@ -255,9 +266,10 @@ export function ConversationHeader({ conversation }: Props) {
             // religa o automático para TODAS as conversas daquela pessoa. Um botão
             // que às vezes faz mais do que o nome promete precisa dizer quando.
             title={
-              motivo === "contato_travado"
+              motivoExpediente ??
+              (motivo === "contato_travado"
                 ? t("Religa o atendimento automático para este cliente — vale para todas as conversas dele.")
-                : t("Devolve esta conversa ao atendimento automático.")
+                : t("Devolve esta conversa ao atendimento automático."))
             }
             onClick={() => retomar.mutate({ conversation_id: conversation.id })}
           >
@@ -268,19 +280,25 @@ export function ConversationHeader({ conversation }: Props) {
           <Button
             size="sm"
             variant="outline"
-            disabled={pausar.isPending}
+            disabled={pausar.isPending || foraDoExpediente}
             data-testid="pausar-o-automatico"
             // `podePausar` já exige dono != null, então este botão NUNCA aparece
             // sem dono — prometer "você assume" aqui seria prometer o que a rota
             // não faz: com dono, ela só cala, nunca rouba a conversa de quem a tem.
-            title={t("O atendimento automático para nesta conversa. O dono não muda.")}
+            title={motivoExpediente ?? t("O atendimento automático para nesta conversa. O dono não muda.")}
             onClick={() => pausar.mutate({ conversation_id: conversation.id })}
           >
             {pausar.isPending ? t("Pausando...") : t("Pausar o automático")}
           </Button>
         )}
         {!encerrada && (
-          <Button size="sm" variant="outline" onClick={() => setReassignOpen(true)}>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={foraDoExpediente}
+            title={motivoExpediente}
+            onClick={() => setReassignOpen(true)}
+          >
             {t("Transferir")}
           </Button>
         )}
@@ -288,13 +306,15 @@ export function ConversationHeader({ conversation }: Props) {
           <SnoozeButton
             conversationId={conversation.id}
             snoozeUntil={conversation.snooze_until ?? null}
+            disabled={foraDoExpediente}
           />
         )}
         {!encerrada && (
           <Button
             size="sm"
             variant="outline"
-            disabled={close.isPending}
+            disabled={close.isPending || foraDoExpediente}
+            title={motivoExpediente}
             onClick={() => {
               if (confirm(t("Fechar esta conversa?"))) {
                 close.mutate({ conversation_id: conversation.id, expected_revision: conversation.service_revision });
@@ -304,7 +324,8 @@ export function ConversationHeader({ conversation }: Props) {
             {t("Fechar")}
           </Button>
         )}
-        {encerrada && <Button size="sm" variant="outline" disabled={reopen.isPending}
+        {encerrada && <Button size="sm" variant="outline" disabled={reopen.isPending || foraDoExpediente}
+          title={motivoExpediente}
           onClick={() => reopen.mutate({ conversation_id: conversation.id, expected_revision: conversation.service_revision })}>
           {t("Reabrir")}
         </Button>}

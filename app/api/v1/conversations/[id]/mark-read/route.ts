@@ -29,7 +29,14 @@ export async function POST(_req: NextRequest, ctx: RouteCtx): Promise<Response> 
   const { id } = await ctx.params;
   const supabase = await createClient();
 
-  const authz = await requireRole("agent", { requestId, resource: "conversations" });
+  const authz = await requireRole("agent", {
+    requestId,
+    resource: "conversations",
+    // PRD-01 (#67), decisão P1: o inbox dispara esta rota sozinho ao abrir a conversa. Barrá-la fora
+    // do expediente daria 403 a todo `agent` que só lê (que a Q1/RF-4 liberam) e o contador de não
+    // lidas nunca zeraria. Não fala com o cliente nem assume atendimento.
+    expediente: { isenta: "ação automática da UI, sem efeito para o cliente" },
+  });
   if (!authz.ok) return authz.response;
 
   try {

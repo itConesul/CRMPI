@@ -91,3 +91,49 @@ describe("isHeartbeatStale (AT-08 auto-offline, clock mockado)", () => {
     expect(isHeartbeatStale(null, now)).toBe(true);
   });
 });
+
+describe("RF-12 · expediente da organização na elegibilidade (PRD-01 / #67)", () => {
+  // Atendente 24/7 e com folga: sozinho seria elegível a qualquer hora.
+  const livre = {
+    isAvailable: true,
+    capacity: 5,
+    currentLoad: 1,
+    schedule: availabilityScheduleSchema.parse({ timezone: "America/Sao_Paulo", windows: [] }),
+  };
+  const comercial = {
+    timezone: "America/Sao_Paulo",
+    windows: [1, 2, 3, 4, 5].map((dow) => ({ dow, start: "08:00", end: "18:00" })),
+  };
+
+  it("dentro do expediente, a decisão é a de hoje (seg 14:00 BRT, comercial 08–18) ⇒ elegível", () => {
+    expect(isAttendantEligible({ ...livre, expediente: comercial }, MON_1400_BRT)).toBe(true);
+  });
+
+  it("FORA do expediente o agent NÃO entra na distribuição, mesmo disponível, com folga e 24/7", () => {
+    expect(isAttendantEligible({ ...livre, expediente: comercial }, MON_1900_BRT)).toBe(false);
+  });
+
+  it("REGRESSÃO — sem expediente (undefined, null, `windows` vazio) a decisão é exatamente a de antes", () => {
+    for (const expediente of [undefined, null, { timezone: "America/Sao_Paulo", windows: [] }]) {
+      expect(isAttendantEligible({ ...livre, expediente }, MON_1900_BRT)).toBe(true);
+    }
+    // E o objeto sem a chave `expediente` (todo chamador antigo) idem.
+    expect(isAttendantEligible(livre, MON_1900_BRT)).toBe(true);
+  });
+
+  it("as camadas SOMAM: expediente aberto não salva quem está fora da PRÓPRIA janela", () => {
+    const soDeTarde = availabilityScheduleSchema.parse({
+      timezone: "America/Sao_Paulo",
+      windows: [{ dow: 1, start: "13:00", end: "18:00" }],
+    });
+    const manha = new Date("2026-07-13T10:00:00-03:00"); // dentro do expediente, fora da janela própria
+    expect(isAttendantEligible({ ...livre, schedule: soDeTarde, expediente: comercial }, manha)).toBe(false);
+  });
+
+  it("expediente que vira o dia: plantão 22:00–06:00 elegível às 23:00 e às 03:00 do dia seguinte", () => {
+    const plantao = { timezone: "America/Sao_Paulo", windows: [{ dow: 1, start: "22:00", end: "06:00" }] };
+    expect(isAttendantEligible({ ...livre, expediente: plantao }, new Date("2026-07-13T23:00:00-03:00"))).toBe(true);
+    expect(isAttendantEligible({ ...livre, expediente: plantao }, new Date("2026-07-14T03:00:00-03:00"))).toBe(true);
+    expect(isAttendantEligible({ ...livre, expediente: plantao }, new Date("2026-07-14T07:00:00-03:00"))).toBe(false);
+  });
+});

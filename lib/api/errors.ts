@@ -27,6 +27,9 @@ export const ApiErrorCodes = {
   forbidden_role: "forbidden_role",
   forbidden_tenant: "forbidden_tenant",
   lgpd_anonymization_irreversible: "lgpd_anonymization_irreversible",
+  // PRD-01 (#67): fora do expediente da organização o `agent` lê, mas não age. O código é MAIÚSCULO
+  // por contrato da issue (`403 OUT_OF_WORK_HOURS`); `details.opens_at` traz a próxima abertura.
+  OUT_OF_WORK_HOURS: "OUT_OF_WORK_HOURS",
 
   // 404
   not_found: "not_found",
