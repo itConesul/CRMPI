@@ -54,6 +54,43 @@ expediente da organização; rota ou tela `/app/fora-de-expediente`; erro `OUT_O
 - Quantas rotas de `app/api/v1/` leem `conversations` com o client **admin** (que bypassa a RLS e
   portanto precisam repetir a regra de setor à mão). Comando:
   `grep -rl "conversations" app/api/v1 --include=route.ts | xargs grep -l "createAdminClient\|supabase/admin"`.
+  **MEDIDO em 2026-11-19 (T0(d)), `origin/develop` em `365a670`** — o comando acima **superestima**: só
+  confere que a palavra aparece e que o client admin é importado, não que o admin consulta a tabela.
+
+  | O que se mede | Comando | Resultado |
+  |---|---|---|
+  | `route.ts` que citam `conversations` | `grep -rl "conversations" app/api/v1 --include=route.ts \| wc -l` | **44** |
+  | …com o client admin importado (o comando acima) | o comando acima, com `\| wc -l` | **23** |
+  | …em que o **admin consulta `conversations` diretamente** | `grep -rPzl "\b(admin\|adminClient\|service\|svc\|createAdminClient\(\))\s*\.from\(\s*[\"']conversations[\"']" app/api/v1 --include=route.ts \| tr '\0' '\n'` (`-z` trata o arquivo como uma linha, para pegar o `.from(` na linha de baixo) | **7** |
+
+  **As 7 não servem um `agent`:** `admin/dashboard/kpis`, `admin/inbox/conversations`,
+  `admin/inbox/conversations/[id]`, `admin/tenants/[id]` e `admin/usage` (console de platform admin) e
+  `cron/contact-phones` e `cron/snooze-watcher` (segredo, sem sessão). **As 8 rotas de `agent`/`viewer`
+  entre as 23** (`agenda/agendamentos/[id]`, `ai/cases/[id]/reply`, `conversations/[id]/{close,media,notes,transfer}`,
+  `conversations/open-with-contact`, `metrics/attendants`) **não consultam `conversations` com o admin**
+  na medição por texto. **Lido linha a linha em 4 delas** (`close`, `media`, `notes`, `agendamentos/[id]`):
+  a leitura de visibilidade da conversa usa o client da **sessão** (`createClient()`, sob RLS) e o admin
+  só entra depois, para efeito (`rpc`, storage, evento). Com a RLS de setor ligada na T4b, essas herdam
+  a regra sem mudança. **Não lidas linha a linha:** `transfer`, `open-with-contact` (a spec já a
+  declara "não afetada", §4.3), `ai/cases/[id]/reply` e `metrics/attendants`.
+
+  **O trabalho real da T3 está fora de `route.ts`** — onde o admin chega a `conversations` por helper,
+  por parâmetro ou pelo MCP:
+  - **MCP:** `ctx.supabase` é o client **admin** (`lib/mcp/server.ts:41`). `from("conversations")` em
+    `lib/mcp/tools/handoff.ts` (linha 139) e `lib/mcp/tools/governance.ts`.
+  - **Helpers com `createAdminClient` que consultam `conversations`:** `lib/routing/worker.ts`,
+    `lib/ai/dispatcher/index.ts`, `lib/ai/handoff/orchestrator.ts`, `lib/ai/rag/ingest/conversations.ts`,
+    `lib/ai/runtime/agent.ts`, `lib/lgpd/export-collector.ts`; e os workers `workers/ai-response-worker.ts`
+    e `workers/ai-sentiment-worker.ts` (processos internos, sem pessoa em sessão).
+  - **Chamadores de `fn_can_view_conversation` que não são policy:** `fn_appointment_stamp`,
+    `fn_meet_action`, `fn_reply_action` (já na T3).
+
+  **A medição é um PISO, não o total.** O scan casa texto: acha `createAdminClient()` ligado a uma
+  variável **no mesmo arquivo** e **não acha** um client admin recebido como parâmetro com outro nome
+  (`db`, `client`) — é assim que `lib/routing/queue.ts` e o MCP o recebem. **Não medido:** (1) **quem chama
+  o MCP** (token de API ou agente de IA) e se um `agent` humano chega às ferramentas, o que decide se o MCP
+  entra no escopo de setor; (2) se cada helper acima **lista conversas para uma pessoa em sessão** ou só
+  serve processo interno. A T3 fecha esses dois pontos, helper a helper.
 
 ## 2. Decisão de design
 
