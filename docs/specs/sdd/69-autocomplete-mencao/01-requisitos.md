@@ -57,8 +57,8 @@ Acréscimos da spec (a issue deixou implícitos):
 - Avisar o **autor** de quem foi de fato notificado.
 
 ## Perguntas em aberto
-Cada uma vira decisão em [`05-revisao.md`](05-revisao.md). **Nenhuma bloqueia o design**; a
-proposta da spec está indicada.
+**Todas decididas em 2026-11-19, conforme a proposta** — ver [`05-revisao.md`](05-revisao.md).
+O texto abaixo é mantido como o registro da pergunta.
 
 | # | Pergunta | Proposta da spec |
 |---|---|---|
