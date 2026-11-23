@@ -16,20 +16,33 @@ Reproduza as medições: `grep -rn "startOfWeek(startOfMonth" app components lib
 `grep -n "MAXIMO_DE_DIAS" lib/agenda/consulta.ts`.
 
 **NÃO VERIFICADO:** o comportamento em navegador (a causa vem de leitura de código e da simulação
-de datas da issue); o defeito no mês anterior (P2); se a janela maior altera de modo perceptível a
-consulta de horários livres de `AgendaInterativa` no Mês (a T0 mede); se o mapa vivo
+de datas da issue); o defeito no mês anterior (P2: o CA-4 prova); se o mapa vivo
 (`docs/architecture/`) lista `lib/agenda/*` (a T0 confere).
 
+**Efeito do recorte maior em horários livres (verificado por leitura, review do Sciuba):** a rota
+aceita até 62 dias (`app/api/v1/agenda/horarios-livres/route.ts:86`, `MAXIMO_DE_DIAS`) e
+`horariosLivres` já descarta o que vem antes de `agora + avisoMinimo`
+(`lib/agenda/horarios-livres.ts:296`). 42 dias não gera 422; o custo é calcular slots a mais.
+
+**Limite de 200 linhas:** a listagem ordena por `starts_at` crescente com `limit`
+(`lib/agenda/consulta.ts:491-492`), então o corte remove a cauda da janela, os dias do mês seguinte.
+Decisão em P4 (`05-revisao.md`).
+
 ## 2. Decisão de design
-Extrair para `lib/agenda/recorte-da-grade.ts` funções puras, sem I/O e sem relógio (a âncora é
+Extrair para `lib/agenda/janela-da-grade.ts` funções puras, sem I/O e sem relógio (a âncora é
 argumento):
 1. `inicioDaGradeDoMes(ancora)` → `startOfWeek(startOfMonth(ancora), { weekStartsOn: 0 })`.
-2. `recorteDaGrade(visao, ancora)` → `{ de, ate }` em ISO. Mês: `de = inicioDaGradeDoMes(ancora)`, `ate = de + 42 dias`. Semana e Dia: as fórmulas atuais, sem alteração.
+2. `janelaDaGrade(visao, ancora)` → `{ de, ate }` em ISO. Mês: `de = inicioDaGradeDoMes(ancora)`, `ate = de + 42 dias`. Semana e Dia: as fórmulas atuais, sem alteração.
 
 `VisaoDeMes` passa a obter `primeiro` de `inicioDaGradeDoMes`, e `_client.tsx` troca o corpo do
-`useMemo` por `recorteDaGrade(visao, ancora)`. O número 42 vem de uma constante exportada
+`useMemo` por `janelaDaGrade(visao, ancora)`. O número 42 vem de uma constante exportada
 (`DIAS_DA_GRADE_DO_MES`) que `VisaoDeMes` também usa para gerar as 6 semanas, para que desenho e
 busca não divirjam de novo.
+
+**Nome:** a função é `janelaDaGrade`, e não `recorteDaGrade`, porque `_client.tsx` já tem
+`const recorteDaGrade = React.useMemo(...)`. Importar uma função com o mesmo nome e chamá-la dentro
+desse `useMemo` sombrearia o import (review do Sciuba, ponto 2). O `const` mantém o nome; só o corpo
+passa a chamar `janelaDaGrade`.
 
 ### Alternativas recusadas
 | Alternativa | Por que não |
@@ -42,7 +55,7 @@ busca não divirjam de novo.
 ```ts
 export const DIAS_DA_GRADE_DO_MES = 42; // 6 semanas × 7 dias
 export function inicioDaGradeDoMes(ancora: Date): Date;
-export function recorteDaGrade(
+export function janelaDaGrade(
   visao: "dia" | "semana" | "mes",
   ancora: Date,
 ): { de: string; ate: string };
@@ -55,7 +68,7 @@ Nenhuma mudança de schema, RLS, API ou contrato. Sem migration, sem `baseline.s
 ## 5. Rastreabilidade
 | Requisito | Onde é atendido neste design |
 |---|---|
-| RF-1 | §2 (`recorteDaGrade`, Mês) |
+| RF-1 | §2 (`janelaDaGrade`, Mês) |
 | RF-2 | §2 (uso nos dois pontos) |
 | RF-3 | §2 + prova e2e em `03-testes.md` |
 | RF-4 | §2 (Semana e Dia inalterados) |
@@ -74,6 +87,6 @@ Nenhuma mudança de schema, RLS, API ou contrato. Sem migration, sem `baseline.s
 ## 7. Riscos
 | Risco | Mitigação |
 |---|---|
-| A janela maior (42 dias) torna mais provável o truncamento do limite de 200 linhas | Fora de escopo, registrado; a janela continua abaixo do teto de dias |
-| `recorte` também alimenta horários livres e a janela do Mês cresce | A T0 mede; CA-6 garante Semana e Dia intactos |
-| Soma de 42 dias atravessando horário de verão | `addDays` do date-fns soma dias de calendário; o unitário usa âncoras de virada de mês e de ano |
+| A janela maior (42 dias) torna mais provável o truncamento do limite de 200 linhas, e o corte cai na cauda (mês seguinte): em agenda cheia o defeito reaparece sem aviso, só nos últimos dias | Fora de escopo, com **decisão registrada do dono (P4)**: aceitar nesta spec e abrir issue própria, ou outra |
+| `recorte` também alimenta horários livres e a janela do Mês cresce | Verificado por leitura (§1): sem 422, custo de slots a mais. CA-6 garante Semana e Dia intactos |
+| Soma de 42 dias atravessando horário de verão | `addDays` do date-fns soma dias de calendário; CA-2 mede com `differenceInCalendarDays` e inclui âncora com mudança de horário, fuso do teste fixado |
