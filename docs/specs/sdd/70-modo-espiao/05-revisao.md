@@ -34,7 +34,7 @@ resolvidas** — quem resolve é o revisor. Cada ponto aponta o commit que o cob
 | 3 | Toggle redundante com o RF-1 | **Virou decisão explícita (Q7)**, com a lista do que cai se sair. Não removi sozinho: a issue o pede. **Depois resolvido pelo dono: selo fixo e neutro** (ver as 3 linhas abaixo) | `67c6742`, `2ad9f3f` |
 | 7 | **Pós-aprovação (16:03):** toggle → selo fixo, só indicador; Q6 cai; RF-2, RF-3/CA-3, CA-5 e T4 mudam | **Acatado.** RF-2 descreve o selo, CA-5 o verifica, T4 troca "toggle" por "selo", Q6 marcada como removida com o motivo | `2ad9f3f` |
 | 8 | **Pós-aprovação (16:07):** texto do selo neutro, "Conversa de <titular>"; teste de o gestor virar titular | **Acatado.** Texto neutro em RF-2/CA-5; **CA-9 novo** (`claim`/`transfer` → selo some e `mark-read` zera para o gestor) | `2ad9f3f` |
-| 9 | **Pós-aprovação (16:07):** Q5 continua fora; escrever em `02-design.md` §1.4 que o gestor responde e zera o contador do titular | **Acatado.** Parágrafo "Limitação conhecida (Q5)" na §1.4, com a transferência | este push (ver `git log`) |
+| 9 | **Pós-aprovação (16:07):** Q5 continua fora; escrever em `02-design.md` §1.4 que o gestor responde e zera o contador do titular | **Acatado.** Parágrafo "Limitação conhecida (Q5)" na §1.4, com a transferência | `44d1e13` |
 | 4 | Medir `assignee_kind` e tipo de ator antes de aprovar | **Acatado e medido** (`02-design.md` §1.6): IA tem dono nulo pelo CHECK; handler recusa ator não-usuário. T0(b)/(e) fechadas | `2363cc1` |
 | 5 | Volume do audit sem dedupe | **Acatado.** 1 linha por (org, conversa, ator) a cada 30 min, falha aberta | `b12cf76` |
 | 6 | Como a suíte `invariants` chama a rota | **Acatado.** Ela não chama; CA-1 passa a ser e2e de API pela rota + invariante só do predicado SQL | `2363cc1` |
