@@ -23,6 +23,11 @@ import { cn } from "@/lib/utils";
 const buttonVariants = cva(
   [
     "group inline-flex items-center justify-center gap-2 whitespace-nowrap",
+    // Celular: caixa-alta + `tracking-widest` alargam o rótulo, e `nowrap` o impede
+    // de quebrar — um rótulo longo vira mais largo que o contêiner e estoura a tela.
+    // Abaixo de `sm` ele pode quebrar em duas linhas (cabem nos 44px de altura) e
+    // nunca passa da largura do pai. Desktop segue em linha única.
+    "max-sm:max-w-full max-sm:whitespace-normal max-sm:text-center max-sm:leading-tight",
     "rounded-xl font-black uppercase tracking-widest",
     "transition-all duration-200 ease-out",
     "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
