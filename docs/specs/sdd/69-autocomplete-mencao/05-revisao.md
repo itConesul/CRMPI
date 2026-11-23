@@ -5,10 +5,10 @@
 |---|---|---|---|
 | 2026-11-19 | D-1 · Como conduzir a issue (base, formato, branch) | Seguir o que o projeto já tem: base `develop`, pasta SDD de 6 arquivos, branch `docs/sdd-69-...`. | cMoreiraSul (autor da spec, no chat) |
 | 2026-11-19 | D-2 · Ambiguidade de menção | O autocomplete **lista os membros para o usuário selecionar** (origem de RF-2 e RF-4). A medição em `02-design.md` §1 mostrou que o token por nome falha para alguns nomes; a spec responde com a queda para `@<user_id>` (Q1, decidida abaixo). | cMoreiraSul (autor da spec, no chat) |
-| 2026-11-19 | Q1 · token `@<user_id>` para quem não tem token por nome | **Sim**, como proposto. | cMoreiraSul (chat: "aprovado com as propostas") — **confirmação do dono do produto pendente no PR #89** |
-| 2026-11-19 | Q2 · listar o próprio autor | **Não**, como proposto. | cMoreiraSul (idem) — confirmação do dono do produto pendente |
-| 2026-11-19 | Q3 · filtro ignora acentos | **Não**, como proposto (igual ao `TemplateMenu`; CA-4 permanece só com maiúsculas). | cMoreiraSul (idem) — confirmação do dono do produto pendente |
-| 2026-11-19 | Q4 · destacar `@` no `NoteCard` | **Fora de escopo**, como proposto. | cMoreiraSul (idem) — confirmação do dono do produto pendente |
+| 2026-11-19 | Q1 · token `@<user_id>` para quem não tem token por nome | **Sim**, como proposto. | cMoreiraSul (chat: "aprovado com as propostas") · **confirmada pelo Sciuba (dono do produto) em 2026-11-23, no review do PR #89** |
+| 2026-11-19 | Q2 · listar o próprio autor | **Não**, como proposto. | cMoreiraSul (idem) · confirmada pelo Sciuba em 2026-11-23 |
+| 2026-11-19 | Q3 · filtro ignora acentos | **Não**, como proposto (igual ao `TemplateMenu`; CA-4 permanece só com maiúsculas). | cMoreiraSul (idem) · confirmada pelo Sciuba em 2026-11-23 |
+| 2026-11-19 | Q4 · destacar `@` no `NoteCard` | **Fora de escopo**, como proposto. | cMoreiraSul (idem) · confirmada pelo Sciuba em 2026-11-23 |
 
 ## Comentários de review
 | Data | Revisor | Comentário | Resolução |
@@ -19,5 +19,9 @@
 
 ## Aprovação
 - [x] **Aprovada por:** cMoreiraSul, em 2026-11-19, no chat, com as propostas Q1–Q4 — implementação liberada após o merge do PR #89
-- [ ] **Confirmação do dono do produto (Sciuba):** pendente no review do PR #89 (Q1–Q4 e os pontos de atenção do comentário). Em 2026-11-23 ele pediu três ajustes (tabela acima), aplicados nesta revisão; a confirmação sai depois que ele reler.
-- **Estado do README:** `em-revisao` até a confirmação acima; só então volta a `aprovada` (o `04-tarefas.md` não começa antes).
+- [x] **Confirmação do dono do produto (Sciuba):** `APPROVED` em 2026-11-23 no PR #89, sobre `eaa57bf`. Ele conferiu os três ajustes (`16d632b`) contra o código e confirmou Q1–Q4.
+- [x] **Merge:** PR #89 mergeado na `develop` em 2026-11-23 20:49 UTC, merge commit `9defd7b`. Os 6 arquivos desta pasta estão na `develop`.
+- **Estado do README:** `aprovada`. O `04-tarefas.md` pode começar. Ao entrar na implementação o estado passa a `implementando`.
+
+## Pendências registradas na aprovação
+- **Fora deste PR — issue própria (ainda não aberta):** o possível vazamento do `body_preview` da nota a um `viewer` (`emitirMencoesDaNota` não filtra por papel). Segundo o Sciuba, **não está confirmado**. Tem a mesma raiz de R4(c) em `02-design.md` §7.

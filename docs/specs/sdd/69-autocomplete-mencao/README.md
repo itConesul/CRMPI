@@ -1,9 +1,10 @@
 # PRD-03 · Autocomplete de `@usuário` nas notas internas
 
 **Issue:** #69 — https://github.com/itConesul/CRMPI/issues/69
-**Estado:** `em-revisao`  <!-- rascunho | em-revisao | aprovada | implementando | concluida | substituida -->
+**Estado:** `aprovada`  <!-- rascunho | em-revisao | aprovada | implementando | concluida | substituida -->
 **Autor:** cMoreiraSul (com Claude)
 **Medido em:** `365a670` (`origin/develop`, 2026-11-19)
+**Aprovação:** Sciuba (dono do produto), 2026-11-23, review do PR #89 · mergeado na `develop` em 2026-11-23, `9defd7b` — detalhes em [`05-revisao.md`](05-revisao.md)
 
 ## Resumo
 Notas internas, o aviso `mention` em tempo real e o card âmbar **já existem**. Falta só o
@@ -22,10 +23,11 @@ nova, sem dependência nova** (sem TipTap).
 | [`05-revisao.md`](05-revisao.md) | Decisões e aprovação |
 
 ## Checklist de aprovação
-- [ ] Cada requisito rastreia para um trecho da issue
-- [ ] Toda afirmação sobre o código existente cita arquivo e foi verificada
-- [ ] Todo critério de aceite tem dono de prova em `03-testes.md`
-- [ ] Fora de escopo está explícito
-- [ ] Impacto em schema, RLS, API e `.changes/` declarado (ou declarado como "nenhum")
-- [ ] Living System Checklist respondido em `02-design.md`
-- [ ] Revisor registrou a aprovação em `05-revisao.md`
+Marcado em 2026-11-23, após a aprovação do Sciuba no PR #89 (ele leu a spec inteira e conferiu as afirmações sobre o código).
+- [x] Cada requisito rastreia para um trecho da issue
+- [x] Toda afirmação sobre o código existente cita arquivo e foi verificada
+- [x] Todo critério de aceite tem dono de prova em `03-testes.md`
+- [x] Fora de escopo está explícito
+- [x] Impacto em schema, RLS, API e `.changes/` declarado (ou declarado como "nenhum")
+- [x] Living System Checklist respondido em `02-design.md`
+- [x] Revisor registrou a aprovação em `05-revisao.md`
