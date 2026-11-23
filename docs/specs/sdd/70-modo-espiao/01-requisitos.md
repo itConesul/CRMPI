@@ -68,6 +68,7 @@ Detalhadas em [`05-revisao.md`](05-revisao.md); cada uma tem a medição e uma r
 | Q1 | A regra "só o titular zera" (RF-1) vale para todos os papéis? Ela **substitui** a necessidade do toggle ou convive com ele? | RF-1, RF-2, RF-3 |
 | Q2 | Conversa sem dono: quem zera? | RF-6, CA-7 |
 | Q3 | Reescrever o aceite "ticks cinzas"? Alguém precisa medir se o WAHA/Meta marca como lido sozinho | RF-4 |
-| Q4 | Auditar toda abertura ou só quando o modo está ativo? Qual evento emite (o `mark-read` não serve) | RF-5 |
+| Q4 | ~~Auditar toda abertura ou só com o modo ativo~~ **Reformulada pelo review:** auditar no servidor, na leitura, com dedupe de 30 min (`02-design.md` §2.3). Pergunta ao dono: a janela de 30 min serve? | RF-5 |
 | Q5 | Responder uma conversa alheia zera o contador do titular — mudar? | escopo |
-| Q6 | O toggle persiste (por usuário? por sessão?) e é padrão ligado em conversa alheia? | RF-2 |
+| Q6 | O toggle persiste (por usuário? por sessão?) e é padrão ligado em conversa alheia? Só vale se a Q7 mantiver o toggle | RF-2 |
+| Q7 | **O toggle fica ou sai?** O RF-1 já impede o gestor de zerar o contador alheio com ou sem toggle (review Sciuba pt 3). Se sair, caem RF-2, RF-3, CA-3, CA-5, Q6 e a T4 | RF-2, RF-3 |
