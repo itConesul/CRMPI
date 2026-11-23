@@ -577,6 +577,7 @@ jobs:
         agenda-presenca-recuperacao.spec.ts
         agenda-google-sync.spec.ts
         agenda-google-meet.spec.ts
+        agenda-mes-dias-de-outro-mes.spec.ts
         encerramento-atendimento.spec.ts
         interface-por-vinculo.spec.ts
         olhar-telas-do-epico.spec.ts
