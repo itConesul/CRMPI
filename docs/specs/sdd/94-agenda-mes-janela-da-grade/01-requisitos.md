@@ -27,7 +27,7 @@ Os da issue, reescritos com ID. A prova de cada um fica em [`03-testes.md`](03-t
 | CA-2 | O recorte do Mês tem exatamente 42 dias e é menor ou igual a `MAXIMO_DE_DIAS` | RF-1, RF-5 |
 | CA-3 | `VisaoDeMes` e `recorteDaGrade` importam a função compartilhada; nenhum deles calcula o início da grade por conta própria | RF-2 |
 | CA-4 | E2e pela tela: no Mês, um compromisso numa célula `celula-mes-*` de outro mês aparece nela, independente da data de execução | RF-3, RNF-1 |
-| CA-5 | `agenda-ocupacao-do-google-na-grade.spec.ts` passa em dom 22/11 e seg 23/11/2026 (data simulada ou execução real) e em qualquer outro dia | RF-3 |
+| CA-5 | `agenda-ocupacao-do-google-na-grade.spec.ts` passa em dom 22/11 e seg 23/11/2026 (execução real em 23/11, decisão P3) e em qualquer outro dia | RF-3 |
 | CA-6 | Semana e Dia devolvem o mesmo recorte que devolviam antes (teste de valor, com datas fixas) | RF-4 |
 | CA-7 | O diff da implementação não contém migration, `baseline.sql`, rota de API nem tipo de contrato | RF-5 |
 | CA-8 | `pnpm typecheck`, `pnpm lint` e `pnpm test:unit` verdes; `pnpm release:conferir` aceita o fragmento | RNF-2 |
