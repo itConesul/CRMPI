@@ -283,8 +283,15 @@ Dois mecanismos independentes, cada um com uma **função pura** testável sem b
      Sessão que não é o ator → não marca (e a linha segue sendo gravada). Só `admin` e `manager`
      marcam. **`agent` nunca marca, nem em rota isenta**
      (`mark-read`, `attendants/availability`): isenção é "o `agent` não é barrado ali", não é bypass.
-     Platform admin sem vínculo com a organização devolve papel `null` e não marca; a sessão de suporte
-     já carrega `support_session_id` no `metadata` (decisão **aberta** para o dono do produto, abaixo).
+     **Platform admin e sessão de suporte (proposta revisada em 2026-11-23, review do #87 item 3):
+     MARCAM.** Eles passam pelo gate sem serem barrados (RF-6, RNF-1) e são os atores com mais poder e
+     menos rastro de "fora do expediente": a sessão de suporte tem `support_session_id`, mas isso diz
+     *quem* agiu, não *quando*; o platform admin sem vínculo não deixa nada. A `rpc` de papel devolve
+     `null` para o platform admin sem vínculo, então para esses dois a regra 4 **não depende do papel**:
+     `support_session_id` e `entry.actingAsPlatformAdmin` já estão no `audit()` na hora de gravar
+     (`lib/audit/index.ts`) e contam como bypass, sem `rpc`. Custo: uma condição na regra 4. **A versão
+     anterior desta spec dizia "não marcam" como padrão; era escolha de quem escreveu, não decisão do
+     dono. Agora é uma pergunta explícita a ele (abaixo).**
   5. **Falha nunca atrapalha:** erro ou tempo esgotado em 3 ou 4 → não marca e segue; o `try/catch`
      fica dentro do `audit()` e a linha é gravada sem o campo. Registra `logger.warn`, **sem** alerta
      Sentry por mutação (seria ruído proporcional ao tráfego); falha de *gravação* do audit continua
@@ -295,6 +302,22 @@ Dois mecanismos independentes, cada um com uma **função pura** testável sem b
      Não é alerta por mutação: o ruído fica limitado a 1 por organização/dia/processo. A prova de que
      o caminho marca continua sendo o e2e da T2c; o aviso cobre o que o e2e não vê, a falha em
      produção depois do deploy.
+  - **`void audit()` (125 chamadas): o que se sabe, o que NÃO foi medido e o que a T2c mede antes de
+    depender disto (review do #87, item 2).** Fato lido no código, **não** medição: o corpo de
+    `audit()` roda **de forma síncrona até o primeiro `await`**, dentro do contexto da requisição, mesmo
+    quando o chamador faz `void audit(...)`. E o `audit()` de hoje já lê `cookies()` (via
+    `createClient()`) depois de `await`s nesses mesmos casos — **precedente, não prova** de que
+    `headers()` se comporta igual. **Regra decorrente (proposta):** a regra 2 chama `headers()` **na
+    primeira instrução do `audit()`, antes de qualquer `await`** (guarda só a promessa; o `await` vem
+    depois), para a leitura não depender de o contexto sobreviver ao fim da resposta.
+    **Medição que falta, antes de a T2c depender disto:** em build de produção contra o Supabase local,
+    uma rota de sonda (descartável, não commitada — a mesma técnica da Server Action) faz
+    `void audit({...})` e responde na hora; lê-se `api_audit_log` por `request_id`. Critério: a linha
+    tem `fora_do_expediente` quando `admin` age fora do expediente. **Se falhar**, o mecanismo "o
+    `audit()` decide" não vale para as 125 chamadas e a spec volta à mesa (alternativas: converter em
+    `await audit()` as chamadas de mutação relevantes, ou outro canal — o `AsyncLocalStorage` já foi
+    recusado por fragilidade). **Resultado: AINDA NÃO MEDIDO** — este PR é só de texto e a medição pede
+    um build de produção; registrar aqui o comando e a saída quando for feita.
   - **Uma só verdade para a decisão.** "Fora do expediente **e** `admin`/`manager`" **já é uma função
     pura**, escrita na T1: `expedienteBarra({ papel, config, agora }).bypassAuditado`
     (`lib/expediente/expediente.ts`, no PR do gate). O `audit()` **chama essa função**; não reimplementa
@@ -330,9 +353,12 @@ Dois mecanismos independentes, cada um com uma **função pura** testável sem b
     regra 2 exclui por nome a família `auth.` (`grep -c '^  "auth\.' lib/audit/actions.ts` → 19
     códigos) além de `authz.denied`; a T2c mede que outras famílias de sessão/perfil entram
     (`profile.*`, `onboarding.*`) e fecha a lista numa **constante compartilhada**, com teste.
-  - **Decisão aberta (dono do produto):** sessão de suporte/impersonação e platform admin **não**
-    marcam nesta proposta (RF-6 fala de `admin`/`manager` do tenant; o suporte já é rastreado por
-    `support_session_id`). Se o dono quiser marcá-los também, é uma linha na regra 4.
+  - **Decisão aberta (dono do produto): sessão de suporte/impersonação e platform admin marcam ou
+    não?** **Recomendação desta spec: marcam** (razão na regra 4). Alternativa: não marcam, porque o
+    RF-6 fala só de `admin`/`manager` do tenant e o suporte já é rastreado por `support_session_id`. A
+    diferença é uma condição na regra 4 e duas linhas em `03-testes.md`; **a spec não escolhe por
+    ele**, e a T2c não começa sem a resposta. Ressalva: marcar o suporte pode virar ruído numa
+    instalação em que o suporte atua fora do horário por rotina — é decisão de produto.
   - **Vigia:** só `lib/audit/index.ts` pode inserir em `api_audit_log`; hoje há **um escritor que o
     contorna**, `lib/ai/handoff/orchestrator.ts` (ação da IA, sem ator humano, fora da regra por
     construção). A varredura de `03-testes.md` o nomeia numa allowlist com motivo que só encolhe.
