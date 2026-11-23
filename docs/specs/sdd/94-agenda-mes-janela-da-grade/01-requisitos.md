@@ -34,7 +34,7 @@ Os da issue, reescritos com ID. A prova de cada um fica em [`03-testes.md`](03-t
 
 ## Fora de escopo
 Como a issue declara:
-- **Limite de 200 linhas** da listagem (`app/api/v1/agenda/agendamentos/route.ts:179`): risco anterior a este bug, registrado em `02-design.md` §7. A listagem ordena por `starts_at` crescente (`lib/agenda/consulta.ts:491-492`), então o corte tira a **cauda** da janela, justamente os dias do mês seguinte que esta spec passa a buscar. **O dono aceitou esse risco (P4)**: segue fora desta spec e não a segura. Há issue própria para tratar o corte, com aviso na tela ou paginação (número a registrar quando a issue existir).
+- **Limite de 200 linhas** da listagem (`app/api/v1/agenda/agendamentos/route.ts:179`): risco anterior a este bug, registrado em `02-design.md` §7. A listagem ordena por `starts_at` crescente (`lib/agenda/consulta.ts:491-492`), então o corte tira a **cauda** da janela, justamente os dias do mês seguinte que esta spec passa a buscar. **O dono aceitou esse risco (P4)**: segue fora desta spec e não a segura. A issue própria **#96** trata o corte (aviso na tela ou paginação).
 - **Primeira pintura do servidor** (`app/app/agenda/page.tsx`): usa só a semana corrente e não é afetada.
 - **Falhas de e2e no celular** (`scrollWidth > clientWidth`, vistas só na branch `feat/identidade-visual-cone-sul`): outra causa, issue própria.
 - **Plano de evolução do Google Agenda** (seção "Plano" da issue, em aberto).
@@ -44,6 +44,6 @@ Acréscimo da spec: o teste atual `agenda-ocupacao-do-google-na-grade.spec.ts` n
 ## Perguntas em aberto
 Nenhuma. P1 a P4 decididas em 2026-11-23 ([`05-revisao.md`](05-revisao.md); P3 e P4 após o review do Sciuba). O texto original fica abaixo como histórico.
 - **P1 (decidida: fora).** `components/agenda/PainelDeMarcacao.tsx:187` tem outro `startOfWeek(startOfMonth(mes))`, no mini-calendário do painel. Fica fora desta spec (a issue cita só `VisaoDeMes` e `recorteDaGrade`), ou passa a usar a função compartilhada? Incluí-lo é crescer o escopo. [NÃO ANALISADO por dentro]
-- **P2 (decidida: sim, o e2e prova também o mês anterior).** O defeito nos dias do mês **anterior** decorre do mesmo cálculo, mas a issue diz que não foi observado em execução. A spec o trata como coberto por CA-1, e o e2e (CA-4) deve provar também uma célula do mês anterior. Confirma?
+- **P2 (decidida: sim, o e2e prova também o mês anterior).** O defeito nos dias do mês **anterior** decorre do mesmo cálculo, mas a issue diz que não foi observado em execução. A spec o trata como coberto por CA-1, e o e2e (CA-4) deve provar também uma célula do mês anterior.
 - **P3 (decidida, revisada).** A decisão inicial ("rodar hoje") não era executável: o 23/11 só serve se o código corrigido já existir hoje. **Decisão do dono (23/11):** prova por âncoras fixas no CA-1 e o e2e existente como regressão, na data da execução registrada, sem dia exigido.
-- **P4 (decidida).** Limite de 200 linhas: **fora desta spec**; o dono aceitou o risco de corte da cauda do mês seguinte em agenda cheia, e uma issue própria trata do corte (aviso na tela ou paginação).
+- **P4 (decidida).** Limite de 200 linhas: **fora desta spec**; o dono aceitou o risco de corte da cauda do mês seguinte em agenda cheia, e a issue própria **#96** trata do corte (aviso na tela ou paginação).
