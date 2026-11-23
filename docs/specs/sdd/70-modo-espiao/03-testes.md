@@ -10,10 +10,11 @@ implementação começar (TDD: teste vermelho antes do código, nome do teste co
 | CA-1 | Contra banco real, **pela rota HTTP** (login do gestor, `POST mark-read`, depois `select unread_count_for_assignee` com service role): continua 3. Não vai em `tests/invariants/`: aquela suíte só fala SQL com `psql` e **não chama rota** (review do Sciuba, ponto 6) | e2e de API (Playwright `request`) | `tests/e2e/modo-espiao.spec.ts` (CA-1/CA-2/CA-7) | — |
 | CA-1 | O **predicado** que o handler emite (`UPDATE … WHERE assigned_to_user_id = :ator`) afeta 0 linhas para não titular e 1 para o titular, sob a RLS real | invariante SQL (`pnpm test:db`) | `tests/invariants/mark-read-so-do-titular.test.ts` — simula papel pelo mesmo helper de `gov-5d-queue-assign-unread.test.ts` (**T0 confirma** o helper) | — |
 | CA-2 | Titular chama a rota e o contador vira 0 | unit + integração | os mesmos arquivos | — |
-| CA-3 | Com o modo ativo, `useMarkAsRead` não chama `apiClient.post` depois de 1,5 s (timers falsos); sem o modo, chama | unit (hook) | `hooks/inbox/useMarkAsRead.test.tsx` | — |
-| CA-3 | Pela tela: gestor abre conversa alheia com 3 não lidas no modo espião; o badge do titular segue `3` (medido por `getComputedStyle`/texto, evidência em `.superpowers/evidence/`) | e2e | `tests/e2e/modo-espiao.spec.ts` | — |
+| CA-3 | Com o selo visível, `useMarkAsRead` não chama `apiClient.post` depois de 1,5 s (timers falsos); sem o selo (titular, ou `agent`), chama | unit (hook) | `hooks/inbox/useMarkAsRead.test.tsx` | — |
+| CA-3 | Pela tela: gestor abre conversa alheia com 3 não lidas, **sem tocar em controle algum**; o badge do titular segue `3` (medido por `getComputedStyle`/texto, evidência em `.superpowers/evidence/`) | e2e | `tests/e2e/modo-espiao.spec.ts` | — |
 | CA-4 | O handler e a rota não importam nem invocam `lib/channels/**` (varredura de AST/import) e um adaptador-espião injetado em teste não é chamado | unit | `tests/unit/mark-read-nao-fala-com-o-provedor.test.ts` | — |
-| CA-5 | Toggle ausente para `agent`, presente para `manager`/`admin` em conversa alheia, ausente em conversa própria | unit (componente) + e2e | `components/inbox/*.test.tsx` + `tests/e2e/modo-espiao.spec.ts` | — |
+| CA-5 | Selo ausente para `agent`; presente para `manager`/`admin` em conversa de outro titular, com o texto exato "Conversa de <titular>" e **sem** a palavra "espiando"; ausente em conversa própria e em conversa sem titular | unit (componente) + e2e | `components/inbox/*.test.tsx` + `tests/e2e/modo-espiao.spec.ts` | — |
+| CA-9 | **Gestor vira titular:** por `claim` e por `transfer` o selo some; com nova mensagem recebida e o gestor abrindo a conversa, o `mark-read` zera para ele (contador 0 no banco) | unit (componente) + e2e | `components/inbox/*.test.tsx` + `tests/e2e/modo-espiao.spec.ts` | — |
 | CA-6 | `listMessagesHandler` com ator `manager` e titular ≠ ator grava 1 linha; 2ª chamada na janela, 0 novas; titular na própria e conversa sem titular, 0; `agent` lendo conversa própria, 0 | unit | `app/api/v1/messages/espiao-auditoria.test.ts` | — |
 | CA-6 | **Sem depender da tela:** gestor chama `GET …/messages` direto e a linha existe em `api_audit_log` (prova que não depende do cliente) | e2e de API | `tests/e2e/modo-espiao.spec.ts` | — |
 | CA-6 | Dedupe falha aberta: com o contador de dedupe indisponível, a leitura ainda audita e responde 200 | unit | `app/api/v1/messages/espiao-auditoria.test.ts` | — |
@@ -39,8 +40,8 @@ pnpm lint:channels && pnpm typecheck && pnpm lint
 | Requisito | Critérios |
 |---|---|
 | RF-1 | CA-1, CA-2 |
-| RF-2 | CA-5 |
-| RF-3 | CA-3 |
+| RF-2 | CA-5, CA-9 |
+| RF-3 | CA-3, CA-9 |
 | RF-4 | CA-4 |
 | RF-5 | CA-6 |
 | RF-6 | CA-7 |

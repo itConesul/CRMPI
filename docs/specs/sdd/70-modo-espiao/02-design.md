@@ -62,14 +62,28 @@ da aprovação.
 `conv.assigned_to_user_id === ctx.actor.id`. Implementação: um `UPDATE … WHERE id = :id AND
 organization_id = :org AND assigned_to_user_id = :ator` seguido de leitura da conversa quando 0
 linhas afetadas (para distinguir "não é o titular" de 404). A rota segue exigindo `agent`. Se `ctx.actor.type !== "user"` o handler responde sem escrever (§1.6).
-Efeito: resolve o PRD para **todos** os papéis, sem depender de o gestor ligar toggle, e cobre o
+Efeito: resolve o PRD para **todos** os papéis, sem depender de controle algum na tela, e cobre o
 cliente antigo em cache. Sem dono → `assigned_to_user_id` é `null` ≠ ator → **não escreve** (RF-6).
 
-### 2.2 Toggle (RF-2, RF-3)
-No cabeçalho do chat, visível por `manager`+ em conversa cujo titular ≠ usuário. Com o modo ativo,
-`useMarkAsRead` recebe um flag e fica inerte (mesmo padrão do `readonly` de suporte). Como o RF-1
-já protege o servidor, o toggle é **conveniência de UX e economia de requisição**, não a defesa.
-Local do cabeçalho: **[NÃO VERIFICADO]** — T0 localiza o componente.
+### 2.2 Selo fixo e neutro (RF-2, RF-3)
+Decisão do dono (#70, 16:03 e 16:07): **não há toggle.** Com o RF-1, desligar o botão não mudaria
+nada para o titular, e um controle com estado sem efeito engana quem o usa.
+
+No cabeçalho do chat aparece o selo **"Conversa de <titular>"**, quando e somente quando: papel ≥
+`manager` (via o helper de papel do front, nunca `ROLE_RANK` direto) **e** conversa com titular humano
+≠ usuário. Não liga nem desliga, e não persiste. O texto é neutro porque o gestor também **responde**
+(`POST messages` exige `agent`) e **transfere** (`POST conversations/[id]/transfer`): "espiando"
+deixaria de ser verdade.
+
+`useMarkAsRead` fica **inerte enquanto o selo aparece** — mesmo padrão do `readonly` de suporte
+(`hooks/inbox/useMarkAsRead.ts:34`), com a mesma condição que decide o selo, de modo que os dois
+nunca divergem. É economia de requisição e sinal visual; **a defesa continua sendo o RF-1**.
+
+**Gestor vira titular** (`claim` ou `transfer`): a condição do selo deixa de valer, ele some, e o hook
+volta a marcar como lida normalmente — o CA-9 trava isso. O servidor já aceita (o ator passa a ser o
+titular).
+
+Local do cabeçalho: **[NÃO VERIFICADO]** — T0(a) localiza o componente.
 
 ### 2.3 Auditoria (RF-5) — **no servidor, na leitura**
 Revisão do Sciuba (pontos 1 e 5): a versão anterior auditava por uma rota `POST …/spy-view` que o
@@ -131,6 +145,10 @@ expõe conteúdo nenhum.
 ## 3. Alternativas recusadas
 - **Só o toggle (como o texto pede):** deixa o defeito para quem esquecer de ligá-lo e para o `agent`
   que abre conversa de outro (`own_and_unassigned` + `all`). A issue já aponta isso.
+- **Toggle convivendo com o RF-1** (versão anterior desta spec): o estado "desligado" não muda nada
+  para o titular, e um controle com estado sem efeito engana. Substituído pelo selo (§2.2).
+- **Selo "Você está espiando…":** a frase deixa de ser verdade quando o gestor responde ou transfere.
+  Texto neutro, "Conversa de <titular>".
 - **Coluna `read_by_user_id` / contador por usuário:** correto no limite, mas é schema e foge do
   "sem migration" da issue. Se Q1 revelar que o contador deve ser por leitor, **parar e alinhar**.
 - **Auditar dentro do `mark-read`:** não cobre conversa sem não lidas.
@@ -152,10 +170,10 @@ expõe conteúdo nenhum.
 |---|---|
 | Entrada e saída | Entrada: gestor abre conversa alheia. Saída: contador do titular intacto + linha de audit |
 | Emite log/atividade | `conversation.spy_viewed` em `api_audit_log` |
-| Aparece na tela | Toggle no cabeçalho; linha no painel de auditoria (**T0 confirma** que o painel a lista) |
+| Aparece na tela | Selo "Conversa de <titular>" no cabeçalho; linha no painel de auditoria (**T0 confirma** que o painel a lista) |
 | Porta na navegação | Sem tela nova; nada a declarar em `lib/navigation/registry.ts` |
 | Anti-morte | O não lido do titular deixa de morrer por olhar alheio — é o objetivo da issue |
 | Laço de retorno (invariante 7) | Se o gestor espiar demais, o audit mostra quem viu o quê; se RF-1 errar para o titular, o badge nunca zera e aparece no e2e (CA-2) |
 | Mapa vivo | **[A decidir no review]** se a peça (auditoria de leitura em `listMessagesHandler`) merece nó em `docs/architecture/`; exige ≥2 arestas (rota de mensagens/MCP → handler → audit) |
-| `.changes/` | 1 fragmento, `capacidade_nova` (o operador passa a ver o toggle e o contador deixa de ser zerado por terceiros) |
+| `.changes/` | 1 fragmento, `capacidade_nova` (o operador passa a ver o selo e o contador deixa de ser zerado por terceiros) |
 | Schema / RLS / API | Schema: nenhum. RLS: nenhuma. API: RF-1 muda comportamento do `mark-read`; `GET …/messages` passa a auditar; **nenhuma rota nova** |
