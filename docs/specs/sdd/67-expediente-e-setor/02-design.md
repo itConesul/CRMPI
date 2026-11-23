@@ -238,10 +238,11 @@ Dois mecanismos independentes, cada um com uma **função pura** testável sem b
     quinta na ordem de `04-tarefas.md` (depois de T4a, T3, T4b e T5): sem decisão, o contador seria
     **escrito e não lido** por vários PRs — "evento sem consumer", o anti-pattern 3 do `CLAUDE.md`, e
     o DoD 13 ("aparece na tela") sem resposta. Como o contador só guarda "hoje" (validade de 48 h),
-    escrever antes da T6 **não preserva histórico nenhum**. Três saídas, **pendentes do dono do
-    produto** (`05-revisao.md`):
+    escrever antes da T6 **não preserva histórico nenhum**. Três saídas; **o dono escolheu a (b) em
+    2026-11-23** ([#67](https://github.com/itConesul/CRMPI/issues/67#issuecomment-7105707792), registrado em
+    `05-revisao.md`) — as outras ficam como o histórico do que foi recusado:
     - **(a)** Aceitar o intervalo, com o leitor (T6) e o prazo escritos. Sem nada visível até lá.
-    - **(b) — recomendada:** o `GET /api/v1/settings/expediente` devolve `barrados_hoje` (número, ou
+    - **(b) — ESCOLHIDA pelo dono:** o `GET /api/v1/settings/expediente` devolve `barrados_hoje` (número, ou
       `null` com o Redis fora) **só a `admin`/`manager`**; `agent` e `viewer` recebem `null`. O laço fecha
       já, o código existente é reaproveitado, e a tela da T6 só passa a consumir o que a API já dá.
       Custo: o contrato da rota ganha um campo que depende do papel.
@@ -251,8 +252,9 @@ Dois mecanismos independentes, cada um com uma **função pura** testável sem b
 - **Na tela:** uma faixa no shell do app (mesmo lugar de `FaixaDeAvisos`) mostra a janela da empresa
   e a próxima abertura, e os controles de ação ficam desabilitados com o motivo. Calculado no
   servidor pela mesma função pura, para cliente e servidor não divergirem.
-- **Bypass auditado (RF-10) — mecanismo PROPOSTO em 2026-11-18, pendente do ok do dono do produto
-  (`05-revisao.md`); troca o texto anterior, "o `requireRole` devolve `foraDoExpediente` e a rota o
+- **Bypass auditado (RF-10) — mecanismo proposto em 2026-11-18 e ACEITO pelo dono do produto em
+  2026-11-23 ([#67](https://github.com/itConesul/CRMPI/issues/67#issuecomment-7105707792);
+  `05-revisao.md`); troca o texto anterior, "o `requireRole` devolve `foraDoExpediente` e a rota o
   repassa ao `audit()`".** Quem decide é o próprio `audit()` (`lib/audit/index.ts`), na hora de gravar
   a linha da mutação que **já** vai gravar: acrescenta `metadata.fora_do_expediente = true`. Não há
   linha nova — a doutrina de audit manda auditar quando há efeito, e uma linha emitida no gate
@@ -268,7 +270,7 @@ Dois mecanismos independentes, cada um com uma **função pura** testável sem b
      requisição (workers) e as rotas `GET` que auditam leitura. A linha de recusa `authz.denied`
      (emitida pelo `requireRole`) é excluída por nome: é a recusa, não a ação. O carimbo **chega às
      Server Actions** (`POST`, medido — ver "Server Actions" abaixo), por isso a família de sessão
-     `auth.` também é excluída por nome (proposta pendente do dono).
+     `auth.` também é excluída por nome (decidido pelo dono em 2026-11-23, ponto 6).
   3. **O expediente da organização**, lido pelo **mesmo carregador do gate** (`carregarExpediente`),
      com **cache por organização e TTL curto — proposta: 30 s**, em memória do processo, descartado
      quando `PATCH /settings/expediente` roda no mesmo processo. Sem expediente configurado, ou
@@ -283,7 +285,7 @@ Dois mecanismos independentes, cada um com uma **função pura** testável sem b
      Sessão que não é o ator → não marca (e a linha segue sendo gravada). Só `admin` e `manager`
      marcam. **`agent` nunca marca, nem em rota isenta**
      (`mark-read`, `attendants/availability`): isenção é "o `agent` não é barrado ali", não é bypass.
-     **Platform admin e sessão de suporte (proposta revisada em 2026-11-23, review do #87 item 3):
+     **Platform admin e sessão de suporte (proposta do review do #87, item 3; **decidido pelo dono em 2026-11-23**):
      MARCAM.** Eles passam pelo gate sem serem barrados (RF-6, RNF-1) e são os atores com mais poder e
      menos rastro de "fora do expediente": a sessão de suporte tem `support_session_id`, mas isso diz
      *quem* agiu, não *quando*; o platform admin sem vínculo não deixa nada. A `rpc` de papel devolve
@@ -291,7 +293,7 @@ Dois mecanismos independentes, cada um com uma **função pura** testável sem b
      `support_session_id` e `entry.actingAsPlatformAdmin` já estão no `audit()` na hora de gravar
      (`lib/audit/index.ts`) e contam como bypass, sem `rpc`. Custo: uma condição na regra 4. **A versão
      anterior desta spec dizia "não marcam" como padrão; era escolha de quem escreveu, não decisão do
-     dono. Agora é uma pergunta explícita a ele (abaixo).**
+     dono. O dono decidiu que MARCAM (abaixo).**
   5. **Falha nunca atrapalha:** erro ou tempo esgotado em 3 ou 4 → não marca e segue; o `try/catch`
      fica dentro do `audit()` e a linha é gravada sem o campo. Registra `logger.warn`, **sem** alerta
      Sentry por mutação (seria ruído proporcional ao tráfego); falha de *gravação* do audit continua
@@ -349,16 +351,18 @@ Dois mecanismos independentes, cada um com uma **função pura** testável sem b
   - **O que sobra no lugar do "ponto 6" antigo — ruído, não furo:** Server Actions de **sessão e
     perfil** (logout, idioma, o próprio perfil) também são `POST` com ator humano, então um `admin` que
     sai do sistema às 23h teria a linha de `auth.logout` marcada como "fora do expediente". Isso não é
-    bypass de ação de atendimento, é ruído que desvaloriza a marca. **Proposta (pendente do dono):** a
-    regra 2 exclui por nome a família `auth.` (`grep -c '^  "auth\.' lib/audit/actions.ts` → 19
+    bypass de ação de atendimento, é ruído que desvaloriza a marca. **Decidido pelo dono em 2026-11-23
+    (ponto 6):** a regra 2 exclui por nome a família `auth.` (`grep -c '^  "auth\.' lib/audit/actions.ts` → 19
     códigos) além de `authz.denied`; a T2c mede que outras famílias de sessão/perfil entram
     (`profile.*`, `onboarding.*`) e fecha a lista numa **constante compartilhada**, com teste.
-  - **Decisão aberta (dono do produto): sessão de suporte/impersonação e platform admin marcam ou
-    não?** **Recomendação desta spec: marcam** (razão na regra 4). Alternativa: não marcam, porque o
-    RF-6 fala só de `admin`/`manager` do tenant e o suporte já é rastreado por `support_session_id`. A
-    diferença é uma condição na regra 4 e duas linhas em `03-testes.md`; **a spec não escolhe por
-    ele**, e a T2c não começa sem a resposta. Ressalva: marcar o suporte pode virar ruído numa
-    instalação em que o suporte atua fora do horário por rotina — é decisão de produto.
+  - **Decidido pelo dono (2026-11-23, ponto 2): sessão de suporte/impersonação e platform admin
+    MARCAM**, identificados por `support_session_id` e `actingAsPlatformAdmin`, sem depender da `rpc`
+    de papel ([#67](https://github.com/itConesul/CRMPI/issues/67#issuecomment-7105707792)). A alternativa
+    recusada era "não marcam", porque o RF-6 fala só de `admin`/`manager` do tenant e o suporte já é
+    rastreado por `support_session_id`. Ressalva que fica para a T2c observar: marcar o suporte pode
+    virar ruído numa instalação em que ele atua fora do horário por rotina. **A T2c precisa conferir,
+    nos chamadores de `audit()`, que `actingAsPlatformAdmin` é de fato preenchido** — só o `audit()`
+    foi lido aqui.
   - **Vigia:** só `lib/audit/index.ts` pode inserir em `api_audit_log`; hoje há **um escritor que o
     contorna**, `lib/ai/handoff/orchestrator.ts` (ação da IA, sem ator humano, fora da regra por
     construção). A varredura de `03-testes.md` o nomeia numa allowlist com motivo que só encolhe.
