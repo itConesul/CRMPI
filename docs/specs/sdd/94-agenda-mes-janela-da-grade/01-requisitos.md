@@ -42,7 +42,7 @@ Como a issue declara:
 Acréscimo da spec: o teste atual `agenda-ocupacao-do-google-na-grade.spec.ts` não é alterado.
 
 ## Perguntas em aberto
-Cada uma vira decisão em [`05-revisao.md`](05-revisao.md).
-- **P1.** `components/agenda/PainelDeMarcacao.tsx:187` tem outro `startOfWeek(startOfMonth(mes))`, no mini-calendário do painel. Fica fora desta spec (a issue cita só `VisaoDeMes` e `recorteDaGrade`), ou passa a usar a função compartilhada? Incluí-lo é crescer o escopo. [NÃO ANALISADO por dentro]
-- **P2.** O defeito nos dias do mês **anterior** decorre do mesmo cálculo, mas a issue diz que não foi observado em execução. A spec o trata como coberto por CA-1, e o e2e (CA-4) deve provar também uma célula do mês anterior. Confirma?
-- **P3.** CA-5: simular a data no Playwright só mexe no relógio do navegador, e o teste calcula o alvo no Node. Hoje é 23/11/2026, então basta rodar o teste hoje, antes de 24/11. Basta isso, ou exige-se simulação?
+Nenhuma. P1, P2 e P3 foram decididas em 2026-11-23 e estão em [`05-revisao.md`](05-revisao.md); o texto original fica abaixo como histórico.
+- **P1 (decidida: fora).** `components/agenda/PainelDeMarcacao.tsx:187` tem outro `startOfWeek(startOfMonth(mes))`, no mini-calendário do painel. Fica fora desta spec (a issue cita só `VisaoDeMes` e `recorteDaGrade`), ou passa a usar a função compartilhada? Incluí-lo é crescer o escopo. [NÃO ANALISADO por dentro]
+- **P2 (decidida: sim, o e2e prova também o mês anterior).** O defeito nos dias do mês **anterior** decorre do mesmo cálculo, mas a issue diz que não foi observado em execução. A spec o trata como coberto por CA-1, e o e2e (CA-4) deve provar também uma célula do mês anterior. Confirma?
+- **P3 (decidida: rodar hoje).** CA-5: simular a data no Playwright só mexe no relógio do navegador, e o teste calcula o alvo no Node. Hoje é 23/11/2026, então basta rodar o teste hoje, antes de 24/11. Basta isso, ou exige-se simulação?
