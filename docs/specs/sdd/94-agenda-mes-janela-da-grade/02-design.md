@@ -26,7 +26,7 @@ aceita até 62 dias (`app/api/v1/agenda/horarios-livres/route.ts:86`, `MAXIMO_DE
 
 **Limite de 200 linhas:** a listagem ordena por `starts_at` crescente com `limit`
 (`lib/agenda/consulta.ts:491-492`), então o corte remove a cauda da janela, os dias do mês seguinte.
-Decisão em P4 (`05-revisao.md`).
+Risco aceito pelo dono (P4, `05-revisao.md`); há issue própria para tratar o corte.
 
 ## 2. Decisão de design
 Extrair para `lib/agenda/janela-da-grade.ts` funções puras, sem I/O e sem relógio (a âncora é
@@ -87,6 +87,6 @@ Nenhuma mudança de schema, RLS, API ou contrato. Sem migration, sem `baseline.s
 ## 7. Riscos
 | Risco | Mitigação |
 |---|---|
-| A janela maior (42 dias) torna mais provável o truncamento do limite de 200 linhas, e o corte cai na cauda (mês seguinte): em agenda cheia o defeito reaparece sem aviso, só nos últimos dias | Fora de escopo, com **decisão registrada do dono (P4)**: aceitar nesta spec e abrir issue própria, ou outra |
+| A janela maior (42 dias) torna mais provável o truncamento do limite de 200 linhas, e o corte cai na cauda (mês seguinte): em agenda cheia o defeito reaparece sem aviso, só nos últimos dias | **Risco aceito pelo dono (P4, 2026-11-23)**; fora desta spec, com issue própria para o corte (aviso na tela ou paginação) |
 | `recorte` também alimenta horários livres e a janela do Mês cresce | Verificado por leitura (§1): sem 422, custo de slots a mais. CA-6 garante Semana e Dia intactos |
 | Soma de 42 dias atravessando horário de verão | `addDays` do date-fns soma dias de calendário; CA-2 mede com `differenceInCalendarDays` e inclui âncora com mudança de horário, fuso do teste fixado |
