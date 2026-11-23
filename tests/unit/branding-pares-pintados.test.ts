@@ -347,8 +347,9 @@ describe("controle positivo — o produto sem marca não pode se mexer", () => {
 
     const p = pintadosDaSemente("#506d48");
     // Claro: os dois números que `contraste.ts` documenta como medidos à mão.
-    expect(foco(p.claro, "--color-bg")).toBeCloseTo(3.79, 2);
-    expect(foco(p.claro, "--color-surface-elevated")).toBeCloseTo(3.6, 2);
+    // Re-medido com o fundo #f8fafc da identidade Cone Sul (era 3,79 sobre #faf9f6).
+    expect(foco(p.claro, "--color-bg")).toBeCloseTo(3.82, 2);
+    expect(foco(p.claro, "--color-surface-elevated")).toBeCloseTo(3.65, 2);
     // Escuro: 6,30 e 5,22 na rampa DERIVADA da semente; os literais do
     // `globals.css` (`#82a077`) dão 6,31 e 5,23 — a rampa reproduz a Sage com
     // Δ ≤ 2/255 por canal, e a diferença de 0,01 é esse arredondamento.
@@ -377,8 +378,9 @@ describe("a navy #0f172a — o defeito que a prova em tela achou", () => {
     // pintava `--color-accent-400: #545f77`, o stop CRU. O tema escuro anda -1,
     // então o anel agora pinta `#828a9d`, o stop 300 da rampa da marca.
     const p = pintadosDaSemente("#0f172a");
-    expect(foco(p.claro, "--color-bg")).toBeCloseTo(10.77, 2);
-    expect(foco(p.claro, "--color-surface-elevated")).toBeCloseTo(10.22, 2);
+    // Re-medido com o fundo #f8fafc (era 10,77 sobre #faf9f6).
+    expect(foco(p.claro, "--color-bg")).toBeCloseTo(10.83, 2);
+    expect(foco(p.claro, "--color-surface-elevated")).toBeCloseTo(10.35, 2);
     expect(foco(p.escuro, "--color-bg")).toBeCloseTo(5.28, 2);
     expect(foco(p.escuro, "--color-surface-elevated")).toBeCloseTo(4.39, 2);
     for (const superficie of ["--color-bg", "--color-surface-elevated"] as const) {

@@ -57,11 +57,11 @@ export function CaseDetail({ caseId }: { caseId: string | null }) {
       </header>
 
       <div className="grid gap-3 sm:grid-cols-2">
-        <div className="rounded-lg border border-border p-3">
+        <div className="rounded-2xl border border-border p-3">
           <p className="text-xs font-medium text-muted-foreground">{t("O que o cliente precisa")}</p>
           <p className="mt-1 text-sm">{data.summary}</p>
         </div>
-        <div className="rounded-lg border border-border p-3">
+        <div className="rounded-2xl border border-border p-3">
           <p className="text-xs font-medium text-muted-foreground">{t("Por que a IA travou")}</p>
           <p className="mt-1 text-sm">{data.blocker}</p>
         </div>

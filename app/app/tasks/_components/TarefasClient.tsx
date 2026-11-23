@@ -72,7 +72,7 @@ export function TarefasClient({ podeEditar }: { podeEditar: boolean }) {
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 p-4 sm:p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">{t("Tarefas")}</h1>
+          <h1 className="font-serif text-3xl font-bold tracking-tight">{t("Tarefas")}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {t(
               "O que ficou combinado, com prazo. Tarefa presa a um negócio aparece na linha do tempo dele.",
@@ -97,13 +97,13 @@ export function TarefasClient({ podeEditar }: { podeEditar: boolean }) {
             </SelectContent>
           </Select>
 
-          <div className="flex items-center gap-0.5 rounded-md border bg-muted p-0.5">
+          <div className="flex items-center gap-0.5 rounded-xl border bg-muted p-0.5">
             <button
               type="button"
               onClick={() => setModo("lista")}
               aria-pressed={modo === "lista"}
               className={cn(
-                "flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors",
+                "flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-xs font-medium transition-colors",
                 modo === "lista"
                   ? "bg-background text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground",
@@ -117,7 +117,7 @@ export function TarefasClient({ podeEditar }: { podeEditar: boolean }) {
               onClick={() => setModo("calendario")}
               aria-pressed={modo === "calendario"}
               className={cn(
-                "flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors",
+                "flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-xs font-medium transition-colors",
                 modo === "calendario"
                   ? "bg-background text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground",
@@ -160,7 +160,7 @@ export function TarefasClient({ podeEditar }: { podeEditar: boolean }) {
       ) : carregando ? (
         <div className="space-y-3" aria-busy>
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="h-14 animate-pulse rounded-lg border bg-card" />
+            <div key={i} className="h-14 animate-pulse rounded-2xl border bg-card" />
           ))}
         </div>
       ) : modo === "calendario" ? (

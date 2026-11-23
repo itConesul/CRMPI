@@ -30,7 +30,7 @@ export function InterfaceEditor({
   );
   const options = permitidos(false, role).filter((d) => !essencial(d, role));
   return (
-    <fieldset disabled={disabled} className="space-y-3 rounded-md border p-4">
+    <fieldset disabled={disabled} className="space-y-3 rounded-xl border p-4">
       <legend className="px-1 text-sm font-medium">{t("Interface")}</legend>
       <p className="text-xs text-muted-foreground">{t("Define quais áreas aparecem na navegação. As permissões continuam sendo determinadas pelo papel. Links de conversas e avisos podem abrir áreas autorizadas que estejam ocultas.")}</p>
       <label htmlFor={id} className="block text-sm">{t("Perfil de interface")}</label>
@@ -38,7 +38,7 @@ export function InterfaceEditor({
         id={id}
         value={value.preset}
         onChange={(e) => onChange({ preset: e.target.value as InterfaceSettings["preset"] })}
-        className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+        className="h-10 w-full rounded-xl border bg-background px-3 text-sm"
       >
         <option value="completa">{t("Completa")}</option>
         <option value="simplificada">{t("Simplificada")}</option>

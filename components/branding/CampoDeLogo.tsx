@@ -272,7 +272,7 @@ export function CampoDeLogo({
               const arquivo = e.target.files?.[0];
               if (arquivo) void enviar(arquivo);
             }}
-            className="max-w-xs text-sm file:mr-3 file:cursor-pointer file:rounded-sm file:border file:border-border file:bg-surface-elevated file:px-3 file:py-1.5 file:text-sm"
+            className="max-w-xs text-sm file:mr-3 file:cursor-pointer file:rounded-md file:border file:border-border file:bg-surface-elevated file:px-3 file:py-1.5 file:text-sm"
           />
           {logoGravado ? (
             <Button type="button" variant="outline" onClick={() => void remover()} disabled={enviando}>
@@ -309,7 +309,7 @@ export function CampoDeLogo({
             <div key={rotulo} className="space-y-1">
               <div
                 data-previa-do-logo={rotulo === t("Aparência clara") ? "claro" : "escuro"}
-                className="flex h-24 items-center justify-center rounded-sm border border-border px-4"
+                className="flex h-24 items-center justify-center rounded-md border border-border px-4"
                 style={{ backgroundColor: fundo }}
               >
                 {emVigor ? (

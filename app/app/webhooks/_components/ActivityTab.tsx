@@ -138,7 +138,7 @@ function ActionLine({ action, run }: { action: AutomationRuleRunActionResult; ru
         // `action.error` é texto de fora (resposta do webhook externo) — sem
         // tamanho garantido. `flex-wrap` + `break-words` impedem que um erro
         // comprido empurre o botão "Reenviar" pra fora da tela.
-        <div className="ml-6 flex flex-wrap items-center justify-between gap-2 rounded-sm bg-muted px-2 py-1.5">
+        <div className="ml-6 flex flex-wrap items-center justify-between gap-2 rounded-md bg-muted px-2 py-1.5">
           <p className="min-w-0 break-words text-xs text-muted-foreground">
             {/* A frase ANTES do código cru. `action.error` já é texto de gente
                 nas falhas de envio (desfechoDoEnvio traduz), mas nas falhas da
@@ -167,7 +167,7 @@ function ActionLine({ action, run }: { action: AutomationRuleRunActionResult; ru
       ) : explicacao ? (
         // Pular e adiar também precisam de razão visível: o ícone sozinho fazia
         // "não fiz nada" parecer "fiz e deu certo, só sem alarde".
-        <div className="ml-6 rounded-sm bg-muted px-2 py-1.5">
+        <div className="ml-6 rounded-md bg-muted px-2 py-1.5">
           <p className="break-words text-xs text-muted-foreground">
             {explicacao}
             {retorno ? ` ${t("Nova tentativa em")} ${retorno}.` : null}

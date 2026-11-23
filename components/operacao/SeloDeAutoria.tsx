@@ -55,7 +55,7 @@ export function SeloDeAutoria({
     <Link
       href="/app/audit"
       className={cn(
-        "inline-flex w-fit items-center gap-1 rounded-sm text-xs underline-offset-2 hover:underline",
+        "inline-flex w-fit items-center gap-1 rounded-md text-xs underline-offset-2 hover:underline",
         doAgente ? "font-medium text-accent" : "text-muted-foreground",
         className,
       )}

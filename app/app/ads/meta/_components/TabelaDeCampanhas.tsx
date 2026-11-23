@@ -123,7 +123,7 @@ export function TabelaDeCampanhas({ linhas, moeda }: Props) {
 
   if (linhas.length === 0) {
     return (
-      <p className="rounded-md border p-4 text-sm text-muted-foreground">
+      <p className="rounded-xl border p-4 text-sm text-muted-foreground">
         {/*
           Vazio tem duas causas opostas e dizer só "nenhuma campanha" esconderia
           a segunda: ou a conta não tem campanha nenhuma, ou tem e nenhuma delas
@@ -143,7 +143,7 @@ export function TabelaDeCampanhas({ linhas, moeda }: Props) {
       São 14 colunas; em telas estreitas a tabela rola dentro do próprio quadro e
       a página segue parada, que é o combinado do produto para conteúdo largo.
     */
-    <div className="overflow-x-auto rounded-md border">
+    <div className="overflow-x-auto rounded-xl border">
       <Table>
         <TableHeader>
           <TableRow>

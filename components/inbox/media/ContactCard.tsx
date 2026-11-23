@@ -47,7 +47,7 @@ export function ContactCard({ message }: Props) {
 
     return (
 
-      <div className="rounded-lg border border-current/20 bg-background/10 px-3 py-2 text-xs opacity-80">
+      <div className="rounded-2xl border border-current/20 bg-background/10 px-3 py-2 text-xs opacity-80">
 
         {t("Contato")}
 
@@ -135,7 +135,7 @@ export function ContactCard({ message }: Props) {
 
       className={cn(
 
-        "flex max-w-[220px] items-center gap-2 rounded-lg border border-current/20 bg-background/10 px-2 py-2 text-left transition-colors",
+        "flex max-w-[220px] items-center gap-2 rounded-2xl border border-current/20 bg-background/10 px-2 py-2 text-left transition-colors",
 
         canOpen && "cursor-pointer hover:bg-background/20 disabled:cursor-wait disabled:opacity-70",
 

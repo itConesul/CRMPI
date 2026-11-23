@@ -260,13 +260,13 @@ export function ConnectionsClient({ wahaConfigured }: { wahaConfigured: boolean 
       <p className="text-sm text-muted-foreground">
         {t("Novos canais começam em modo de teste, sem respostas automáticas até você autorizar números ou liberar o público.")}
       </p>
-      {connectionDetail && <details className="rounded-md border p-3 text-sm"><summary>{t("Detalhes para suporte")}</summary><pre className="mt-2 whitespace-pre-wrap break-words">{connectionDetail}</pre><Button variant="outline" size="sm" onClick={async () => {
+      {connectionDetail && <details className="rounded-xl border p-3 text-sm"><summary>{t("Detalhes para suporte")}</summary><pre className="mt-2 whitespace-pre-wrap break-words">{connectionDetail}</pre><Button variant="outline" size="sm" onClick={async () => {
         if (await copyToClipboard(connectionDetail)) toast.success(t("Copiado!"));
         else toast.error(t("Não foi possível copiar. Selecione e copie manualmente."));
       }}>{t("Copiar detalhes")}</Button></details>}
       <Link href="/app/settings/atendimento" className="text-sm underline">{t("Configurar responsáveis por número")}</Link>
       {!wahaConfigured && (
-        <div className="rounded-md border border-warning bg-warning-bg p-4 text-sm text-warning-fg">
+        <div className="rounded-xl border border-warning bg-warning-bg p-4 text-sm text-warning-fg">
           <p className="font-medium">{t("O serviço do WhatsApp não está configurado.")}</p>
           <p className="mt-1">
             {t("Faltam o endereço e a chave do serviço (")}
@@ -286,7 +286,7 @@ export function ConnectionsClient({ wahaConfigured }: { wahaConfigured: boolean 
       )}
 
       {schemaOutdated && (
-        <div className="rounded-md border border-warning bg-warning-bg p-4 text-sm text-warning-fg">
+        <div className="rounded-xl border border-warning bg-warning-bg p-4 text-sm text-warning-fg">
           <p className="font-medium">{t("Esta instalação está com o banco atrasado.")}</p>
           <p className="mt-1">
             {t(
@@ -366,7 +366,7 @@ export function ConnectionsClient({ wahaConfigured }: { wahaConfigured: boolean 
                       historico.tom === "aviso"
                         ? "text-xs text-amber-600"
                         : historicoEmAndamento(c.historico)
-                          ? "flex items-center gap-2 rounded-md border bg-muted/50 px-3 py-2 text-sm font-medium"
+                          ? "flex items-center gap-2 rounded-xl border bg-muted/50 px-3 py-2 text-sm font-medium"
                           : "text-xs text-muted-foreground"
                     }
                   >
@@ -694,7 +694,7 @@ function QrDialog({
             <img
               src={`/api/v1/channel-sessions/${sessionId}/qr?t=${tick}`}
               alt={t("QR Code para conectar WhatsApp")}
-              className="h-64 w-64 rounded-md border bg-white p-2"
+              className="h-64 w-64 rounded-xl border bg-white p-2"
             />
           ) : status === "WORKING" ? (
             <div className="flex flex-col items-center gap-2 text-sm font-medium text-success-fg">

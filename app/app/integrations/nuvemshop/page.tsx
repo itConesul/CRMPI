@@ -61,11 +61,11 @@ export default async function NuvemshopIntegrationPage() {
       </Suspense>
 
       <header className="flex items-start gap-4">
-        <div className="rounded-md border border-border bg-surface p-3">
+        <div className="rounded-xl border border-border bg-surface p-3">
           <Storefront size={28} weight="duotone" className="text-muted-foreground" />
         </div>
         <div>
-          <h1 className="text-xl font-semibold">Nuvemshop</h1>
+          <h1 className="font-serif text-2xl font-bold">Nuvemshop</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {traduzir("Sincroniza pedidos, produtos e clientes via OAuth + webhooks.", idioma)}
           </p>
@@ -78,12 +78,12 @@ export default async function NuvemshopIntegrationPage() {
             <CardTitle>{traduzir("Integração não configurada", idioma)}</CardTitle>
             <CardDescription>
               {traduzir("Configure", idioma)}{" "}
-              <code className="rounded-md bg-muted px-1 py-0.5 text-xs">NUVEMSHOP_APP_ID</code>,{" "}
-              <code className="rounded-md bg-muted px-1 py-0.5 text-xs">NUVEMSHOP_CLIENT_ID</code>{" "}
+              <code className="rounded-xl bg-muted px-1 py-0.5 text-xs">NUVEMSHOP_APP_ID</code>,{" "}
+              <code className="rounded-xl bg-muted px-1 py-0.5 text-xs">NUVEMSHOP_CLIENT_ID</code>{" "}
               {traduzir("e", idioma)}{" "}
-              <code className="rounded-md bg-muted px-1 py-0.5 text-xs">NUVEMSHOP_CLIENT_SECRET</code>{" "}
+              <code className="rounded-xl bg-muted px-1 py-0.5 text-xs">NUVEMSHOP_CLIENT_SECRET</code>{" "}
               {traduzir("em", idioma)}{" "}
-              <code className="rounded-md bg-muted px-1 py-0.5 text-xs">.env.local</code>{" "}
+              <code className="rounded-xl bg-muted px-1 py-0.5 text-xs">.env.local</code>{" "}
               {traduzir("para ativar a integração.", idioma)}
             </CardDescription>
           </CardHeader>
