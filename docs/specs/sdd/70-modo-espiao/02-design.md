@@ -41,13 +41,27 @@ Consequência: RF-4 já é verdade hoje; o trabalho é **travá-la com teste** p
 - Papéis: `requireRole("manager", …)` (`lib/auth/require-role.ts`); comparar `ROLE_RANK` direto em
   rota é proibido por aquele arquivo.
 
+### 1.6 Medições da T0 que bloqueavam a aprovação (2026-11-23, sobre `0e79ee2`)
+Resposta ao review do Sciuba (ponto 4): estas medições mudam a regra do RF-1, então entram **antes**
+da aprovação.
+
+| Item | Medição | Consequência |
+|---|---|---|
+| (b) `assignee_kind` | `baseline.sql` ~5328-5360 (migration 0032): CHECK em forma de implicação, `kind='user'` ⇒ dono humano; `kind='ai'` ⇒ **sem dono**. Conversa de IA tem `assigned_to_user_id = null` | A comparação `assigned_to_user_id = ator` **já cobre a IA**: dono IA → null ≠ ator → não escreve (mesmo caminho do RF-6). Não é preciso filtrar por `kind`. O risco "dono IA" da §4 deixa de existir |
+| (e) outros chamadores do `mark-read` | `grep -rnE "mark-read\|useMarkAsRead\|markConversationReadHandler"` em `app components hooks lib workers`, sem testes: **só** `hooks/inbox/useMarkAsRead.ts`, usado em `components/inbox/InboxLayout.tsx:248`, e a própria rota | Nenhum worker, MCP ou outra tela chama a rota. Mudar o comportamento dela só afeta o inbox |
+| Tipo de ator na rota | `mark-read/route.ts` monta `actor: { type: "user", id }` fixo a partir de `requireRole`; `grep Bearer` em `lib/auth/require-role.ts` não acha tratamento de token | A rota hoje só atende sessão de usuário. Mesmo assim o handler **recusa escrever** se `ctx.actor.type !== "user"` (defesa em profundidade; ex.: `_handler.ts:193` já faz essa checagem em outra função) |
+
+**Ainda não medido (continuam na T0, mas não mudam a regra):** (a) componente do cabeçalho do chat;
+(c) o que o painel de auditoria exige para a ação nova; (d) helper de rate limit; (f) se
+`listMessagesHandler` recebe o ator no `ctx` (decide o ponto de auditoria da §2.3).
+
 ## 2. Decisão proposta
 
 ### 2.1 Regra no servidor (RF-1, RF-6) — a peça que resolve o PRD
 `markConversationReadHandler` passa a receber o `ctx.actor.id` e a só escrever quando
 `conv.assigned_to_user_id === ctx.actor.id`. Implementação: um `UPDATE … WHERE id = :id AND
 organization_id = :org AND assigned_to_user_id = :ator` seguido de leitura da conversa quando 0
-linhas afetadas (para distinguir "não é o titular" de 404). A rota segue exigindo `agent`.
+linhas afetadas (para distinguir "não é o titular" de 404). A rota segue exigindo `agent`. Se `ctx.actor.type !== "user"` o handler responde sem escrever (§1.6).
 Efeito: resolve o PRD para **todos** os papéis, sem depender de o gestor ligar toggle, e cobre o
 cliente antigo em cache. Sem dono → `assigned_to_user_id` é `null` ≠ ator → **não escreve** (RF-6).
 
@@ -85,7 +99,7 @@ rotas de conversa. **[NÃO VERIFICADO]** qual helper — T0.
 ## 4. Riscos
 | Risco | Mitigação |
 |---|---|
-| Badge do titular nunca zera se ele estiver com a conversa aberta e o `assigned_to_user_id` divergir do `auth.uid()` (ex.: dono IA/`assignee_kind ≠ user`) | CA-2 + T0 mede `assignee_kind`; só `kind = user` entra na comparação |
+| Badge do titular nunca zera se ele estiver com a conversa aberta e o `assigned_to_user_id` divergir do `auth.uid()` | Medido na §1.6: dono IA tem `assigned_to_user_id` nulo (CHECK da migration 0032), então só o titular humano casa. CA-2 trava o caso feliz |
 | Conversa na fila deixa de zerar ao ser aberta por `agent` (mudança perceptível) | É a Q2; a spec propõe e o review decide |
 | Volume de `spy_viewed` se auditar toda abertura | Q4: dedupe; fire-and-forget; não bloqueia |
 | Gestor responde e zera (Q5) — o PRD continua parcialmente aberto | Declarado em "Fora de escopo" e Q5 |

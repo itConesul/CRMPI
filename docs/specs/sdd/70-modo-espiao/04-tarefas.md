@@ -5,7 +5,7 @@ TDD (teste vermelho → código mínimo → verde) e cita os IDs no commit.
 
 | # | Tarefa | Cobre | Prova | Feito |
 |---|---|---|---|---|
-| T0 | **Medir os NÃO VERIFICADOS** de `02-design.md`: (a) componente do cabeçalho do chat; (b) `assignee_kind` — só `user` entra na comparação?; (c) o que o painel de auditoria exige para a ação nova; (d) helper de rate limit das rotas de conversa; (e) algum outro chamador do `mark-read` além do hook | RF-1, RF-2, RF-5 | saída colada em `02-design.md` | [ ] |
+| T0 | **Medir os NÃO VERIFICADOS restantes** de `02-design.md`: (a) componente do cabeçalho do chat; (c) o que o painel de auditoria exige para a ação nova; (d) helper de rate limit; (f) se `listMessagesHandler` recebe o ator; (g) helper de papel simulado em `tests/invariants/`. **(b) e (e) já medidos** em `02-design.md` §1.6 | RF-1, RF-2, RF-5 | saída colada em `02-design.md` | [~] |
 | T1 | `markConversationReadHandler` só escreve para o titular (e a sem dono não escreve), com o ator vindo de `ctx.actor` | RF-1, RF-6 | `mark-read-titular.test.ts`, `mark-read-so-do-titular.test.ts` (`pnpm test:db`) | [ ] |
 | T2 | Trava RF-4: varredura que o caminho de `mark-read` não toca `lib/channels` | RF-4 | `mark-read-nao-fala-com-o-provedor.test.ts` | [ ] |
 | T3 | `conversation.spy_viewed` em `AUDIT_ACTIONS` + rota `spy-view` (forma final conforme Q4) | RF-5, RNF-3 | `spy-view.test.ts`, painel de auditoria | [ ] |

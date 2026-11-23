@@ -7,7 +7,8 @@ implementação começar (TDD: teste vermelho antes do código, nome do teste co
 | Critério | Prova | Tipo | Arquivo / comando | Evidência |
 |---|---|---|---|---|
 | CA-1 | `markConversationReadHandler` com ator ≠ titular devolve a conversa e o `update` **não** é emitido; contador segue 3 | unit | `app/api/v1/conversations/mark-read-titular.test.ts` | — |
-| CA-1 | Contra banco real: gestor chama a rota, `select unread_count_for_assignee` continua 3 | integração (RLS) | `tests/invariants/mark-read-so-do-titular.test.ts` (`pnpm test:db`) | — |
+| CA-1 | Contra banco real, **pela rota HTTP** (login do gestor, `POST mark-read`, depois `select unread_count_for_assignee` com service role): continua 3. Não vai em `tests/invariants/`: aquela suíte só fala SQL com `psql` e **não chama rota** (review do Sciuba, ponto 6) | e2e de API (Playwright `request`) | `tests/e2e/modo-espiao.spec.ts` (CA-1/CA-2/CA-7) | — |
+| CA-1 | O **predicado** que o handler emite (`UPDATE … WHERE assigned_to_user_id = :ator`) afeta 0 linhas para não titular e 1 para o titular, sob a RLS real | invariante SQL (`pnpm test:db`) | `tests/invariants/mark-read-so-do-titular.test.ts` — simula papel pelo mesmo helper de `gov-5d-queue-assign-unread.test.ts` (**T0 confirma** o helper) | — |
 | CA-2 | Titular chama a rota e o contador vira 0 | unit + integração | os mesmos arquivos | — |
 | CA-3 | Com o modo ativo, `useMarkAsRead` não chama `apiClient.post` depois de 1,5 s (timers falsos); sem o modo, chama | unit (hook) | `hooks/inbox/useMarkAsRead.test.tsx` | — |
 | CA-3 | Pela tela: gestor abre conversa alheia com 3 não lidas no modo espião; o badge do titular segue `3` (medido por `getComputedStyle`/texto, evidência em `.superpowers/evidence/`) | e2e | `tests/e2e/modo-espiao.spec.ts` | — |
