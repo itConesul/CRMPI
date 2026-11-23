@@ -61,7 +61,7 @@ export function SincronizacaoDoCompromisso({
         }).formatRange(new Date(value.starts_at), new Date(value.ends_at));
   const c = sync.conflict;
   return (
-    <section className="space-y-2 rounded-md border p-3" aria-label={t("Sincronização Google")}>
+    <section className="space-y-2 rounded-xl border p-3" aria-label={t("Sincronização Google")}>
       <h3 className="text-sm font-medium">{t("Sincronização Google")}</h3>
       <p className="text-sm">
         {t(

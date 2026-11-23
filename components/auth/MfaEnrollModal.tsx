@@ -82,7 +82,7 @@ export function MfaEnrollModal({ motivo = "obrigatorio" }: { motivo?: "obrigator
       aria-labelledby="mfa-title"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
     >
-      <div className="w-full max-w-md rounded-lg border border-border bg-background p-6 shadow-xl">
+      <div className="w-full max-w-md rounded-2xl border border-border bg-background p-6 shadow-xl">
         {step === "intro" && (
           <div className="space-y-4">
             <div>
@@ -107,7 +107,7 @@ export function MfaEnrollModal({ motivo = "obrigatorio" }: { motivo?: "obrigator
               </p>
             </div>
             {error && (
-              <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
                 {error}
               </div>
             )}
@@ -149,14 +149,14 @@ export function MfaEnrollModal({ motivo = "obrigatorio" }: { motivo?: "obrigator
                     alt={t("QR code para configurar autenticador")}
                     width={240}
                     height={240}
-                    className="rounded-md border border-border bg-white p-2"
+                    className="rounded-xl border border-border bg-white p-2"
                   />
                 </div>
                 <details className="text-xs text-muted-foreground">
                   <summary className="cursor-pointer">
                     {t("Não consegue escanear? Digite o código manual")}
                   </summary>
-                  <code className="mt-2 block break-all rounded-md bg-muted p-2 font-mono">
+                  <code className="mt-2 block break-all rounded-xl bg-muted p-2 font-mono">
                     {enrollState.secret}
                   </code>
                 </details>
@@ -174,7 +174,7 @@ export function MfaEnrollModal({ motivo = "obrigatorio" }: { motivo?: "obrigator
                     hasError={!!error}
                   />
                   {error && (
-                    <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-center text-sm text-destructive">
+                    <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-center text-sm text-destructive">
                       {error}
                     </div>
                   )}

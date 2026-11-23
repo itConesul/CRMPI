@@ -145,7 +145,7 @@ export function IncidentDetailClient({ id }: IncidentDetailClientProps) {
             <CardTitle className="text-sm font-medium">Payload</CardTitle>
           </CardHeader>
           <CardContent>
-            <pre className="overflow-auto rounded-md bg-muted p-4 text-xs leading-relaxed max-h-80">
+            <pre className="overflow-auto rounded-xl bg-muted p-4 text-xs leading-relaxed max-h-80">
               {JSON.stringify(incident.payload, null, 2)}
             </pre>
           </CardContent>

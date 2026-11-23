@@ -51,7 +51,7 @@ export function AgendaCarregando() {
       data-testid="agenda-carregando"
       aria-busy="true"
       aria-label={t("Carregando a agenda")}
-      className="flex min-h-0 flex-1 overflow-hidden rounded-lg border border-border bg-surface"
+      className="flex min-h-0 flex-1 overflow-hidden rounded-2xl border border-border bg-surface"
     >
       <div className="w-12 shrink-0 border-r border-border">
         <div className="h-8 border-b border-border" />
@@ -99,7 +99,7 @@ export function AgendaComErro({
     <div
       data-testid="agenda-com-erro"
       role="alert"
-      className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 rounded-lg border border-error/30 bg-error-bg p-8 text-center"
+      className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 rounded-2xl border border-error/30 bg-error-bg p-8 text-center"
     >
       <WarningOctagon size={28} weight="duotone" className="text-error" aria-hidden />
       <div>

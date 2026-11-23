@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 const badgeVariants = cva(
   [
     "inline-flex items-center gap-1 rounded-full border px-3 py-0.5",
-    "text-xs font-medium leading-5",
+    "text-[11px] font-black uppercase leading-5 tracking-wider",
     "transition-colors duration-fast ease-out",
     "focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2",
   ].join(" "),
@@ -19,22 +19,22 @@ const badgeVariants = cva(
     variants: {
       variant: {
         default:
-          "border-transparent bg-accent-soft text-accent",
+          "border-accent/15 bg-accent-soft text-accent",
         neutral:
           "border-border bg-surface-elevated text-text-muted",
         success:
-          "border-transparent bg-success-bg text-success-fg",
+          "border-success/25 bg-success-bg text-success-fg",
         warning:
-          "border-transparent bg-warning-bg text-warning-fg",
+          "border-warning/30 bg-warning-bg text-warning-fg",
         error:
-          "border-transparent bg-error-bg text-error-fg",
+          "border-error/25 bg-error-bg text-error-fg",
         info:
           "border-transparent bg-info-bg text-info-fg",
         // shadcn aliases
         secondary:
           "border-border bg-surface-elevated text-text-muted",
         destructive:
-          "border-transparent bg-error-bg text-error-fg",
+          "border-error/25 bg-error-bg text-error-fg",
         outline:
           "border-border bg-transparent text-text",
       },

@@ -15,7 +15,7 @@ export function PlatformAdminsClient() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">{t("Platform Admins")}</h1>
+        <h1 className="font-serif text-3xl font-bold tracking-tight">{t("Platform Admins")}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           {t("Administradores com acesso privilegiado à plataforma")}
         </p>
@@ -28,7 +28,7 @@ export function PlatformAdminsClient() {
       {isLoading ? (
         <PlatformAdminsTableSkeleton />
       ) : isError ? (
-        <div className="flex items-center justify-center rounded-lg border py-12 text-sm text-muted-foreground">
+        <div className="flex items-center justify-center rounded-2xl border py-12 text-sm text-muted-foreground">
           {t("Erro ao carregar platform admins. Tente recarregar.")}
         </div>
       ) : (

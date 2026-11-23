@@ -105,7 +105,7 @@ export function SetupAiForm({ capacidades, conferencias }: Props) {
         });
       }}
     >
-      <div className="space-y-5 rounded-lg border bg-background p-6">
+      <div className="space-y-5 rounded-2xl border bg-background p-6">
         <div className="space-y-2">
           <Label htmlFor="name">{t("Como ele vai se chamar")}</Label>
           <Input
@@ -129,7 +129,7 @@ export function SetupAiForm({ capacidades, conferencias }: Props) {
               <label
                 key={j.id}
                 className={cn(
-                  "flex cursor-pointer items-start gap-3 rounded-md border p-3 transition-colors",
+                  "flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-colors",
                   jeito === j.id ? "border-primary bg-primary/5" : "hover:bg-muted/40",
                 )}
               >
@@ -180,7 +180,7 @@ export function SetupAiForm({ capacidades, conferencias }: Props) {
         exatamente essa.
       */}
       <div className="grid gap-3 sm:grid-cols-2">
-        <section className="rounded-lg border bg-background p-4">
+        <section className="rounded-2xl border bg-background p-4">
           <h3 className="text-sm font-medium">{t("Ele já vem sabendo")}</h3>
           <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
             {capacidades.map((c) => (
@@ -188,7 +188,7 @@ export function SetupAiForm({ capacidades, conferencias }: Props) {
             ))}
           </ul>
         </section>
-        <section className="rounded-lg border bg-background p-4">
+        <section className="rounded-2xl border bg-background p-4">
           <h3 className="text-sm font-medium">{t("E nunca vai fazer")}</h3>
           <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
             {conferencias.map((c) => (
@@ -204,7 +204,7 @@ export function SetupAiForm({ capacidades, conferencias }: Props) {
       {regrasNaoSalvas && (
         <div
           role="alert"
-          className="space-y-2 rounded-md border border-amber-300/60 bg-amber-50 p-4 dark:border-amber-500/30 dark:bg-amber-950/20"
+          className="space-y-2 rounded-xl border border-amber-300/60 bg-amber-50 p-4 dark:border-amber-500/30 dark:bg-amber-950/20"
         >
           <p className="text-sm font-medium">
             {t("O atendente foi criado, mas as")} <strong>{t("regras da casa")}</strong>{" "}
@@ -220,7 +220,7 @@ export function SetupAiForm({ capacidades, conferencias }: Props) {
       {causa === "chave" && (
         <div
           role="alert"
-          className="space-y-3 rounded-md border border-amber-300/60 bg-amber-50 p-4 dark:border-amber-500/30 dark:bg-amber-950/20"
+          className="space-y-3 rounded-xl border border-amber-300/60 bg-amber-50 p-4 dark:border-amber-500/30 dark:bg-amber-950/20"
         >
           <p className="text-sm font-medium">
             {t("Seu atendente foi criado, mas ficou como")} <strong>{t("rascunho")}</strong>{" "}
@@ -257,7 +257,7 @@ export function SetupAiForm({ capacidades, conferencias }: Props) {
       {causa === "modelo" && (
         <div
           role="alert"
-          className="space-y-3 rounded-md border border-amber-300/60 bg-amber-50 p-4 dark:border-amber-500/30 dark:bg-amber-950/20"
+          className="space-y-3 rounded-xl border border-amber-300/60 bg-amber-50 p-4 dark:border-amber-500/30 dark:bg-amber-950/20"
         >
           <p className="text-sm font-medium">
             {t("Seu atendente foi criado, mas ficou como")} <strong>{t("rascunho")}</strong>{" "}
@@ -302,7 +302,7 @@ export function SetupAiForm({ capacidades, conferencias }: Props) {
       {naoPublicado && (
         <div
           role="alert"
-          className="space-y-3 rounded-md border border-amber-300/60 bg-amber-50 p-4 dark:border-amber-500/30 dark:bg-amber-950/20"
+          className="space-y-3 rounded-xl border border-amber-300/60 bg-amber-50 p-4 dark:border-amber-500/30 dark:bg-amber-950/20"
         >
           <p className="text-sm font-medium">
             {t("Seu agente foi criado, mas ficou como")} <strong>{t("rascunho")}</strong>:{" "}

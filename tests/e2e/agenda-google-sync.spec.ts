@@ -279,15 +279,15 @@ test("fontes e destino entre duas contas, somente leitura e ocupação imediatam
   const section = page.getByRole("region", { name: "Suas agendas Google" });
   await expect(section.getByText("Principal local", { exact: true })).toBeVisible();
   const reader = section
-    .locator("div.rounded-md")
+    .locator("div.rounded-xl")
     .filter({ has: page.getByText("Agenda de leitura", { exact: true }) });
   await expect(reader.getByRole("radio")).toBeDisabled();
   const target = section
-    .locator("div.rounded-md")
+    .locator("div.rounded-xl")
     .filter({ has: page.getByText("Destino secundário", { exact: true }) });
   await target.getByRole("radio").check();
   const primary = section
-    .locator("div.rounded-md")
+    .locator("div.rounded-xl")
     .filter({ has: page.getByText("Principal local", { exact: true }) });
   await primary.getByRole("checkbox").uncheck();
   await saveCalendars(page);
@@ -451,7 +451,7 @@ test("retry pela tela usa filtro PostgREST real; conflito exige escolha e conser
     await page.goto("/app/settings/tenant/agenda");
     const settings = page.getByRole("region", { name: "Suas agendas Google" });
     await settings
-      .locator("div.rounded-md")
+      .locator("div.rounded-xl")
       .filter({ has: page.getByText("Destino secundário", { exact: true }) })
       .getByRole("radio")
       .check();

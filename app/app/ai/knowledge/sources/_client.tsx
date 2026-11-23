@@ -93,7 +93,7 @@ export function AcervoClient({ initialSources, initialChave, agentes }: Props) {
 
       {lista.length === 0 ? (
         <div
-          className="rounded-lg border border-dashed border-border p-8 text-center"
+          className="rounded-2xl border border-dashed border-border p-8 text-center"
           data-testid="acervo-vazio"
         >
           <p className="text-sm font-medium">{t("O agente ainda não conhece o seu negócio")}</p>
@@ -120,7 +120,7 @@ export function AcervoClient({ initialSources, initialChave, agentes }: Props) {
       )}
 
       {arquivados.length > 0 ? (
-        <details className="rounded-lg border border-border p-4" data-testid="acervo-arquivados">
+        <details className="rounded-2xl border border-border p-4" data-testid="acervo-arquivados">
           <summary className="cursor-pointer text-sm font-medium">
             {arquivados.length}{" "}
             {arquivados.length === 1 ? t("arquivado") : t("arquivados")}

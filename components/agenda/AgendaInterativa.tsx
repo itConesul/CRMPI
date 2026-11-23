@@ -248,7 +248,7 @@ export function AgendaInterativa({
           data-testid="motivo-da-grade"
           data-motivo={motivo}
           role="status"
-          className="rounded-sm border border-border bg-surface-sunken px-3 py-2 text-xs leading-4 text-text-muted"
+          className="rounded-md border border-border bg-surface-sunken px-3 py-2 text-xs leading-4 text-text-muted"
         >
           {motivo === "sem-jornada" ? (
             <>
@@ -276,7 +276,7 @@ export function AgendaInterativa({
         <div
           data-testid="confirmar-remarcacao"
           role="status"
-          className="flex flex-wrap items-center justify-between gap-2 rounded-sm border border-accent/50 bg-accent-soft px-3 py-2"
+          className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-accent/50 bg-accent-soft px-3 py-2"
         >
           <p className="text-xs leading-4 text-text">
             {t("Remarcar")} <span className="font-semibold">{nomeDoPendente}</span> {t("para")}{" "}
@@ -300,7 +300,7 @@ export function AgendaInterativa({
         <div
           data-testid="remarcacao-recusada"
           role="status"
-          className="flex items-center justify-between gap-2 rounded-sm border border-warning/40 bg-warning-bg px-3 py-2"
+          className="flex items-center justify-between gap-2 rounded-md border border-warning/40 bg-warning-bg px-3 py-2"
         >
           <p className="text-xs leading-4 text-text">{recusa}</p>
           <button

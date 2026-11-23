@@ -86,13 +86,13 @@ export function QuadroClient({
         o primeiro cliente real.
       */}
       {sugestao.origem === "ia" ? (
-        <p className="rounded-md border border-emerald-500/30 bg-emerald-500/5 p-3 text-sm">
+        <p className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3 text-sm">
           {t(
             "Seu funcionário montou este quadro olhando o que você me contou sobre o negócio. Ajuste o que quiser.",
           )}
         </p>
       ) : (
-        <div className="space-y-2 rounded-md border border-amber-500/30 bg-amber-500/5 p-3 text-sm">
+        <div className="space-y-2 rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 text-sm">
           <p>
             {t("Não consegui pedir uma sugestão para o seu funcionário agora")}
             {sugestao.porque ? <> — {t(sugestao.porque)}</> : null}. {t("Comecei por um quadro pronto de")}{" "}
@@ -106,7 +106,7 @@ export function QuadroClient({
         </div>
       )}
 
-      <div className="space-y-3 rounded-lg border bg-background p-6">
+      <div className="space-y-3 rounded-2xl border bg-background p-6">
         <div className="space-y-2">
           <label className="block text-sm font-medium" htmlFor="nome_do_quadro">
             {t("Nome do quadro")}
@@ -123,7 +123,7 @@ export function QuadroClient({
           {quadro.etapas.map((etapa, i) => {
             const explicacao = etapa.passo ? explicacaoDoPasso(etapa.passo) : null;
             return (
-              <li key={i} className="flex items-start gap-2 rounded-md border p-3">
+              <li key={i} className="flex items-start gap-2 rounded-xl border p-3">
                 <span
                   aria-hidden
                   className="mt-2 w-5 shrink-0 text-center text-xs text-muted-foreground"
@@ -187,7 +187,7 @@ export function QuadroClient({
 
       {/* O que a instalação trouxe, para a troca não parecer mágica. */}
       {atual && atual.colunas.length > 0 ? (
-        <details className="rounded-md border p-3 text-sm">
+        <details className="rounded-xl border p-3 text-sm">
           <summary className="cursor-pointer text-muted-foreground">
             {t("O que veio na instalação")} ({atual.nome})
           </summary>
@@ -208,7 +208,7 @@ export function QuadroClient({
                 key={p.id}
                 type="button"
                 onClick={() => usarPacote(p.id)}
-                className="rounded-md border p-3 text-left text-sm hover:bg-muted"
+                className="rounded-xl border p-3 text-left text-sm hover:bg-muted"
               >
                 <span className="font-medium">{t(p.comoSeApresenta)}</span>
                 <span className="mt-1 block text-xs text-muted-foreground">

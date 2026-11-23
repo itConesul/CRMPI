@@ -173,7 +173,7 @@ export function DetalheDoCompromisso({
               </p>
             )}
             {a.recovery ? (
-              <div className="rounded-lg border p-3" role="status">
+              <div className="rounded-2xl border p-3" role="status">
                 <p>
                   {t(
                     a.recovery.invalidated_at && a.recovery.result === "started"
@@ -201,7 +201,7 @@ export function DetalheDoCompromisso({
                 )}
               </div>
             ) : a.status === "no_show" && a.contact_id && a.outcome_recorded_at ? (
-              <div role="status" className="rounded-lg border p-3">
+              <div role="status" className="rounded-2xl border p-3">
                 <p>
                   {t("Falta confirmada. O resultado da recuperação ainda não está disponível.")}
                 </p>
@@ -211,7 +211,7 @@ export function DetalheDoCompromisso({
               </div>
             ) : null}
             {staleDraft ? (
-              <div role="alert" className="space-y-2 rounded-lg border p-3">
+              <div role="alert" className="space-y-2 rounded-2xl border p-3">
                 <p>
                   {t(
                     "O compromisso mudou ou a alteração não foi concluída. Revise os dados antes de decidir novamente.",
@@ -227,7 +227,7 @@ export function DetalheDoCompromisso({
                 <label className="block">
                   {t("Mensagem do cliente usada como evidência (opcional)")}
                   <select
-                    className="mt-2 w-full rounded-md border bg-surface p-2"
+                    className="mt-2 w-full rounded-xl border bg-surface p-2"
                     aria-label={t("Mensagem de evidência")}
                     value={evidence}
                     onChange={(e) => {
@@ -288,7 +288,7 @@ export function DetalheDoCompromisso({
                 <label className="block">
                   {t("Motivo do cancelamento")}
                   <input
-                    className="mt-2 w-full rounded-md border bg-surface p-2"
+                    className="mt-2 w-full rounded-xl border bg-surface p-2"
                     value={reason}
                     onChange={(e) => {
                       beginDraft();

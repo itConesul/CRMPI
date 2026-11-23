@@ -109,7 +109,7 @@ export function AnonymizeDialog({ contactId, open, onOpenChange }: Props) {
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="rounded-md border border-error-fg/30 bg-error-bg p-3 text-sm text-error-fg">
+            <div className="rounded-xl border border-error-fg/30 bg-error-bg p-3 text-sm text-error-fg">
               {t("Para confirmar, digite")} <strong>{CONFIRM_TEXT}</strong> {t("abaixo.")}
             </div>
             <div className="space-y-2">
