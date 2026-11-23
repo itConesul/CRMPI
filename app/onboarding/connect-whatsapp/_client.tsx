@@ -126,7 +126,7 @@ function Escolha({
     <label
       data-testid={`forma-${valor}`}
       data-marcada={marcada ? "sim" : "nao"}
-      className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors ${
+      className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-3 transition-colors ${
         marcada ? "border-primary bg-primary/5" : "border-border hover:bg-muted/40"
       }`}
     >
@@ -348,7 +348,7 @@ export function ConnectWhatsappClient({
   // é o único estado em que esta tela não tem efeito colateral nenhum.
   if (forma === null) {
     return (
-      <div className="space-y-4 rounded-lg border bg-background p-6">
+      <div className="space-y-4 rounded-2xl border bg-background p-6">
         <fieldset className="space-y-3">
           <legend className="text-sm font-medium">{t("Como você já usa esse número?")}</legend>
           <p className="text-xs text-muted-foreground">
@@ -389,11 +389,11 @@ export function ConnectWhatsappClient({
 
   if (forma === "oficial" || forma === "parceiro") {
     return (
-      <div className="space-y-4 rounded-lg border bg-background p-6">
+      <div className="space-y-4 rounded-2xl border bg-background p-6">
         <VoltarParaEscolha onVoltar={() => setForma(null)} />
 
         {forma === "oficial" && !oficialPodeReceber && (
-          <div className="rounded-md border border-amber-300/60 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-500/40 dark:bg-amber-950/40 dark:text-amber-100">
+          <div className="rounded-xl border border-amber-300/60 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-500/40 dark:bg-amber-950/40 dark:text-amber-100">
             <p className="font-medium">
               {t("Este servidor ainda não está pronto para RECEBER por este caminho.")}
             </p>
@@ -416,10 +416,10 @@ export function ConnectWhatsappClient({
   }
 
   return (
-    <div className="space-y-4 rounded-lg border bg-background p-6">
+    <div className="space-y-4 rounded-2xl border bg-background p-6">
       <VoltarParaEscolha onVoltar={() => setForma(null)} />
       {!wahaConfigured && (
-        <div className="rounded-md border border-amber-300/60 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-500/40 dark:bg-amber-950/40 dark:text-amber-100">
+        <div className="rounded-xl border border-amber-300/60 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-500/40 dark:bg-amber-950/40 dark:text-amber-100">
           <p className="font-medium">{t("O WhatsApp desta instalação ainda não subiu.")}</p>
           <p className="mt-1">
             {t("Ele roda no seu próprio servidor. Dá para seguir sem ele agora e conectar o número depois, em")}{" "}
@@ -430,7 +430,7 @@ export function ConnectWhatsappClient({
       )}
 
       {wahaConfigured && (
-        <div className="rounded-md border bg-muted/40 p-4">
+        <div className="rounded-xl border bg-muted/40 p-4">
           {/*
             O que estava aqui: "Sessão: org_f3d61bc0" e "Status: INIT".
             O primeiro é um identificador que o produto deriva do id interno da
@@ -471,7 +471,7 @@ export function ConnectWhatsappClient({
                   key={qrTick}
                   src={`/api/v1/onboarding/whatsapp/qr?t=${qrTick}`}
                   alt={t("Código QR para conectar o WhatsApp")}
-                  className="h-48 w-48 rounded-md border bg-white object-contain sm:h-56 sm:w-56"
+                  className="h-48 w-48 rounded-xl border bg-white object-contain sm:h-56 sm:w-56"
                   onError={() => setQrFailed(true)}
                   onLoad={() => setQrFailed(false)}
                 />

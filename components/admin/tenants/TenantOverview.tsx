@@ -67,7 +67,7 @@ function StatCard({ label, value, warning }: { label: string; value: number; war
   const t = useT();
   return (
     <div className={[
-      "rounded-lg border p-4 flex flex-col gap-1",
+      "rounded-2xl border p-4 flex flex-col gap-1",
       warning && value > 0 ? "border-amber-300 bg-amber-50/50 dark:border-amber-700 dark:bg-amber-950/20" : "bg-card",
     ].join(" ")}>
       <span className="text-2xl font-bold tabular-nums">{value.toLocaleString("pt-BR")}</span>
@@ -111,7 +111,7 @@ export function TenantOverview({ organization, counts, integrations }: TenantOve
   return (
     <div className="space-y-6">
       {/* Info card */}
-      <div className="rounded-lg border bg-card p-5">
+      <div className="rounded-2xl border bg-card p-5">
         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
           {t("Informações")}
         </h2>
@@ -143,7 +143,7 @@ export function TenantOverview({ organization, counts, integrations }: TenantOve
 
       {/* Integrations + WAHA */}
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="rounded-lg border bg-card p-5">
+        <div className="rounded-2xl border bg-card p-5">
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
             {t("Integrações")}
           </h2>
@@ -165,7 +165,7 @@ export function TenantOverview({ organization, counts, integrations }: TenantOve
         </div>
 
         {/* LGPD + AI */}
-        <div className="rounded-lg border bg-card p-5">
+        <div className="rounded-2xl border bg-card p-5">
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
             {t("Compliance & IA")}
           </h2>

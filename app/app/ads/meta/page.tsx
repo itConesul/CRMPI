@@ -60,7 +60,7 @@ export default async function MetaAdsPage() {
       className="-m-6 flex min-h-[calc(100%+3rem)] flex-col gap-6 bg-bg p-6 text-text"
     >
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">{t("Meta Ads")}</h1>
+        <h1 className="font-serif text-3xl font-bold tracking-tight">{t("Meta Ads")}</h1>
         <p className="max-w-3xl text-sm text-muted-foreground">
           {t(
             "O desempenho das campanhas que estão trazendo gente para cá. Os números vêm da plataforma no momento em que você clica em Atualizar — nada fica guardado aqui.",
@@ -71,7 +71,7 @@ export default async function MetaAdsPage() {
       {conexao.conectada ? (
         <MetaAdsClient contaPadrao={conexao.contaPadrao} idioma={idioma} />
       ) : (
-        <div className="rounded-md border p-6 text-sm">
+        <div className="rounded-xl border p-6 text-sm">
           <p className="font-medium">{t("Nenhuma conta de anúncios conectada.")}</p>
           <p className="mt-1 text-muted-foreground">
             {podeConectar
@@ -84,7 +84,7 @@ export default async function MetaAdsPage() {
           </p>
           {podeConectar && (
             <a
-              className="mt-4 inline-block rounded-md border px-4 py-2 font-medium underline-offset-2 hover:bg-muted"
+              className="mt-4 inline-block rounded-xl border px-4 py-2 font-medium underline-offset-2 hover:bg-muted"
               href="/app/settings/meta-ads"
             >
               {t("Conectar conta de anúncios")}

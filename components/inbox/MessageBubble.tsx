@@ -93,7 +93,7 @@ export function MessageBubble({ message, debugCitations, onResponder, citada, au
           onClick={() => onResponder(message)}
           aria-label={t("Responder a esta mensagem")}
           className={cn(
-            "rounded-md p-1 text-muted-foreground transition-opacity hover:bg-muted",
+            "rounded-xl p-1 text-muted-foreground transition-opacity hover:bg-muted",
             // VISÍVEL POR PADRÃO, e escondido só onde EXISTE hover.
             //
             // A primeira versão era `opacity-0` + `group-hover`, copiando o
@@ -120,8 +120,8 @@ export function MessageBubble({ message, debugCitations, onResponder, citada, au
             : cn(
                 "rounded-2xl px-3 py-2 shadow-sm",
                 isOutbound
-                  ? "rounded-br-sm bg-primary text-primary-foreground"
-                  : "rounded-bl-sm bg-muted text-foreground",
+                  ? "rounded-br-md bg-primary text-primary-foreground"
+                  : "rounded-bl-md bg-muted text-foreground",
               ),
           isFailed && "border border-destructive",
         )}
@@ -135,7 +135,7 @@ export function MessageBubble({ message, debugCitations, onResponder, citada, au
         {citada && (
           <div
             className={cn(
-              "mb-1 rounded-md border-l-2 px-2 py-1 text-xs",
+              "mb-1 rounded-xl border-l-2 px-2 py-1 text-xs",
               isOutbound
                 ? "border-primary-foreground/50 bg-primary-foreground/10"
                 : "border-primary bg-background/60",
@@ -257,7 +257,7 @@ export function MessageBubble({ message, debugCitations, onResponder, citada, au
           onClick={() => onResponder(message)}
           aria-label={t("Responder a esta mensagem")}
           className={cn(
-            "rounded-md p-1 text-muted-foreground transition-opacity hover:bg-muted",
+            "rounded-xl p-1 text-muted-foreground transition-opacity hover:bg-muted",
             // VISÍVEL POR PADRÃO, e escondido só onde EXISTE hover.
             //
             // A primeira versão era `opacity-0` + `group-hover`, copiando o

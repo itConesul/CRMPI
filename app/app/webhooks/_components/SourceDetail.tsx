@@ -146,7 +146,7 @@ export function SourceDetail({ source, open, onOpenChange }: Props) {
           <section className="space-y-2">
             <p className="text-sm font-medium text-text">{t("Endereço da fonte")}</p>
             <div className="flex items-center gap-2">
-              <code className="flex-1 truncate rounded-sm border border-border bg-muted px-3 py-2 text-xs">
+              <code className="flex-1 truncate rounded-md border border-border bg-muted px-3 py-2 text-xs">
                 {url}
               </code>
               <Button
@@ -174,7 +174,7 @@ export function SourceDetail({ source, open, onOpenChange }: Props) {
             </Button>
           </section>
 
-          <section className="space-y-2 rounded-sm border border-border">
+          <section className="space-y-2 rounded-md border border-border">
             <details className="group p-3">
               <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-medium text-text">
                 {t("Como conectar no seu caso")}
@@ -201,11 +201,11 @@ export function SourceDetail({ source, open, onOpenChange }: Props) {
             </details>
           </section>
 
-          <details className="rounded-sm border border-border p-3">
+          <details className="rounded-md border border-border p-3">
             <summary className="cursor-pointer list-none text-sm font-medium text-text">
               {t("Para desenvolvedores")}
             </summary>
-            <pre className="mt-3 overflow-x-auto rounded-sm bg-muted p-3 text-xs">
+            <pre className="mt-3 overflow-x-auto rounded-md bg-muted p-3 text-xs">
               <code>{curlSnippet(url)}</code>
             </pre>
           </details>
@@ -247,7 +247,7 @@ export function SourceDetail({ source, open, onOpenChange }: Props) {
             )}
           </section>
 
-          <section className="flex items-center justify-between rounded-sm border border-border p-3">
+          <section className="flex items-center justify-between rounded-md border border-border p-3">
             <div>
               <p className="text-sm font-medium text-text">{t("Fonte ativa")}</p>
               <p className="text-xs text-muted-foreground">

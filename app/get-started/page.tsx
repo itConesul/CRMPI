@@ -45,12 +45,12 @@ export default async function GetStartedPage() {
   return (
     <IdiomaProvider locale={user.locale}>
       <main className="bg-muted/40 flex min-h-screen items-center justify-center px-4 py-10">
-        <div className="w-full max-w-md space-y-6 rounded-lg border bg-background p-6 shadow-sm">
+        <div className="w-full max-w-md space-y-6 rounded-2xl border bg-background p-6 shadow-sm">
           <div className="space-y-2">
             <p className="text-xs uppercase tracking-wider text-muted-foreground">
               {branding().name}
             </p>
-            <h1 className="text-2xl font-semibold tracking-tight">
+            <h1 className="font-serif text-3xl font-bold tracking-tight">
               {t("Configure sua organização")}
             </h1>
             <p className="text-sm leading-relaxed text-muted-foreground">

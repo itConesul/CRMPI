@@ -17,7 +17,7 @@ describe("VideoMedia", () => {
     const { container } = render(<VideoMedia messageId="m4" />);
     const box = container.querySelector(".aspect-video");
     expect(box).not.toBeNull();
-    expect(box).toHaveClass("relative", "w-full", "max-w-sm", "overflow-hidden", "rounded-lg");
+    expect(box).toHaveClass("relative", "w-full", "max-w-sm", "overflow-hidden", "rounded-2xl");
   });
 
   it("mostra skeleton enquanto carrega, desaparece após loadedmetadata", () => {

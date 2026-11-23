@@ -50,7 +50,7 @@ function shortEmail(email: string | null): string {
 export function PlatformAdminsTableSkeleton() {
   const t = useT();
   return (
-    <div className="rounded-md border">
+    <div className="rounded-xl border">
       <Table>
         <TableHeader>
           <TableRow>
@@ -84,7 +84,7 @@ export function PlatformAdminsTableSkeleton() {
 function EmptyState() {
   const t = useT();
   return (
-    <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-16 text-center">
+    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed py-16 text-center">
       <p className="text-sm font-medium text-muted-foreground">
         {t("Nenhum platform admin encontrado")}
       </p>
@@ -133,7 +133,7 @@ export function PlatformAdminsTable({ data }: PlatformAdminsTableProps) {
   if (data.length === 0) return <EmptyState />;
 
   return (
-    <div className="rounded-md border">
+    <div className="rounded-xl border">
       <Table>
         <TableHeader>
           <TableRow>

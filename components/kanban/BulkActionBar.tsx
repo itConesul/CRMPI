@@ -156,7 +156,7 @@ export function BulkActionBar({
           quebrar em linhas em vez de vazar. */}
       <div
         data-lote-selecionados={selectedIds.length}
-        className="sticky bottom-4 z-30 mx-auto flex w-fit max-w-[calc(100vw-2rem)] flex-wrap items-center justify-center gap-2 rounded-lg border border-border bg-surface px-3 py-2 shadow-md"
+        className="sticky bottom-4 z-30 mx-auto flex w-fit max-w-[calc(100vw-2rem)] flex-wrap items-center justify-center gap-2 rounded-2xl border border-border bg-surface px-3 py-2 shadow-md"
       >
         <span className="text-sm font-medium">{rotuloDaContagem}</span>
 

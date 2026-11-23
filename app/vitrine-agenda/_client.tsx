@@ -63,7 +63,7 @@ export function VitrineDaAgenda() {
     <div className="mx-auto max-w-6xl space-y-10 p-6">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
         <div className="min-w-0">
-          <h1 className="text-2xl font-semibold tracking-tight">Kit visual da Agenda</h1>
+          <h1 className="font-serif text-3xl font-bold tracking-tight">Kit visual da Agenda</h1>
           <p className="text-sm text-muted-foreground">
             Componentes puros, alimentados por dados de mentira. Sem banco, sem rota — o desenho
             decidido antes de haver o que exibir.
@@ -93,11 +93,11 @@ export function VitrineDaAgenda() {
             <div
               key={trilha}
               data-testid={`amostra-trilha-${trilha}`}
-              className="flex items-center gap-2 rounded-md border border-border bg-surface p-2"
+              className="flex items-center gap-2 rounded-xl border border-border bg-surface p-2"
             >
               <span
                 data-testid={`swatch-${trilha}`}
-                className="h-8 w-8 shrink-0 rounded-sm"
+                className="h-8 w-8 shrink-0 rounded-md"
                 style={{ backgroundColor: corDaTrilha(trilha) }}
                 aria-hidden
               />
@@ -139,7 +139,7 @@ export function VitrineDaAgenda() {
             <FiltroDePessoas pessoas={PESSOAS} isolada={isolada} onIsolar={setIsolada} />
             <div
               data-testid="alternador-de-visao"
-              className="flex items-center gap-0.5 rounded-md border border-border bg-surface p-0.5"
+              className="flex items-center gap-0.5 rounded-xl border border-border bg-surface p-0.5"
             >
               {VISOES.map((v) => (
                 <button
@@ -149,7 +149,7 @@ export function VitrineDaAgenda() {
                   aria-pressed={visao === v.id}
                   onClick={() => setVisao(v.id)}
                   className={cn(
-                    "rounded-sm px-2.5 py-1 text-xs transition-colors duration-fast ease-out",
+                    "rounded-md px-2.5 py-1 text-xs transition-colors duration-fast ease-out",
                     "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500",
                     visao === v.id
                       ? "bg-accent font-semibold text-accent-fg"
@@ -239,7 +239,7 @@ export function VitrineDaAgenda() {
         titulo="Os estados"
         descricao="Vazio, carregando e erro — os três que aparecem antes de qualquer dado existir, e que decidem a primeira impressão de quem acabou de instalar."
       >
-        <div className="rounded-lg border border-border bg-surface">
+        <div className="rounded-2xl border border-border bg-surface">
           <EmptyAgenda primary={{ label: "Criar um tipo de agendamento", onClick: () => {} }} />
         </div>
         <div className="flex h-[280px]">

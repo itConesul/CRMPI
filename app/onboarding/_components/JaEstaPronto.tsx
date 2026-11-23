@@ -61,7 +61,7 @@ export function JaEstaPronto({
   return (
     <section
       aria-labelledby="ja-pronto"
-      className="rounded-lg border bg-background p-5"
+      className="rounded-2xl border bg-background p-5"
     >
       <h3 id="ja-pronto" className="text-sm font-medium">
         {t("Você já instalou o sistema. Isto aqui já está de pé:")}

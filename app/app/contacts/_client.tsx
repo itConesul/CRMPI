@@ -83,7 +83,7 @@ export function ContactsListClient() {
     <div className="space-y-4 p-6">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
         <div className="min-w-0">
-          <h1 className="text-2xl font-semibold tracking-tight">{t("Contatos")}</h1>
+          <h1 className="font-serif text-3xl font-bold tracking-tight">{t("Contatos")}</h1>
           <p className="text-sm text-muted-foreground">
             {t("Customer 360 — busque, filtre e gerencie contatos.")}
           </p>
@@ -115,7 +115,7 @@ export function ContactsListClient() {
         </div>
       </header>
 
-      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-surface p-2">
+      <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-surface p-2">
         <div className="relative w-full sm:w-72">
           <MagnifyingGlass
             size={16}

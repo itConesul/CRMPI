@@ -146,7 +146,7 @@ export function FormularioDeConversoes({
           </p>
         </div>
 
-        <div className="flex items-center justify-between rounded-md border p-4">
+        <div className="flex items-center justify-between rounded-xl border p-4">
           <div className="flex flex-col gap-1">
             <Label htmlFor="enabled">{t("Reportar vendas automaticamente")}</Label>
             <p className="text-xs text-muted-foreground">

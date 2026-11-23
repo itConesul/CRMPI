@@ -63,8 +63,8 @@ export function NavHub({
   return (
     <div className="flex h-full flex-col gap-8 p-6">
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">{traduzir(title, locale)}</h1>
-        {subtitle && <p className="text-sm text-muted-foreground">{traduzir(subtitle, locale)}</p>}
+        <h1 className="font-serif text-3xl font-bold tracking-tight text-text">{traduzir(title, locale)}</h1>
+        {subtitle && <p className="mt-1 text-sm text-text-muted">{traduzir(subtitle, locale)}</p>}
       </header>
 
       {secoes.map(({ section, items }) => (
@@ -75,7 +75,7 @@ export function NavHub({
         >
           <h2
             id={`hub-${group}-${slug(section)}`}
-            className="text-xs font-medium tracking-wider text-muted-foreground uppercase"
+            className="border-l-4 border-gold pl-4 font-serif text-lg font-bold text-text"
           >
             {traduzir(section, locale)}
           </h2>
@@ -83,17 +83,17 @@ export function NavHub({
             {items.map((item) => {
               const Icon = item.icon;
               return (
-                <Link key={item.href} href={item.href} className="block">
-                  <Card className="flex h-full gap-3 p-4 transition-colors hover:border-border-strong">
+                <Link key={item.href} href={item.href} className="group block rounded-2xl focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg">
+                  <Card className="flex h-full gap-4 p-5 transition-all duration-200 group-hover:border-accent/40 group-hover:shadow-md group-active:scale-[0.99]">
                     <Icon
                       size={20}
                       weight="regular"
                       aria-hidden
-                      className="mt-0.5 shrink-0 text-muted-foreground"
+                      className="mt-0.5 shrink-0 text-accent opacity-70 transition-opacity group-hover:opacity-100"
                     />
                     <div>
-                      <h3 className="text-sm font-semibold">{traduzir(item.label, locale)}</h3>
-                      <p className="mt-1 text-xs text-muted-foreground">
+                      <h3 className="text-sm font-bold text-text transition-colors group-hover:text-accent">{traduzir(item.label, locale)}</h3>
+                      <p className="mt-1 text-xs text-text-muted">
                         {traduzir(item.description, locale)}
                       </p>
                     </div>

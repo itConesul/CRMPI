@@ -158,7 +158,7 @@ export function ConditionForm({
       </div>
 
       {trocaPendente && (
-        <div className="space-y-2 rounded-sm border border-warning bg-warning-bg p-2" data-testid="cond-troca-aviso">
+        <div className="space-y-2 rounded-md border border-warning bg-warning-bg p-2" data-testid="cond-troca-aviso">
           <p className="text-xs leading-snug text-warning-fg">
             {t("Trocar de modo deixa")} {trocaPendente.orfas}{" "}
             {trocaPendente.orfas === 1 ? t("ligação sem saída") : t("ligações sem saída")}{" "}
@@ -206,7 +206,7 @@ export function ConditionForm({
 
       <div className="space-y-3">
         {checks.map((check, idx) => (
-          <div key={check.id ?? idx} className="space-y-2 rounded-sm border border-border p-2" data-testid={`condition-check-${idx}`}>
+          <div key={check.id ?? idx} className="space-y-2 rounded-md border border-border p-2" data-testid={`condition-check-${idx}`}>
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-text-muted">{t("Condição")} {idx + 1}</span>
               <Button

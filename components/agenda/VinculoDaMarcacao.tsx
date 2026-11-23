@@ -28,11 +28,11 @@ export function VinculoDaMarcacao({
       ).data,
   });
   return (
-    <div className="space-y-3 rounded-lg border p-3">
+    <div className="space-y-3 rounded-2xl border p-3">
       <label className="block">
         {t("Buscar cliente")}
         <input
-          className="mt-1 w-full rounded-md border bg-surface p-2"
+          className="mt-1 w-full rounded-xl border bg-surface p-2"
           value={search}
           onChange={(e) => {
             setSearch(e.target.value);
@@ -43,7 +43,7 @@ export function VinculoDaMarcacao({
       <label className="block">
         {t("Quem será atendido")}
         <select
-          className="mt-1 w-full rounded-md border bg-surface p-2"
+          className="mt-1 w-full rounded-xl border bg-surface p-2"
           value={contactId}
           onChange={(e) => onChange(e.target.value, "")}
         >
@@ -59,7 +59,7 @@ export function VinculoDaMarcacao({
         <label className="block">
           {t("Conversa vinculada (opcional)")}
           <select
-            className="mt-1 w-full rounded-md border bg-surface p-2"
+            className="mt-1 w-full rounded-xl border bg-surface p-2"
             value={conversationId}
             onChange={(e) => onChange(contactId, e.target.value)}
           >

@@ -119,9 +119,10 @@ describe("extrairRegua — os pares saem do globals.css, nunca de lista à mão"
     const razao = (papel: string, superficie: string) =>
       pares.find((p) => p.papel === papel && p.superficie === superficie)?.razao ?? 0;
 
-    expect(razao("--color-accent", "--color-bg")).toBeCloseTo(5.51, 2);
-    expect(razao(":focus-visible/outline", "--color-bg")).toBeCloseTo(3.79, 2);
-    expect(razao(":focus-visible/outline", "--color-surface-elevated")).toBeCloseTo(3.6, 2);
+    // Re-medido com o fundo #f8fafc da identidade Cone Sul (era 5,51 sobre #faf9f6).
+    expect(razao("--color-accent", "--color-bg")).toBeCloseTo(5.54, 2);
+    expect(razao(":focus-visible/outline", "--color-bg")).toBeCloseTo(3.82, 2);
+    expect(razao(":focus-visible/outline", "--color-surface-elevated")).toBeCloseTo(3.65, 2);
   });
 
   it("a Sage inteira, como está no CSS, cabe nos pisos", () => {
