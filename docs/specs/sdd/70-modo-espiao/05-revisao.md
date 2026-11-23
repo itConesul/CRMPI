@@ -27,7 +27,7 @@ resolvidas** — quem resolve é o revisor. Cada ponto aponta o commit que o cob
 |---|---|---|---|
 | 1 | Auditoria dependia do cliente | **Acatado.** Auditoria passa para o servidor, na leitura (`listMessagesHandler`); rota `spy-view` removida. Limite declarado em RNF-5 (Realtime/PostgREST) | `b12cf76` |
 | 2 | RLS `conversations_agent_update` deixa `UPDATE` direto | **Acatado como limitação** (RNF-4, `02-design.md` §2.5), com teste de caracterização e T7 (issue própria). **Não** relaxei o RNF-2 | `b12cf76` |
-| 3 | Toggle redundante com o RF-1 | **Virou decisão explícita (Q7)**, com a lista do que cai se sair. Não removi sozinho: a issue o pede | este commit |
+| 3 | Toggle redundante com o RF-1 | **Virou decisão explícita (Q7)**, com a lista do que cai se sair. Não removi sozinho: a issue o pede | `67c6742` |
 | 4 | Medir `assignee_kind` e tipo de ator antes de aprovar | **Acatado e medido** (`02-design.md` §1.6): IA tem dono nulo pelo CHECK; handler recusa ator não-usuário. T0(b)/(e) fechadas | `2363cc1` |
 | 5 | Volume do audit sem dedupe | **Acatado.** 1 linha por (org, conversa, ator) a cada 30 min, falha aberta | `b12cf76` |
 | 6 | Como a suíte `invariants` chama a rota | **Acatado.** Ela não chama; CA-1 passa a ser e2e de API pela rota + invariante só do predicado SQL | `2363cc1` |
