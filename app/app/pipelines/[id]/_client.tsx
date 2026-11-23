@@ -98,7 +98,7 @@ export function PipelinePageClient({
       )}
       <FilterBar filters={filters} onChange={setFilters} leads={data?.leads ?? []} />
       {error ? (
-        <div className="rounded-md border border-destructive/30 bg-destructive/10 p-4 text-sm">
+        <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm">
           {t("Não consegui carregar este funil:")} {formatError(error, t)}
         </div>
       ) : isLoading || !data ? (

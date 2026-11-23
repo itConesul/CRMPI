@@ -119,7 +119,7 @@ export function HistoricoDaAgenda({
       <div
         role="tablist"
         aria-label={t("Filtrar o histórico")}
-        className="flex flex-wrap items-center gap-0.5 rounded-md border border-border bg-surface p-0.5"
+        className="flex flex-wrap items-center gap-0.5 rounded-xl border border-border bg-surface p-0.5"
       >
         {ABAS.map((a) => {
           const n = grupos[a.id].length;
@@ -132,7 +132,7 @@ export function HistoricoDaAgenda({
               aria-selected={aba === a.id}
               onClick={() => setAba(a.id)}
               className={cn(
-                "flex items-center gap-1.5 rounded-sm px-2.5 py-1 text-xs transition-colors duration-fast ease-out",
+                "flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs transition-colors duration-fast ease-out",
                 "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500",
                 aba === a.id
                   ? "bg-accent font-semibold text-accent-fg"
@@ -157,7 +157,7 @@ export function HistoricoDaAgenda({
         })}
       </div>
 
-      <div className="mt-3 min-h-0 flex-1 overflow-auto rounded-lg border border-border bg-surface">
+      <div className="mt-3 min-h-0 flex-1 overflow-auto rounded-2xl border border-border bg-surface">
         {daAba.length === 0 ? (
           <p data-testid="historico-vazio" className="p-8 text-center text-sm text-text-muted">
             {aba === "proximos" && t("Nada marcado daqui para a frente.")}

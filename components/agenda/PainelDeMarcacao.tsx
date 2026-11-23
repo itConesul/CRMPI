@@ -258,7 +258,7 @@ export function PainelDeMarcacao({
       <div
         data-testid="painel-de-marcacao"
         data-tempo="marcado"
-        className={cn("rounded-lg border border-border bg-surface p-6", className)}
+        className={cn("rounded-2xl border border-border bg-surface p-6", className)}
       >
         <div className="flex flex-col items-center text-center">
           <CheckCircle size={32} weight="duotone" className="text-success" aria-hidden />
@@ -346,7 +346,7 @@ export function PainelDeMarcacao({
         // de altura) um `min-h-[450px]` sem teto estoura o Sheet e o
         // `overflow-hidden` corta em silêncio — o mesmo modo de falha que este
         // painel já teve na horizontal.
-        "flex min-h-[450px] flex-col overflow-hidden rounded-lg border border-border bg-surface lg:min-h-0 lg:w-fit lg:flex-row",
+        "flex min-h-[450px] flex-col overflow-hidden rounded-2xl border border-border bg-surface lg:min-h-0 lg:w-fit lg:flex-row",
         className,
       )}
     >
@@ -426,7 +426,7 @@ export function PainelDeMarcacao({
           // próximo passo em vez de constatar a ausência.
           <div
             data-testid="sem-jornada-publicada"
-            className="mb-3 rounded-sm border border-warning/40 bg-warning-bg p-3"
+            className="mb-3 rounded-md border border-warning/40 bg-warning-bg p-3"
           >
             <p className="text-sm font-semibold text-text">
               {t("Você ainda não publicou seus horários de atendimento")}
@@ -467,7 +467,7 @@ export function PainelDeMarcacao({
           <div
             data-testid="motivo-do-bloqueio"
             data-motivo="erro"
-            className="mb-3 rounded-sm border border-warning/40 bg-warning-bg p-3"
+            className="mb-3 rounded-md border border-warning/40 bg-warning-bg p-3"
           >
             <p className="text-sm font-semibold text-text">{t("Não consegui carregar os horários")}</p>
             <p className="mt-1 text-xs leading-4 text-text-muted">
@@ -487,7 +487,7 @@ export function PainelDeMarcacao({
           <div
             data-testid="motivo-do-bloqueio"
             data-motivo="sem-vaga"
-            className="mb-3 rounded-sm border border-border bg-surface-sunken p-3"
+            className="mb-3 rounded-md border border-border bg-surface-sunken p-3"
           >
             <p className="text-sm font-semibold text-text">
               {t("Nenhum horário livre em")} {format(mes, "MMMM", { locale: localeDaData })}
@@ -553,7 +553,7 @@ export function PainelDeMarcacao({
                 title={disponivel ? undefined : razaoDoDia(isSameMonth(d, mes))}
                 onClick={() => { setDia(d); setHorario(null); }}
                 className={cn(
-                  "flex h-9 items-center justify-center rounded-sm text-sm tabular-nums transition-colors duration-fast ease-out",
+                  "flex h-9 items-center justify-center rounded-md text-sm tabular-nums transition-colors duration-fast ease-out",
                   "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500",
                   !isSameMonth(d, mes) && "text-text-subtle",
                   disponivel && !escolhido && "bg-accent-soft text-text hover:bg-accent hover:text-accent-fg",
@@ -585,7 +585,7 @@ export function PainelDeMarcacao({
               <div
                 data-testid="aviso-sem-lembrete"
                 role="status"
-                className="mt-3 flex gap-2 rounded-sm border border-warning/40 bg-warning-bg p-2.5"
+                className="mt-3 flex gap-2 rounded-md border border-warning/40 bg-warning-bg p-2.5"
               >
                 <Warning size={16} weight="fill" className="mt-0.5 shrink-0 text-warning" aria-hidden />
                 <p className="text-xs leading-4 text-text">
@@ -668,7 +668,7 @@ export function PainelDeMarcacao({
                 className={cn(
                   // Alvo de toque generoso: quem marca consulta faz isso no
                   // celular, com o cliente esperando na frente.
-                  "h-11 shrink-0 rounded-sm border text-sm tabular-nums transition-colors duration-fast ease-out",
+                  "h-11 shrink-0 rounded-md border text-sm tabular-nums transition-colors duration-fast ease-out",
                   "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500",
                   horario?.instante === h.instante
                     ? "border-accent bg-accent font-semibold text-accent-fg"

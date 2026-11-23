@@ -86,7 +86,7 @@ function Pendentes({
   }
 
   return (
-    <ul className="divide-y divide-border rounded-lg border border-border">
+    <ul className="divide-y divide-border rounded-2xl border border-border">
       {itens.map((p) => (
         <li key={`${p.lead_id}-${p.seq}`} className="flex flex-col gap-3 p-4">
           <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
@@ -150,7 +150,7 @@ function Historico({ itens }: { itens: DecisaoPassada[] }) {
   }
 
   return (
-    <ul className="divide-y divide-border rounded-lg border border-border">
+    <ul className="divide-y divide-border rounded-2xl border border-border">
       {itens.map((d) => (
         <li key={d.activity_id} className="flex flex-col gap-1.5 p-4">
           <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">

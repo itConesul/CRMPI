@@ -48,7 +48,7 @@ export function LegacyRecovery({
   }
   return (
     <section
-      className="space-y-3 rounded-md border border-amber-500/40 bg-amber-500/5 p-4"
+      className="space-y-3 rounded-xl border border-amber-500/40 bg-amber-500/5 p-4"
       aria-label={t("Recuperar agente legado")}
     >
       <h2 className="font-medium">
@@ -70,7 +70,7 @@ export function LegacyRecovery({
               {t("Canal")}
               <select
                 aria-label={t("Canal da recuperação")}
-                className="mt-1 block w-full rounded-md border bg-background p-2"
+                className="mt-1 block w-full rounded-xl border bg-background p-2"
                 value={channel}
                 onChange={(e) => setChannel(e.target.value)}
               >
@@ -98,7 +98,7 @@ export function LegacyRecovery({
               {t("Credencial")}
               <select
                 aria-label={t("Credencial da recuperação")}
-                className="mt-1 block w-full rounded-md border bg-background p-2"
+                className="mt-1 block w-full rounded-xl border bg-background p-2"
                 value={credential}
                 onChange={(e) => setCredential(e.target.value)}
               >

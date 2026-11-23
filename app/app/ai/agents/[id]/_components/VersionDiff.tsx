@@ -186,7 +186,7 @@ export function VersionDiff({ versionA, versionB }: Props) {
       </Section>
 
       <Section title={t("System prompt")}>
-        <pre className="max-h-96 overflow-auto rounded-md border border-border/60 bg-muted/30 p-2 font-mono text-xs leading-relaxed">
+        <pre className="max-h-96 overflow-auto rounded-xl border border-border/60 bg-muted/30 p-2 font-mono text-xs leading-relaxed">
           {lines.map((l, idx) => {
             const cls =
               l.kind === "add"

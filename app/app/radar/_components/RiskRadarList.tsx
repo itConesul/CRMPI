@@ -81,7 +81,7 @@ export function RiskRadarList() {
           viola o invariante 5. Esta é a lista que responde "e daí?". */}
       {semPasso.length > 0 ? (
         <section
-          className="rounded-lg border border-warning-border bg-warning-bg/40 p-3"
+          className="rounded-2xl border border-warning-border bg-warning-bg/40 p-3"
           data-testid="radar-sem-proximo-passo"
         >
           <p className="text-sm font-medium">
@@ -120,7 +120,7 @@ export function RiskRadarList() {
         </Badge>
       </div>
 
-      <ul className="divide-y divide-border rounded-lg border border-border">
+      <ul className="divide-y divide-border rounded-2xl border border-border">
         {data.items.map((lead) => (
           <RadarRow key={lead.id} lead={lead} />
         ))}

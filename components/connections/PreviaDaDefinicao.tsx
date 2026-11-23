@@ -49,13 +49,13 @@ export function PreviaDaDefinicao({
     <div className="flex flex-col gap-2">
       <p className="text-xs font-medium text-muted-foreground">{t("Como o cliente vai ver")}</p>
 
-      <div className="rounded-lg bg-muted/60 p-3">
+      <div className="rounded-2xl bg-muted/60 p-3">
         {vazia ? (
           <p className="text-xs italic text-muted-foreground">
             {t("Preencha o texto para ver a prévia.")}
           </p>
         ) : (
-          <div className="max-w-[22rem] rounded-lg rounded-tl-sm bg-background p-2.5 shadow-sm">
+          <div className="max-w-[22rem] rounded-2xl rounded-tl-md bg-background p-2.5 shadow-sm">
             {midiaUrl && (
               // `unoptimized`: a URL é assinada e temporária, e o otimizador do
               // Next a buscaria de novo depois de ela expirar.
@@ -65,7 +65,7 @@ export function PreviaDaDefinicao({
                 width={320}
                 height={180}
                 unoptimized
-                className="mb-2 h-auto w-full rounded-md"
+                className="mb-2 h-auto w-full rounded-xl"
               />
             )}
             {cabecalho && <p className="mb-1 text-sm font-semibold">{cabecalho}</p>}
