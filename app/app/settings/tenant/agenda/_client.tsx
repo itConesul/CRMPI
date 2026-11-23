@@ -138,7 +138,7 @@ export function TiposDeAgendamentoClient({
           {criando ? (
             <form
               data-testid="form-novo-tipo"
-              className="grid gap-3 rounded-lg border border-border bg-surface p-4 sm:grid-cols-2"
+              className="grid gap-3 rounded-2xl border border-border bg-surface p-4 sm:grid-cols-2"
               onSubmit={async (e) => {
                 e.preventDefault();
                 const feito = await comErro(
@@ -169,7 +169,7 @@ export function TiposDeAgendamentoClient({
                   value={rascunho.name}
                   onChange={(e) => setRascunho((r) => ({ ...r, name: e.target.value }))}
                   placeholder={t("Retorno")}
-                  className="rounded-md border border-border bg-surface-elevated p-2 text-sm text-text outline-hidden focus:border-border-strong"
+                  className="rounded-xl border border-border bg-surface-elevated p-2 text-sm text-text outline-hidden focus:border-border-strong"
                 />
               </label>
               <label className="flex flex-col gap-1 text-xs font-medium text-text-muted">
@@ -178,7 +178,7 @@ export function TiposDeAgendamentoClient({
                   data-testid="novo-tipo-categoria"
                   value={rascunho.category}
                   onChange={(e) => setRascunho((r) => ({ ...r, category: e.target.value }))}
-                  className="rounded-md border border-border bg-surface-elevated p-2 text-sm text-text outline-hidden focus:border-border-strong"
+                  className="rounded-xl border border-border bg-surface-elevated p-2 text-sm text-text outline-hidden focus:border-border-strong"
                 >
                   {CATEGORIAS.map((c) => (
                     <option key={c.valor} value={c.valor}>
@@ -198,7 +198,7 @@ export function TiposDeAgendamentoClient({
                   onChange={(e) =>
                     setRascunho((r) => ({ ...r, duration_minutes: Number(e.target.value) }))
                   }
-                  className="rounded-md border border-border bg-surface-elevated p-2 text-sm text-text outline-hidden focus:border-border-strong"
+                  className="rounded-xl border border-border bg-surface-elevated p-2 text-sm text-text outline-hidden focus:border-border-strong"
                 />
               </label>
               <label className="flex flex-col gap-1 text-xs font-medium text-text-muted">
@@ -207,7 +207,7 @@ export function TiposDeAgendamentoClient({
                   data-testid="novo-tipo-local"
                   value={rascunho.location_kind}
                   onChange={(e) => setRascunho((r) => ({ ...r, location_kind: e.target.value }))}
-                  className="rounded-md border border-border bg-surface-elevated p-2 text-sm text-text outline-hidden focus:border-border-strong"
+                  className="rounded-xl border border-border bg-surface-elevated p-2 text-sm text-text outline-hidden focus:border-border-strong"
                 >
                   {LOCAIS.map((l) => (
                     <option key={l.valor} value={l.valor}>
@@ -228,7 +228,7 @@ export function TiposDeAgendamentoClient({
                   onChange={(e) =>
                     setRascunho((r) => ({ ...r, default_owner_user_id: e.target.value }))
                   }
-                  className="rounded-md border border-border bg-surface-elevated p-2 text-sm text-text outline-hidden focus:border-border-strong"
+                  className="rounded-xl border border-border bg-surface-elevated p-2 text-sm text-text outline-hidden focus:border-border-strong"
                 >
                   <option value="">{t("Definir depois")}</option>
                   {pessoas.map((p) => (
@@ -257,7 +257,7 @@ export function TiposDeAgendamentoClient({
 
       <ul className="flex flex-col gap-2" data-testid="lista-de-tipos">
         {tiposIniciais.length === 0 ? (
-          <li data-testid="sem-tipos" className="rounded-lg border border-border bg-surface p-4 text-sm text-text-muted">
+          <li data-testid="sem-tipos" className="rounded-2xl border border-border bg-surface p-4 text-sm text-text-muted">
             {t("Nenhum tipo de agendamento ainda. Crie o primeiro para que a Agenda tenha o que oferecer.")}
           </li>
         ) : null}
@@ -265,7 +265,7 @@ export function TiposDeAgendamentoClient({
           <li
             key={tipo.id}
             data-testid={`tipo-${tipo.id}`}
-            className={`rounded-lg border border-border bg-surface p-3 ${tipo.is_active ? "" : "opacity-60"}`}
+            className={`rounded-2xl border border-border bg-surface p-3 ${tipo.is_active ? "" : "opacity-60"}`}
           >
             <div className="flex flex-wrap items-center gap-2">
               {/* Sem t(): é o nome que quem opera digitou no campo acima, não
@@ -392,7 +392,7 @@ export function TiposDeAgendamentoClient({
                     name="name"
                     defaultValue={tipo.name}
                     data-testid={`editar-nome-${tipo.id}`}
-                    className="rounded-md border border-border bg-surface-elevated p-2 text-sm text-text"
+                    className="rounded-xl border border-border bg-surface-elevated p-2 text-sm text-text"
                   />
                 </label>
                 <label className="flex flex-col gap-1 text-xs text-text-muted">
@@ -404,7 +404,7 @@ export function TiposDeAgendamentoClient({
                     max={1440}
                     defaultValue={tipo.duration_minutes}
                     data-testid={`editar-duracao-${tipo.id}`}
-                    className="rounded-md border border-border bg-surface-elevated p-2 text-sm text-text"
+                    className="rounded-xl border border-border bg-surface-elevated p-2 text-sm text-text"
                   />
                 </label>
                 <label className="flex flex-col gap-1 text-xs text-text-muted">
@@ -413,7 +413,7 @@ export function TiposDeAgendamentoClient({
                     name="default_owner_user_id"
                     defaultValue={tipo.default_owner_user_id ?? ""}
                     data-testid={`editar-dono-${tipo.id}`}
-                    className="rounded-md border border-border bg-surface-elevated p-2 text-sm text-text"
+                    className="rounded-xl border border-border bg-surface-elevated p-2 text-sm text-text"
                   >
                     <option value="">{t("Sem responsável")}</option>
                     {pessoas.map((p) => (

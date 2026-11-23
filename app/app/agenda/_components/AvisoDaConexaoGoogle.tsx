@@ -222,7 +222,7 @@ export function AvisoDaConexaoGoogle() {
       data-acao={faixa.acao ?? "nenhuma"}
       role="alert"
       className={cn(
-        "flex items-start gap-3 rounded-lg border p-3",
+        "flex items-start gap-3 rounded-2xl border p-3",
         "border-warning/40 bg-warning-bg",
       )}
     >
@@ -241,7 +241,7 @@ export function AvisoDaConexaoGoogle() {
         aria-label={t("Fechar aviso")}
         data-testid="fechar-aviso-google"
         onClick={() => setFaixa(null)}
-        className="shrink-0 rounded-sm p-1 text-text-muted transition-colors hover:bg-surface hover:text-text"
+        className="shrink-0 rounded-md p-1 text-text-muted transition-colors hover:bg-surface hover:text-text"
       >
         <X size={14} weight="bold" aria-hidden />
       </button>

@@ -37,7 +37,7 @@ export function ImageMedia({ messageId, alt }: Props) {
         disabled={state !== "ready"}
         aria-disabled={state !== "ready"}
         className={cn(
-          "relative block w-64 max-w-full aspect-[4/3] overflow-hidden rounded-lg focus-visible:outline-2 focus-visible:outline-ring",
+          "relative block w-64 max-w-full aspect-[4/3] overflow-hidden rounded-2xl focus-visible:outline-2 focus-visible:outline-ring",
           state === "ready" ? "cursor-zoom-in" : "cursor-not-allowed opacity-50",
         )}
       >
@@ -47,7 +47,7 @@ export function ImageMedia({ messageId, alt }: Props) {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-4xl border-none bg-transparent p-0 shadow-none">
           <DialogTitle className="sr-only">{alt}</DialogTitle>
-          <img src={src} alt={alt} className="max-h-[85vh] w-full rounded-lg object-contain" />
+          <img src={src} alt={alt} className="max-h-[85vh] w-full rounded-2xl object-contain" />
         </DialogContent>
       </Dialog>
     </>

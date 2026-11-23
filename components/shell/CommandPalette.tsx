@@ -146,7 +146,7 @@ function Resultados({ aoEscolher }: { aoEscolher: () => void }) {
                 onMouseEnter={() => setDestacado(i)}
                 onClick={() => navegar(d)}
                 className={cn(
-                  "flex cursor-pointer items-start gap-3 rounded-md px-3 py-2",
+                  "flex cursor-pointer items-start gap-3 rounded-xl px-3 py-2",
                   ativo && "bg-accent text-accent-foreground",
                 )}
               >

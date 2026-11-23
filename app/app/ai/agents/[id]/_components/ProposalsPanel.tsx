@@ -63,7 +63,7 @@ export function ProposalsPanel({
   const items = data?.items ?? [];
   if (items.length === 0) {
     return (
-      <div className="flex flex-col items-center gap-2 rounded-lg border border-border py-16 text-center">
+      <div className="flex flex-col items-center gap-2 rounded-2xl border border-border py-16 text-center">
         <Brain size={28} className="text-muted-foreground" aria-hidden />
         <p className="text-sm font-medium">{t("Nenhuma proposta ainda")}</p>
         <p className="max-w-sm text-xs text-muted-foreground">
@@ -76,7 +76,7 @@ export function ProposalsPanel({
   }
 
   return (
-    <ul className="divide-y divide-border rounded-lg border border-border">
+    <ul className="divide-y divide-border rounded-2xl border border-border">
       {items.map((p) => {
         const when = formatDistanceToNowStrict(new Date(p.proposed_at), {
           addSuffix: true,

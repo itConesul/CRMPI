@@ -123,7 +123,7 @@ function GrupoDeDuplicados({
   }
 
   return (
-    <div className="rounded-lg border border-border bg-surface p-3">
+    <div className="rounded-2xl border border-border bg-surface p-3">
       <p className="mb-2 text-xs text-muted-foreground">
         {t("Agrupados por")}: {grupo.motivos.map((m) => t(ROTULO_DO_MOTIVO[m])).join(", ")}
       </p>
@@ -132,7 +132,7 @@ function GrupoDeDuplicados({
         {grupo.contatos.map((c) => (
           <label
             key={c.id}
-            className={`flex cursor-pointer items-start gap-2 rounded-md border p-3 text-sm ${
+            className={`flex cursor-pointer items-start gap-2 rounded-xl border p-3 text-sm ${
               c.id === principal ? "border-primary bg-primary/5" : "border-border bg-card"
             }`}
           >

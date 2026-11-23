@@ -10,6 +10,7 @@ import { loginSchema, type LoginInput } from "@/lib/auth/schemas";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ArrowRight } from "@/lib/ui/icons";
 import { signInWithPassword } from "@/app/actions/auth/signInWithPassword";
 
 export function LoginForm({ next, emailInicial }: { next?: string; emailInicial?: string }) {
@@ -60,12 +61,13 @@ export function LoginForm({ next, emailInicial }: { next?: string; emailInicial?
   return (
     <form method="post" onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
       <div className="space-y-1.5">
-        <Label htmlFor="email">Email</Label>
+        <Label htmlFor="email" className="text-[11px] font-black uppercase leading-none tracking-[0.15em] text-text-muted">Email</Label>
         <Input
           id="email"
           type="email"
           autoComplete="email"
           autoFocus
+          className="h-12 rounded-2xl px-5"
           aria-invalid={errors.email ? true : undefined}
           {...register("email")}
         />
@@ -74,11 +76,12 @@ export function LoginForm({ next, emailInicial }: { next?: string; emailInicial?
         )}
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="password">{t("Senha")}</Label>
+        <Label htmlFor="password" className="text-[11px] font-black uppercase leading-none tracking-[0.15em] text-text-muted">{t("Senha")}</Label>
         <Input
           id="password"
           type="password"
           autoComplete="current-password"
+          className="h-12 rounded-2xl px-5"
           aria-invalid={errors.password ? true : undefined}
           {...register("password")}
         />
@@ -88,14 +91,15 @@ export function LoginForm({ next, emailInicial }: { next?: string; emailInicial?
       </div>
       {serverError && (
         <div
-          className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+          className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
           role="alert"
         >
           {serverError}
         </div>
       )}
-      <Button type="submit" className="w-full" disabled={isPending}>
+      <Button type="submit" size="lg" className="h-14 w-full rounded-2xl tracking-[0.2em]" disabled={isPending}>
         {isPending ? t("Entrando...") : t("Entrar")}
+        {!isPending && <ArrowRight size={16} className="group-hover:translate-x-1" aria-hidden />}
       </Button>
     </form>
   );

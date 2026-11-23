@@ -127,7 +127,7 @@ export function SidebarContent({
           // eslint-disable-next-line @next/next/no-img-element
           <img src={logo} alt={nome} className="h-7 w-auto max-w-[10rem] object-contain" />
         ) : (
-          <span className={cn("font-semibold tracking-tight", collapsed && "sr-only")}>{nome}</span>
+          <span className={cn("font-serif text-lg font-bold tracking-tight text-accent", collapsed && "sr-only")}>{nome}</span>
         )}
         {collapsed && (
           <span aria-hidden className="text-lg font-bold text-primary">
@@ -212,7 +212,7 @@ export function SidebarContent({
                     type="button"
                     onClick={() => toggleGrupo(group.id)}
                     aria-expanded={aberto}
-                    className="flex w-full items-center justify-between rounded-md px-3 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground"
+                    className="flex w-full items-center justify-between rounded-xl px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-text-muted transition-all duration-300 hover:bg-bg hover:text-accent"
                   >
                     {t(group.label)}
                     <CaretDown
@@ -244,14 +244,19 @@ export function SidebarContent({
                           aria-current={isActive ? "page" : undefined}
                           onClick={onNavigate}
                           className={cn(
-                            "relative flex items-center gap-3 rounded-md px-3 py-1 text-sm transition-colors",
+                            "group relative flex items-center gap-3 rounded-xl px-3 py-1 text-sm transition-all duration-300",
                             isActive
-                              ? "bg-accent text-accent-foreground"
-                              : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
+                              ? "bg-surface-dark font-bold text-accent"
+                              : "text-text-muted hover:bg-bg hover:text-accent",
                             collapsed && "justify-center px-2",
                           )}
                         >
-                          <Icon size={18} weight={isActive ? "fill" : "regular"} aria-hidden />
+                          <Icon
+                            size={18}
+                            weight={isActive ? "fill" : "regular"}
+                            className={cn(isActive ? "text-accent" : "opacity-70 transition-opacity group-hover:opacity-100")}
+                            aria-hidden
+                          />
                           {!collapsed && <span className="truncate">{t(item.label)}</span>}
                           {item.healthDot && (
                             <ConnectionHealthDot
@@ -270,10 +275,10 @@ export function SidebarContent({
                         aria-current={pathname === group.hub.href ? "page" : undefined}
                         onClick={onNavigate}
                         className={cn(
-                          "flex items-center gap-3 rounded-md px-3 py-1 text-sm transition-colors",
+                          "group flex items-center gap-3 rounded-xl px-3 py-1 text-sm transition-all duration-300",
                           pathname === group.hub.href
-                            ? "bg-accent text-accent-foreground"
-                            : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
+                            ? "bg-surface-dark font-bold text-accent"
+                            : "text-text-muted hover:bg-bg hover:text-accent",
                           collapsed && "justify-center px-2",
                         )}
                       >
@@ -296,10 +301,10 @@ export function SidebarContent({
             aria-current={pathname.startsWith(rodape.href) ? "page" : undefined}
             onClick={onNavigate}
             className={cn(
-              "mb-1 flex items-center gap-3 rounded-md px-3 py-1 text-sm transition-colors",
+              "group mb-1 flex items-center gap-3 rounded-xl px-3 py-1 text-sm transition-all duration-300",
               pathname.startsWith(rodape.href)
-                ? "bg-accent text-accent-foreground"
-                : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
+                ? "bg-surface-dark font-bold text-accent"
+                : "text-text-muted hover:bg-bg hover:text-accent",
               collapsed && "justify-center px-2",
             )}
           >
@@ -314,7 +319,7 @@ export function SidebarContent({
             onClick={() => startTransition(() => toggleSidebar(collapsed))}
             disabled={isPending}
             className={cn(
-              "flex w-full items-center gap-2 rounded-md px-3 py-1 text-xs text-muted-foreground hover:bg-accent/50 hover:text-foreground",
+              "group flex w-full items-center gap-2 rounded-xl px-3 py-1 text-xs text-text-muted transition-all duration-300 hover:bg-bg hover:text-accent",
               collapsed && "justify-center px-2",
             )}
             aria-label={collapsed ? t("Expandir sidebar") : t("Recolher sidebar")}

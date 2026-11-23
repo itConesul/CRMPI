@@ -93,7 +93,7 @@ export function CapturaDetail({ captura, onOpenChange }: Props) {
               esta linha, e enterrá-lo embaixo dos dados devolveria a ela o
               trabalho de adivinhação que a tela veio acabar. */}
           {motivo ? (
-            <section className="rounded-sm border border-error-fg/20 bg-error-bg p-3">
+            <section className="rounded-md border border-error-fg/20 bg-error-bg p-3">
               <p className="text-sm text-error-fg">{motivo}</p>
             </section>
           ) : null}
@@ -102,7 +102,7 @@ export function CapturaDetail({ captura, onOpenChange }: Props) {
             <h3 className="mb-2 flex items-center gap-2 text-sm font-medium text-text">
               <IdentificationCard className="h-4 w-4 text-accent" /> {t("O que o formulário trouxe")}
             </h3>
-            <dl className="divide-y divide-border rounded-sm border border-border px-3 py-1">
+            <dl className="divide-y divide-border rounded-md border border-border px-3 py-1">
               <Linha rotulo={t("Nome")}>{captura.captured_name ?? "—"}</Linha>
               <Linha rotulo={t("Telefone")}>{captura.captured_phone ?? "—"}</Linha>
               <Linha rotulo={t("E-mail")}>{captura.captured_email ?? "—"}</Linha>
@@ -130,7 +130,7 @@ export function CapturaDetail({ captura, onOpenChange }: Props) {
             <h3 className="mb-2 flex items-center gap-2 text-sm font-medium text-text">
               <Globe className="h-4 w-4 text-accent" /> {t("De onde veio")}
             </h3>
-            <dl className="divide-y divide-border rounded-sm border border-border px-3 py-1">
+            <dl className="divide-y divide-border rounded-md border border-border px-3 py-1">
               <Linha rotulo={t("Página")}>{captura.origin ?? t("não informada")}</Linha>
               <Linha rotulo={t("Endereço IP")}>
                 {captura.remote_ip ?? (
