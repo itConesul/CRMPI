@@ -19,11 +19,13 @@ como fato decidido.
 | RF-2 | O cabeçalho do chat exibe o toggle "Modo Espião" **somente** para papel ≥ `manager`, e **somente** em conversa cujo titular não é o usuário **(Q6)** | Texto: toggle só para `admin`/`manager`; melhoria 2 |
 | RF-3 | Com o modo ativo, o cliente **não** dispara `mark-read` (o hook `useMarkAsRead` fica inerte). O servidor continua protegido por RF-1 mesmo que o cliente dispare | Texto: "não executar `unread_count = 0`" |
 | RF-4 | Abrir conversa, com ou sem modo espião, **não** gera chamada de confirmação de leitura ao provedor | Texto: "não chamar `mark_as_read`"; ressalva da issue (**Q3**) |
-| RF-5 | Gestor que abre conversa de **outra pessoa** gera 1 linha em `api_audit_log` com `action = conversation.spy_viewed`, `resource_type = conversation`, `resource_id` e `metadata.assigned_to_user_id` **(Q4)** | Texto: registrar `SPY_VIEW_LEAD`; melhoria 3 |
+| RF-5 | Quando `manager`/`admin` lê as **mensagens** de conversa cujo titular humano é **outra pessoa**, o **servidor** grava 1 linha em `api_audit_log` (`action = conversation.spy_viewed`, `resource_type = conversation`, `resource_id`, `metadata.assigned_to_user_id`), **com dedupe** de 1 linha por (org, conversa, ator) a cada 30 min. Independe de o cliente chamar rota alguma **(Q4)** | Texto: registrar `SPY_VIEW_LEAD`; melhoria 3; review Sciuba pts 1 e 5 |
 | RF-6 | Conversa **sem dono**: a regra de quem zera é a decidida em Q2; a proposta é que **ninguém zera** até alguém assumir (o `claim` já zera via `fn_conversation_assign`) **(Q2)** | Melhoria 4 |
 | RNF-1 | Nenhuma string de provedor fora de `lib/channels` (`pnpm lint:channels` verde) | "Divergências": nomes de provedor |
 | RNF-2 | **Nenhuma migration, nenhum apêndice de `baseline.sql`, nenhuma coluna ou tabela nova.** A ação nova entra só em `AUDIT_ACTIONS` (TS) | "Banco: não altera" |
-| RNF-3 | A auditoria do RF-5 é fire-and-forget e não bloqueia a abertura da conversa (doutrina de audit) | CLAUDE.md, "Audit log" |
+| RNF-3 | A auditoria do RF-5 é fire-and-forget e não bloqueia a leitura da conversa (doutrina de audit) | CLAUDE.md, "Audit log" |
+| RNF-4 | **Limitação conhecida:** a regra do RF-1 vale para a rota, não para o dado. `conversations_agent_update` deixa qualquer `agent`+ dar `UPDATE` direto pelo PostgREST. Endurecer exige migration (proibida pelo RNF-2) e vai para **issue própria** | Review Sciuba pt 2; `02-design.md` §2.5 |
+| RNF-5 | **Limitação conhecida:** a auditoria cobre leitura **pelo produto** (rota de mensagens e, se a T0(f) confirmar, o MCP). Não cobre o Realtime nem leitura direta pelo PostgREST com JWT de gestor | Review Sciuba pt 1; `02-design.md` §2.3 |
 
 ## Critérios de aceite
 O critério da issue, **verbatim**: *"gestor abre conversa com 3 não lidas em modo espião → os ticks
@@ -42,7 +44,7 @@ Ele tem duas metades de naturezas diferentes, e a spec as separa:
 | CA-3 | **Dado** gestor G com o modo espião ativo numa conversa de A com 3 não lidas, **quando** a conversa fica em foco por mais que 1,5 s, **então** nenhuma requisição `mark-read` é feita e o badge do titular segue `3` | RF-3 |
 | CA-4 | **Quando** `mark-read` é executado por qualquer papel, **então** nenhum adaptador de canal é invocado (nenhuma chamada ao provedor) | RF-4 |
 | CA-5 | **Dado** papel `agent`, **então** o toggle não existe no DOM; **dado** `manager`/`admin` em conversa alheia, **então** existe; em conversa própria, não | RF-2 |
-| CA-6 | **Quando** gestor G abre conversa de A, **então** existe exatamente 1 linha `conversation.spy_viewed` em `api_audit_log` com o `resource_id` da conversa e o ator G; titular abrindo a própria conversa **não** gera linha | RF-5, RNF-3 |
+| CA-6 | **Quando** gestor G lê as mensagens da conversa de A (**por `GET` direto, sem passar pela tela**), **então** existe exatamente 1 linha `conversation.spy_viewed` com o `resource_id` e o ator G. **Quando** G repete a leitura dentro de 30 min (ex.: próxima página), **então** continua 1 linha. Titular lendo a própria, e conversa sem titular, **não** geram linha | RF-5, RNF-3 |
 | CA-7 | **Dado** conversa sem dono e 3 não lidas, **quando** qualquer papel chama `mark-read`, **então** o contador continua `3` (proposta; sujeito a Q2) | RF-6 |
 | CA-8 | `pnpm lint:channels` e `pnpm gov:verify` verdes; `git diff --name-only` não contém `supabase/` | RNF-1, RNF-2 |
 

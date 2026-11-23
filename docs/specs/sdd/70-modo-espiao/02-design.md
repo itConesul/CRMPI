@@ -71,23 +71,62 @@ No cabeçalho do chat, visível por `manager`+ em conversa cujo titular ≠ usu�
 já protege o servidor, o toggle é **conveniência de UX e economia de requisição**, não a defesa.
 Local do cabeçalho: **[NÃO VERIFICADO]** — T0 localiza o componente.
 
-### 2.3 Auditoria (RF-5)
-O `mark-read` **não serve de gatilho**: só dispara com `unread > 0` e depois de 1,5 s. Para auditar
-"gestor viu" é preciso um evento ao abrir. Proposta: `POST /api/v1/conversations/[id]/spy-view`
-(`requireRole("manager")`), que `audit()`a `conversation.spy_viewed` e **só** grava quando
-`assigned_to_user_id` existe e ≠ ator; chamado pelo front uma vez por conversa aberta por sessão de
-tela. Granularidade (toda abertura × só com modo ativo × dedupe por janela) é a Q4. Ação nova entra
-em `AUDIT_ACTIONS`; o teste `tests/unit/audit-lista-do-painel-e-derivada.test.tsx` mostra que o
-painel deriva da lista — **medir em T0** o que a UI do painel de auditoria exige para a ação nova.
+### 2.3 Auditoria (RF-5) — **no servidor, na leitura**
+Revisão do Sciuba (pontos 1 e 5): a versão anterior auditava por uma rota `POST …/spy-view` que o
+**front** precisava chamar. Quem lesse por `GET` ou pela API não deixava rastro, então não era
+controle. E "toda abertura" sem dedupe vira ruído — o oposto da doutrina de audit. **Esta seção
+substitui a rota `spy-view`, que sai da spec.**
+
+**Onde:** na leitura do **conteúdo**, não numa chamada de UX. Medido: o conteúdo das mensagens sai por
+`listMessagesHandler` (`app/api/v1/messages/_handler.ts:183`), usado pela rota
+`GET /conversations/[id]/messages` **e** pela tool MCP `crm_get_conversation_history`
+(`lib/mcp/tools/conversations.ts:181`). Auditar no handler cobre as duas portas. Se a T0(f) mostrar
+que o `ctx` do handler não traz o ator, a auditoria fica na rota e o MCP vira limitação declarada
+(RNF-5) — o MCP já tem a própria governança de leitura (`tests/unit/mcp-read-governance.test.ts`).
+
+**Quando grava (e só então):** ator `manager`/`admin` (via `requireRole`, nunca `ROLE_RANK` direto),
+conversa com `assigned_to_user_id` não nulo **e** ≠ ator. Sem titular não há quem espiar; titular
+lendo a própria não é espionagem.
+
+**Dedupe (obrigatório):** uma linha por (organização, conversa, ator) por janela de **30 minutos**
+(`JANELA_SPY_VIEW_MIN`, constante nomeada). A rota de mensagens é chamada a cada página e a cada
+reabertura, então sem isso um gestor supervisionando o dia gera centenas de linhas. Mecanismo: chave
+no Redis do rate limit (`SET NX EX`), sem schema novo. **Falha aberta:** Redis ausente ou fora do ar →
+audita sem dedupe (excesso de log é pior que o normal, mas falta de rastro é pior que excesso). O
+helper concreto é **[NÃO VERIFICADO]**, T0.
+
+**Fire-and-forget:** `audit()` não bloqueia nem muda a resposta da leitura (RNF-3). Falha de gravação
+vai para o Sentry, como o resto do audit.
+
+**Ação nova** `conversation.spy_viewed` entra em `AUDIT_ACTIONS`; `tests/unit/audit-lista-do-painel-e-derivada.test.tsx`
+mostra que o painel deriva da lista — T0(c) mede o que a UI do painel exige.
+
+**O que continua sem rastro (declarado, RNF-5):** o Realtime (`postgres_changes`) entrega a mensagem
+nova direto ao navegador sob RLS, sem passar por handler nosso; e o PostgREST com JWT lê
+`messages` direto. A auditoria prova leitura **pelo produto**, não impede nem registra acesso
+direto ao banco com credencial de gestor.
 
 ### 2.4 Contrato
 | Rota | Mudança |
 |---|---|
 | `POST conversations/[id]/mark-read` | mesma assinatura e resposta; passa a ser no-op para não titular |
-| `POST conversations/[id]/spy-view` | **nova** (a confirmar na Q4); 200 `{ data: { audited: boolean } }`; `fail()` padrão |
+| `GET conversations/[id]/messages` | mesma assinatura e resposta; passa a gravar `conversation.spy_viewed` (fire-and-forget, com dedupe) quando as condições da §2.3 valem |
 
-Idempotência: `spy-view` não é criação; sem `Idempotency-Key`. Rate limit: herdado do padrão das
-rotas de conversa. **[NÃO VERIFICADO]** qual helper — T0.
+**Nenhuma rota nova.** Rate limit: herdado do padrão das rotas de conversa. **[NÃO VERIFICADO]**
+qual helper — T0(d).
+
+### 2.5 Limitação conhecida: a proteção do RF-1 vale para a rota, não para o dado
+Revisão do Sciuba (ponto 2). Medido em `baseline.sql:5566`: `conversations_agent_update` libera
+`UPDATE` a **qualquer** `agent`+ da organização. Logo um usuário com o JWT dele pode zerar
+`unread_count_for_assignee` direto pelo PostgREST, sem passar pelo handler. O RF-1 conserta o
+**produto**; não fecha a porta do banco.
+
+Fechar exigiria endurecer a policy (ou mover a escrita para uma RPC `security definer`) — isso é
+**migration + apêndice do baseline**, que o RNF-2 proíbe nesta issue. Decisão da spec: **declarar
+como limitação conhecida (RNF-4)** e abrir issue própria de endurecimento, em vez de relaxar o
+RNF-2 aqui. Efeito prático: o contador é uma **conveniência de atendimento**, não um dado de
+segurança; o risco de um usuário autenticado zerar o contador alheio por fora do produto não
+expõe conteúdo nenhum.
 
 ## 3. Alternativas recusadas
 - **Só o toggle (como o texto pede):** deixa o defeito para quem esquecer de ligá-lo e para o `agent`
@@ -95,13 +134,17 @@ rotas de conversa. **[NÃO VERIFICADO]** qual helper — T0.
 - **Coluna `read_by_user_id` / contador por usuário:** correto no limite, mas é schema e foge do
   "sem migration" da issue. Se Q1 revelar que o contador deve ser por leitor, **parar e alinhar**.
 - **Auditar dentro do `mark-read`:** não cobre conversa sem não lidas.
+- **Rota `POST …/spy-view` chamada pelo front** (versão anterior desta spec): a auditoria dependia
+  de o cliente colaborar; leitura por `GET` ou API não deixava rastro. Substituída pela §2.3.
 
 ## 4. Riscos
 | Risco | Mitigação |
 |---|---|
 | Badge do titular nunca zera se ele estiver com a conversa aberta e o `assigned_to_user_id` divergir do `auth.uid()` | Medido na §1.6: dono IA tem `assigned_to_user_id` nulo (CHECK da migration 0032), então só o titular humano casa. CA-2 trava o caso feliz |
 | Conversa na fila deixa de zerar ao ser aberta por `agent` (mudança perceptível) | É a Q2; a spec propõe e o review decide |
-| Volume de `spy_viewed` se auditar toda abertura | Q4: dedupe; fire-and-forget; não bloqueia |
+| Volume de `spy_viewed` | Dedupe por (org, conversa, ator) em 30 min (§2.3); fire-and-forget; só grava com titular humano ≠ ator |
+| Redis fora do ar anula o dedupe | Falha aberta: audita mesmo assim. Aceito — falta de rastro é pior que excesso |
+| Usuário zera contador alheio direto pelo PostgREST | Limitação declarada (§2.5, RNF-4); issue própria de endurecimento |
 | Gestor responde e zera (Q5) — o PRD continua parcialmente aberto | Declarado em "Fora de escopo" e Q5 |
 
 ## 5. Living System Checklist (`docs/doctrine/sistema-vivo.md`)
@@ -113,6 +156,6 @@ rotas de conversa. **[NÃO VERIFICADO]** qual helper — T0.
 | Porta na navegação | Sem tela nova; nada a declarar em `lib/navigation/registry.ts` |
 | Anti-morte | O não lido do titular deixa de morrer por olhar alheio — é o objetivo da issue |
 | Laço de retorno (invariante 7) | Se o gestor espiar demais, o audit mostra quem viu o quê; se RF-1 errar para o titular, o badge nunca zera e aparece no e2e (CA-2) |
-| Mapa vivo | **[A decidir no review]** se a peça (`spy-view`) merece nó em `docs/architecture/`; exige ≥2 arestas (inbox → rota → audit) |
+| Mapa vivo | **[A decidir no review]** se a peça (auditoria de leitura em `listMessagesHandler`) merece nó em `docs/architecture/`; exige ≥2 arestas (rota de mensagens/MCP → handler → audit) |
 | `.changes/` | 1 fragmento, `capacidade_nova` (o operador passa a ver o toggle e o contador deixa de ser zerado por terceiros) |
-| Schema / RLS / API | Schema: nenhum. RLS: nenhuma. API: RF-1 muda comportamento; `spy-view` nova |
+| Schema / RLS / API | Schema: nenhum. RLS: nenhuma. API: RF-1 muda comportamento do `mark-read`; `GET …/messages` passa a auditar; **nenhuma rota nova** |
