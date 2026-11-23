@@ -1,7 +1,7 @@
 # PRD-03 · Autocomplete de `@usuário` nas notas internas
 
 **Issue:** #69 — https://github.com/itConesul/CRMPI/issues/69
-**Estado:** `aprovada`  <!-- rascunho | em-revisao | aprovada | implementando | concluida | substituida -->
+**Estado:** `em-revisao`  <!-- rascunho | em-revisao | aprovada | implementando | concluida | substituida -->
 **Autor:** cMoreiraSul (com Claude)
 **Medido em:** `365a670` (`origin/develop`, 2026-11-19)
 
