@@ -68,7 +68,7 @@ export default async function ConversoesPage() {
   return (
     <div className="flex h-full flex-col gap-6 overflow-y-auto p-6">
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">{t("Conversões")}</h1>
+        <h1 className="font-serif text-3xl font-bold tracking-tight">{t("Conversões")}</h1>
         <p className="max-w-2xl text-sm text-muted-foreground">
           {t(
             "Quando um negócio que veio de anúncio é marcado como ganho, o valor da venda volta para a plataforma que trouxe o cliente. É esse retorno que ensina o anúncio a procurar mais gente parecida com quem comprou.",
@@ -77,13 +77,13 @@ export default async function ConversoesPage() {
       </header>
 
       {estado.conectada && !estado.habilitada && (
-        <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-4 text-sm">
+        <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm">
           {t("O envio está pausado. As vendas continuam sendo registradas aqui, mas não vão para a plataforma enquanto isto estiver desligado.")}
         </div>
       )}
 
       {estado.testEventCode && (
-        <div className="rounded-md border border-sky-500/40 bg-sky-500/10 p-4 text-sm">
+        <div className="rounded-xl border border-sky-500/40 bg-sky-500/10 p-4 text-sm">
           {t("Modo de teste ligado: as vendas vão marcadas como teste e não contam para a otimização. Apague o código de teste quando terminar de conferir.")}
         </div>
       )}
@@ -99,7 +99,7 @@ export default async function ConversoesPage() {
         </div>
 
         {pendencias.length === 0 ? (
-          <p className="rounded-md border p-4 text-sm text-muted-foreground">
+          <p className="rounded-xl border p-4 text-sm text-muted-foreground">
             {/*
               Ausência de pendência tem DUAS causas com significados opostos, e
               dizer só "tudo certo" esconderia a segunda: ou nada falhou, ou nunca
@@ -109,7 +109,7 @@ export default async function ConversoesPage() {
             {t("Nenhuma pendência. Ou tudo que veio de anúncio foi reportado, ou ainda não fechou nenhuma venda com origem em anúncio.")}
           </p>
         ) : (
-          <div className="overflow-x-auto rounded-md border">
+          <div className="overflow-x-auto rounded-xl border">
             <table className="w-full text-sm">
               <thead className="bg-muted/50 text-left">
                 <tr>

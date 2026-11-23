@@ -75,14 +75,14 @@ function Verificacoes({ g }: { g: NonNullable<TestResponse["data"]["guardrails"]
       {g.passou ? (
         <p
           data-testid="teste-vazamento-limpo"
-          className="rounded-md border border-border/60 bg-muted/40 p-2 text-xs"
+          className="rounded-xl border border-border/60 bg-muted/40 p-2 text-xs"
         >
           {t("A resposta não usa palavras internas do sistema.")}
         </p>
       ) : (
         <div
           data-testid="teste-vazamento-achado"
-          className="rounded-md border border-destructive/50 bg-destructive/5 p-2 text-xs"
+          className="rounded-xl border border-destructive/50 bg-destructive/5 p-2 text-xs"
         >
           <p className="font-medium text-destructive">
             {t("Esta resposta usa palavras que o cliente não deveria ver.")}
@@ -204,7 +204,7 @@ export function TestPanel({ agent, draft, published, readOnly }: Props) {
           </div>
         </div>
 
-        <div className="rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-xs">
+        <div className="rounded-xl border border-amber-500/40 bg-amber-500/5 p-3 text-xs">
           <p className="font-medium text-amber-700 dark:text-amber-400">
             {t("⚠ Modo teste consome créditos do provider.")}
           </p>
@@ -269,7 +269,7 @@ export function TestPanel({ agent, draft, published, readOnly }: Props) {
         {result ? (
           <>
             {result.stub ? (
-              <p className="rounded-md border border-border/60 bg-muted/40 p-2 text-xs text-muted-foreground">
+              <p className="rounded-xl border border-border/60 bg-muted/40 p-2 text-xs text-muted-foreground">
                 {t(
                   "Provedor de teste controlado. O motor e as verificações são os mesmos; não há chamada a uma IA externa.",
                 )}
@@ -344,7 +344,7 @@ export function TestPanel({ agent, draft, published, readOnly }: Props) {
 
 function Cell({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-md border border-border/60 px-2 py-1">
+    <div className="rounded-xl border border-border/60 px-2 py-1">
       <p className="text-[10px] tracking-wide text-muted-foreground uppercase">{label}</p>
       <p className="font-mono">{children}</p>
     </div>

@@ -27,11 +27,11 @@ export function ChannelRoutingForm({ initial }: { initial: ChannelRoutingSetting
     <h2 id="channel-routing-title" className="text-lg font-semibold">{t("Responsáveis por número")}</h2>
     <p className="text-sm text-muted-foreground">{t("A capacidade e o horário de cada pessoa valem para todos os números. A distribuição automática respeita os responsáveis de cada canal.")}</p>
     {!channels.length && <Link className="underline" href="/app/connections">{t("Conecte um número para escolher os responsáveis.")}</Link>}
-    {channels.map((channel) => <fieldset key={channel.id} className="rounded-lg border p-4 space-y-3" disabled={busy !== null}>
+    {channels.map((channel) => <fieldset key={channel.id} className="rounded-2xl border p-4 space-y-3" disabled={busy !== null}>
       <legend className="px-2 font-medium">{t(nomeDoCanal(channel))}</legend>
       <p className="text-sm" data-testid="channel-routing-state">{t(channel.mode === "legacy_unconfigured" ? "Usa todos os atendentes elegíveis da organização." : channel.mode === "restricted_empty" ? "Ninguém configurado — as conversas ficarão na fila." : "Somente as pessoas selecionadas recebem este número.")}</p>
       <div className="grid gap-2 sm:grid-cols-2">
-        {initial.members.map((member) => <label key={member.id} className="flex items-center gap-2 rounded-md p-2 hover:bg-muted">
+        {initial.members.map((member) => <label key={member.id} className="flex items-center gap-2 rounded-xl p-2 hover:bg-muted">
           <input type="checkbox" checked={channel.user_ids.includes(member.id)} onChange={(e) => setChannels((current) => current.map((c) => c.id === channel.id ? { ...c, user_ids: e.target.checked ? [...c.user_ids, member.id] : c.user_ids.filter((id) => id !== member.id) } : c))} />
           <span>{t(member.name)}</span>
         </label>)}

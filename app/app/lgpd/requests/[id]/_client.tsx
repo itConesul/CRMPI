@@ -56,8 +56,8 @@ export function LgpdRequestDetail({ id }: Props) {
       <div className="flex flex-col gap-6">
         <Skeleton className="h-8 w-64" />
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <Skeleton className="h-48 rounded-lg" />
-          <Skeleton className="h-48 rounded-lg" />
+          <Skeleton className="h-48 rounded-2xl" />
+          <Skeleton className="h-48 rounded-2xl" />
         </div>
       </div>
     );
@@ -65,7 +65,7 @@ export function LgpdRequestDetail({ id }: Props) {
 
   if (error || !data) {
     return (
-      <div className="rounded-md border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+      <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
         {t("Falha ao carregar solicitação.")}
       </div>
     );
@@ -118,7 +118,7 @@ export function LgpdRequestDetail({ id }: Props) {
 
       {/* PDF download if completed */}
       {signed_pdf_url && (
-        <div className="rounded-md border bg-muted/30 px-4 py-3 text-sm flex flex-wrap items-center justify-between gap-4">
+        <div className="rounded-xl border bg-muted/30 px-4 py-3 text-sm flex flex-wrap items-center justify-between gap-4">
           <span>{t("Relatório de exportação disponível (expira em 72h).")}</span>
           <Button size="sm" variant="outline" asChild className="shrink-0">
             <a href={signed_pdf_url} download>
@@ -183,7 +183,7 @@ export function LgpdRequestDetail({ id }: Props) {
               />
             )}
             {request.error_message && (
-              <div className="rounded-md border border-destructive/30 bg-destructive/5 px-2 py-1">
+              <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-2 py-1">
                 <p className="text-xs text-muted-foreground">{t("Erro")}</p>
                 <p className="text-destructive text-xs">{request.error_message}</p>
               </div>

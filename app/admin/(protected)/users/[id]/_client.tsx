@@ -87,9 +87,9 @@ export function UserDetailClient({ id }: UserDetailClientProps) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-32 w-full rounded-lg" />
-        <Skeleton className="h-48 w-full rounded-lg" />
-        <Skeleton className="h-64 w-full rounded-lg" />
+        <Skeleton className="h-32 w-full rounded-2xl" />
+        <Skeleton className="h-48 w-full rounded-2xl" />
+        <Skeleton className="h-64 w-full rounded-2xl" />
       </div>
     );
   }
@@ -126,7 +126,7 @@ export function UserDetailClient({ id }: UserDetailClientProps) {
 
       {/* Header */}
       <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">
+        <h1 className="font-serif text-3xl font-bold tracking-tight">
           {user.full_name ?? user.email ?? t("Usuário sem nome")}
         </h1>
         {user.full_name && (

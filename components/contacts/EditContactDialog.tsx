@@ -120,7 +120,7 @@ export function EditContactDialog({ contact, open, onOpenChange, customFieldDefs
             <Input id="ec-tags" {...form.register("tagsRaw")} />
           </div>
           {customFieldDefs.length > 0 && (
-            <div className="space-y-3 rounded-md border border-border p-3">
+            <div className="space-y-3 rounded-xl border border-border p-3">
               <div>
                 <h3 className="text-sm font-medium">{t("Campos personalizados")}</h3>
                 <p className="text-xs text-muted-foreground">

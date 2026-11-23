@@ -60,7 +60,7 @@ export function AgentInboxList({ canResolve }: { canResolve: boolean }) {
       </div>
 
       {isError ? (
-        <div role="alert" className="flex flex-wrap items-center gap-3 rounded-lg border border-border p-4 text-sm">
+        <div role="alert" className="flex flex-wrap items-center gap-3 rounded-2xl border border-border p-4 text-sm">
           <p className="min-w-0 flex-1">{t(acessoNegado ? "Seu acesso aos avisos não está disponível. Confira sua sessão e tente novamente." : data ? "Não foi possível atualizar os avisos. A lista abaixo pode estar desatualizada." : "Não foi possível carregar os avisos. Tente novamente.")}</p>
           <Button variant="outline" size="sm" disabled={isFetching} onClick={() => void refetch()}>{t("Tentar novamente")}</Button>
         </div>
@@ -89,7 +89,7 @@ export function AgentInboxList({ canResolve }: { canResolve: boolean }) {
           </p>
         </div>
       ) : (
-        <ul className="divide-y divide-border rounded-lg border border-border">
+        <ul className="divide-y divide-border rounded-2xl border border-border">
           {data.items.map((item) => (
             <InboxRow
               key={item.id}

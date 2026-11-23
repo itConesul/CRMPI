@@ -45,7 +45,7 @@ export default async function PublicLayout({ children }: { children: React.React
   return (
     <IdiomaProvider locale={locale}>
       <div className="flex min-h-screen items-center justify-center bg-background p-6">
-        <div className="w-full max-w-sm space-y-6">
+        <div className="w-full max-w-md space-y-6 rounded-[2rem] border border-border bg-surface p-8 shadow-xl shadow-accent/10 sm:p-10">
           {marca.logoUrl && (
             <div className="flex justify-center">
               {/*
@@ -69,7 +69,7 @@ export default async function PublicLayout({ children }: { children: React.React
                 data-testid="logo-da-fachada"
                 src={marca.logoUrl}
                 alt={marca.nome}
-                className="h-10 w-auto max-w-[12rem] object-contain"
+                className="h-14 w-auto max-w-[14rem] object-contain"
               />
             </div>
           )}

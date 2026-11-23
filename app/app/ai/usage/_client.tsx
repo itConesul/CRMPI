@@ -53,7 +53,7 @@ function ChartSkeletons() {
   return (
     <div className="grid gap-4 md:grid-cols-2">
       {Array.from({ length: 4 }).map((_, i) => (
-        <div key={i} className="rounded-lg border bg-card p-4">
+        <div key={i} className="rounded-2xl border bg-card p-4">
           <Skeleton className="h-3 w-32" />
           <Skeleton className="mt-4 h-[200px] w-full" />
         </div>
