@@ -1,7 +1,7 @@
 # Agenda · visão Mês busca a mesma janela que desenha
 
 **Issue:** #94 — https://github.com/itConesul/CRMPI/issues/94
-**Estado:** `em-revisao`  <!-- rascunho | em-revisao | aprovada | implementando | concluida | substituida -->
+**Estado:** `aprovada` — aprovada pelo Sciuba no review do PR #95, em 2026-11-23  <!-- rascunho | em-revisao | aprovada | implementando | concluida | substituida -->
 **Autor:** cMoreiraSul (com Claude)
 **Medido em:** `365a670` (develop)
 
@@ -20,10 +20,10 @@ conserto é uma única função pura que define a janela, usada por quem desenha
 | [`05-revisao.md`](05-revisao.md) | Review e aprovação |
 
 ## Checklist de aprovação
-- [ ] Cada requisito rastreia para um trecho da issue
-- [ ] Toda afirmação sobre o código existente cita arquivo e foi verificada
-- [ ] Todo critério de aceite tem dono de prova em `03-testes.md`
-- [ ] Fora de escopo está explícito
-- [ ] Impacto em schema, RLS, API e `.changes/` declarado (ou declarado como "nenhum")
-- [ ] Living System Checklist respondido em `02-design.md`
-- [ ] Revisor registrou a aprovação em `05-revisao.md`
+- [x] Cada requisito rastreia para um trecho da issue
+- [x] Toda afirmação sobre o código existente cita arquivo e foi verificada
+- [x] Todo critério de aceite tem dono de prova em `03-testes.md`
+- [x] Fora de escopo está explícito
+- [x] Impacto em schema, RLS, API e `.changes/` declarado (ou declarado como "nenhum")
+- [x] Living System Checklist respondido em `02-design.md`
+- [x] Revisor registrou a aprovação em `05-revisao.md`

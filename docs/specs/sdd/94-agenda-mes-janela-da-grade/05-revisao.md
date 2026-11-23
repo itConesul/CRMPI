@@ -33,4 +33,17 @@ A parte 3 era infraestrutura e se recuperou no rerun. A parte 2 é o defeito da 
 tabela da issue para seg 23/11. O PR só altera `docs/`. Logs brutos guardados fora do repositório.
 
 ## Aprovação
-- [ ] **Aprovada por:** <nome> em <AAAA-MM-DD> — implementação liberada
+- [x] **Aprovada por:** Sciuba (review APPROVED no PR #95) em 2026-11-23 — implementação liberada. A implementação já entrou pelo PR #97 (ver a evidência abaixo)
+
+## Evidência do e2e depois da correção (registro pedido no review de 2026-11-23)
+O `e2e-parte (2)` vermelho era o defeito que esta spec descreve. Com a implementação no PR #97 (mergeado em `develop`, `4223785`), o teste passa:
+
+| Onde | Run | Resultado |
+|---|---|---|
+| PR #97, `f4437c9` | [45249310139](https://github.com/itConesul/CRMPI/actions/runs/45249310139) | `agenda-ocupacao-do-google-na-grade.spec.ts:218` passa (2,6 s). O e2e novo `agenda-mes-dias-de-outro-mes.spec.ts` (CA-4) passa na parte 3. Partes 1, 2 e 3 verdes |
+| PR #95, `9401cc0` (com a `develop` atualizada) | [45257353378](https://github.com/itConesul/CRMPI/actions/runs/45257353378) | linha 218 passa (3,1 s); parte 2 com 95 passed e 6 skipped; `e2e` verde |
+
+Data da execução (CA-5, regressão sem dia exigido): 2026-11-23. O cenário de 22 e 23 de novembro é provado pelo CA-1 (unitário, âncoras fixas).
+
+## Correção depois da aprovação (review do Sciuba, 2026-11-23)
+O CA-4 dizia "sempre há ao menos 11 células" do mês seguinte, o que está errado: um mês de 31 dias que começa no sábado deixa 5 (6 + 31 = 37 de 42). Corrigido para "ao menos 5" (intervalo medido: 5 a 14, para meses de 28 a 31 dias). A prova do CA-4 não muda.
