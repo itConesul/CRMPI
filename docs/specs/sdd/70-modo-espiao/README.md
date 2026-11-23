@@ -1,15 +1,16 @@
 # PRD-04 · Modo espião: supervisão sem zerar o não lido do titular
 
 **Issue:** #70 — https://github.com/itConesul/CRMPI/issues/70
-**Estado:** `em-revisao`  <!-- rascunho | em-revisao | aprovada | implementando | concluida | substituida -->
+**Estado:** `aprovada`  <!-- rascunho | em-revisao | aprovada | implementando | concluida | substituida -->
 **Autor:** cMoreiraSul (com Claude)
 **Medido em:** `365a670` (develop, 2026-11-19)
 
 ## Resumo
 Hoje **qualquer pessoa que abra uma conversa zera o contador de não lidas do titular**: o handler
 de `mark-read` filtra só por `id` e organização. Esta spec propõe (1) que só o titular zere o
-próprio contador, no servidor; (2) um toggle opcional "Modo Espião" para `manager`/`admin` no
-cabeçalho do chat (**Q7: pode sair**, pois o item 1 já protege); (3) auditoria
+próprio contador, no servidor; (2) um **selo fixo e neutro**, "Conversa de <titular>", para
+`manager`/`admin` no cabeçalho do chat, sem ligar nem desligar (decisão do dono: o toggle saiu
+porque o item 1 já protege e um controle sem efeito engana); (3) auditoria
 `conversation.spy_viewed` em `api_audit_log`, gravada **pelo servidor na leitura das mensagens**,
 com dedupe de 30 min. **Sem migration** e **sem rota nova**. Limitações declaradas: RLS de `UPDATE`
 aberta a `agent`+ (RNF-4) e Realtime/PostgREST sem rastro (RNF-5).
@@ -38,7 +39,7 @@ Resultado, com a medição em [`02-design.md`](02-design.md) §1:
 | Quem vê conversa sem dono? | **Sim:** `fn_can_view_conversation` (baseline 5522) — `manager`/`admin`/`viewer` veem tudo; `agent` vê as suas e as sem dono (default `own_and_unassigned`) | Quem **zera** a sem dono: **não definido → Q2** |
 | Como se audita ação de conversa? | **Sim:** `audit()` + vocabulário `AUDIT_ACTIONS` em TS; a coluna `action` não tem CHECK | RF-5 segue o padrão, no servidor, com dedupe; **janela → Q4** |
 | Resposta também zera o contador? | **Sim, e a issue não menciona:** `messages/_handler.ts` e `fn_mark_conversation_message` (outbound) zeram | Fora do texto da issue → **Q5 (alerta de escopo)** |
-| Onde mora o toggle / persiste? | **Não definido** | **Q6** |
+| Onde mora o toggle / persiste? | **Não definido** | Q6 **removida**: o toggle virou selo (Q7), sem estado a persistir |
 
 ## Checklist de aprovação
 - [ ] Cada requisito rastreia para um trecho da issue
@@ -47,5 +48,9 @@ Resultado, com a medição em [`02-design.md`](02-design.md) §1:
 - [ ] Fora de escopo está explícito
 - [ ] Impacto em schema, RLS, API e `.changes/` declarado
 - [ ] Living System Checklist respondido em `02-design.md`
-- [ ] Perguntas Q1–Q7 decididas e registradas em `05-revisao.md`
-- [ ] Revisor registrou a aprovação em `05-revisao.md`
+- [x] Perguntas Q1–Q7 decididas e registradas em `05-revisao.md`
+- [x] Revisor registrou a aprovação em `05-revisao.md` (Sciuba, 2026-11-23 16:01)
+- [ ] Sciuba reconferiu as linhas pós-aprovação (selo neutro, CA-9, Q5 na §1.4) — pendente
+
+> **Antes de implementar:** a spec precisa estar **mergeada na `develop`** (`04-tarefas.md`) e a T0
+> tem 5 medições abertas que não mudam a regra. Nenhuma tarefa começou.

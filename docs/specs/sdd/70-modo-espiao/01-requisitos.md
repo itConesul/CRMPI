@@ -62,7 +62,8 @@ Acréscimos da spec:
   (`support_readonly` já não marca — `hooks/inbox/useMarkAsRead.ts`).
 
 ## Perguntas em aberto
-Detalhadas em [`05-revisao.md`](05-revisao.md); cada uma tem a medição e uma recomendação.
+**Todas decididas em 2026-11-23** (Q6 removida, Q7 revista duas vezes); a decisão e os links da #70
+estão em [`05-revisao.md`](05-revisao.md). A tabela abaixo guarda o enunciado original.
 
 | # | Pergunta | Bloqueia |
 |---|---|---|

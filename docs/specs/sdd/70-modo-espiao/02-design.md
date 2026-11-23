@@ -30,6 +30,16 @@ Consequência: RF-4 já é verdade hoje; o trabalho é **travá-la com teste** p
 | `fn_conversation_assign` (baseline 5624+) | zera ao mudar de dono | sim — o novo dono começa limpo |
 | `fn_mark_conversation_message` | `inbound` +1; `outbound` → 0 | sim; o "outbound → 0" é a Q5 |
 | `messages/_handler.ts:907` | resposta pelo CRM zera | sim; Q5 |
+| `POST conversations/[id]/transfer` | troca o dono e zera o contador **do novo dono** | sim; é o caminho em que o gestor vira titular (CA-9) |
+
+**Limitação conhecida (Q5, decidida fora desta spec — #70, 16:07):** `manager`/`admin` também
+**respondem** em conversa de outro titular (`POST messages` exige `agent`) e **transferem** conversa.
+Quando o gestor responde, o caminho de envio (`messages/_handler.ts:907` e a direção `outbound` de
+`fn_mark_conversation_message`) **zera o contador do titular**, e o RF-1 **não** cobre isso: ele
+protege o `mark-read`, não o envio. Por isso o gestor "nem sempre só espia", e o selo é neutro (§2.2).
+Mudar o envio toca uma função de banco, exigiria migration (proibida pelo RNF-2) e vai para **issue
+própria**, se o time quiser. **O PRD-04 fica parcialmente aberto por este motivo**, e a spec o declara
+em vez de esconder.
 
 ### 1.5 Visibilidade e auditoria
 - `fn_can_view_conversation` (baseline 5522): `manager`/`admin`/`viewer` veem **tudo**; `agent`
