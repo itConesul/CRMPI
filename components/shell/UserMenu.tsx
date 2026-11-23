@@ -35,14 +35,21 @@ export function UserMenu() {
       <ThemeToggle />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="rounded-full" aria-label={t("Menu do usuário")}>
-            <Avatar className="h-8 w-8">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="rounded-xl hover:scale-110 hover:bg-transparent hover:shadow-lg hover:shadow-accent/20 data-[state=open]:scale-110 data-[state=open]:shadow-lg data-[state=open]:shadow-accent/20"
+            aria-label={t("Menu do usuário")}
+          >
+            <Avatar className="h-8 w-8 rounded-xl">
               {user.avatar_url && <AvatarImage src={user.avatar_url} alt="" />}
-              <AvatarFallback>{initials(user.full_name, user.email)}</AvatarFallback>
+              <AvatarFallback className="rounded-xl bg-text font-serif font-bold text-bg">
+                {initials(user.full_name, user.email)}
+              </AvatarFallback>
             </Avatar>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="min-w-[220px]">
+        <DropdownMenuContent align="end" className="min-w-[220px] rounded-2xl border-border shadow-2xl">
           <DropdownMenuLabel>
             <div className="flex flex-col">
               <span className="text-sm font-medium">{user.full_name ?? user.email}</span>
@@ -50,7 +57,7 @@ export function UserMenu() {
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem disabled={isPending} onClick={() => startTransition(async () => { await signOut(); })}>
+          <DropdownMenuItem className="rounded-xl hover:bg-error-bg hover:text-error-fg focus:bg-error-bg focus:text-error-fg" disabled={isPending} onClick={() => startTransition(async () => { await signOut(); })}>
             <SignOut size={16} className="mr-2" aria-hidden />
             {t("Sair")}
           </DropdownMenuItem>

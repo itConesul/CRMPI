@@ -122,7 +122,7 @@ export function ExecucoesDeIa() {
   return (
     <div className="mx-auto w-full max-w-5xl p-6" data-testid="execucoes-de-ia">
       <header className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight">{t("Execuções de IA")}</h1>
+        <h1 className="font-serif text-3xl font-bold tracking-tight">{t("Execuções de IA")}</h1>
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
           {t(
             "Tudo que a inteligência artificial fez por aqui — e, quando algo falhou, o que aconteceu e o que fazer.",
@@ -215,7 +215,7 @@ export function ExecucoesDeIa() {
                   {e.error_message && (
                     <details className="text-xs text-muted-foreground">
                       <summary className="cursor-pointer">{t("Mensagem técnica do provedor")}</summary>
-                      <pre className="mt-1 overflow-x-auto whitespace-pre-wrap break-words rounded-md bg-muted p-2">
+                      <pre className="mt-1 overflow-x-auto whitespace-pre-wrap break-words rounded-xl bg-muted p-2">
                         {e.error_message}
                         {e.http_status ? `\n(${t("código")} ${e.http_status})` : ""}
                       </pre>

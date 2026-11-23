@@ -119,7 +119,7 @@ function EncerrarDemanda({ draft, onAbrir, onAlterar, onFechar, onPronto }: {
     finally { onAlterar({ salvando: false }); }
   }}>
     <label className="block">{t("Desfecho")}
-      <select aria-label={t("Desfecho da demanda")} className="mt-1 w-full rounded-md border bg-background p-2" value={draft.desfecho} onChange={(e) => onAlterar({ desfecho: e.target.value })}>
+      <select aria-label={t("Desfecho da demanda")} className="mt-1 w-full rounded-xl border bg-background p-2" value={draft.desfecho} onChange={(e) => onAlterar({ desfecho: e.target.value })}>
         <option value="resolvida">{t("Resolvida")}</option><option value="convertida">{t("Convertida")}</option>
         <option value="nao_procede">{t("Não procede")}</option><option value="encerrada_pelo_cliente">{t("Encerrada pelo cliente")}</option>
         <option value="perdida">{t("Perdida")}</option><option value="expirada_sem_resposta">{t("Expirada sem resposta")}</option>
@@ -211,7 +211,7 @@ function MarcarProximoPasso({ demandaId, onPronto }: { demandaId: string; onPron
         placeholder={t("O que acontece a seguir?")}
         aria-label={t("Próximo passo desta demanda")}
         data-testid="campo-proximo-passo"
-        className="w-full rounded-md border border-input bg-background px-2 py-1 text-xs focus:outline-hidden focus:ring-1 focus:ring-ring"
+        className="w-full rounded-xl border border-input bg-background px-2 py-1 text-xs focus:outline-hidden focus:ring-1 focus:ring-ring"
       />
       <div className="flex gap-1.5">
         <Button
@@ -318,7 +318,7 @@ function InboxLeadEditor({
                   aria-pressed={marcado}
                   onClick={() => onSelecionar(l.id)}
                   className={cn(
-                    "w-full rounded-md border p-2 text-left text-xs",
+                    "w-full rounded-xl border p-2 text-left text-xs",
                     marcado ? "border-accent bg-accent/10" : "border-border",
                   )}
                 >
@@ -643,7 +643,7 @@ export function CRMSidePanel({ conversation }: Props) {
                   key={d.id}
                   data-testid={semPasso ? "demanda-sem-proximo-passo" : "demanda-com-proximo-passo"}
                   className={cn(
-                    "rounded-md border p-2 text-xs",
+                    "rounded-xl border p-2 text-xs",
                     semPasso ? "border-warning-border bg-warning-bg/40" : "border-border",
                   )}
                 >
@@ -728,7 +728,7 @@ export function CRMSidePanel({ conversation }: Props) {
             {orders.map((o) => (
               <li
                 key={o.id}
-                className="flex items-center justify-between rounded-md border border-border p-2 text-xs"
+                className="flex items-center justify-between rounded-xl border border-border p-2 text-xs"
               >
                 <div className="min-w-0">
                   <div className="flex items-center gap-1 truncate font-medium">
@@ -758,7 +758,7 @@ export function CRMSidePanel({ conversation }: Props) {
         ) : activities && activities.length > 0 ? (
           <ul className="mt-2 space-y-1.5">
             {activities.map((a) => (
-              <li key={a.id} className="rounded-md border border-border p-2 text-xs">
+              <li key={a.id} className="rounded-xl border border-border p-2 text-xs">
                 {/* Rótulo do vocabulário único (activity-vocabulary), nunca o
                     tipo cru: a tela e o banco divergiram justamente por manter
                     duas listas. Marcador por ator, forma e não cor (§5). */}

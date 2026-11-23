@@ -244,7 +244,7 @@ export function RuleEditor({ open, onOpenChange, rule }: Props) {
                 (cond.field !== "" && !curatedFields.some((f) => f.value === cond.field));
               const curated = curatedFields.find((f) => f.value === cond.field);
               return (
-                <div key={idx} className="space-y-1 rounded-sm border border-border p-3">
+                <div key={idx} className="space-y-1 rounded-md border border-border p-3">
                   <div className="flex flex-wrap items-center gap-2">
                     {isAdvanced ? (
                       <Input
@@ -347,7 +347,7 @@ export function RuleEditor({ open, onOpenChange, rule }: Props) {
           <section className="space-y-3">
             <h3 className="text-lg font-semibold text-text">{t("ENTÃO")}</h3>
             {actions.map((action, idx) => (
-              <div key={idx} className="space-y-3 rounded-sm border border-border p-3">
+              <div key={idx} className="space-y-3 rounded-md border border-border p-3">
                 <div className="flex items-center justify-between">
                   <p className="font-medium text-text">{t(ACTION_LABELS[action.type])}</p>
                   <div className="flex items-center gap-1">
@@ -409,7 +409,7 @@ export function RuleEditor({ open, onOpenChange, rule }: Props) {
           </section>
 
           {!isEdit ? (
-            <p className="rounded-sm border border-border bg-muted p-3 text-sm text-muted-foreground">
+            <p className="rounded-md border border-border bg-muted p-3 text-sm text-muted-foreground">
               {t("A automação nasce pausada. Revise e ligue quando estiver pronta.")}
             </p>
           ) : null}

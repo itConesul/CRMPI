@@ -45,7 +45,7 @@ export function CaseReplyPanel({ caseId, status }: { caseId: string; status: Cas
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-lg border border-border p-4">
+    <div className="flex flex-col gap-3 rounded-2xl border border-border p-4">
       <h3 className="text-sm font-semibold">{t("O que você quer fazer?")}</h3>
       {disabled ? <p className="text-xs text-muted-foreground">{disabledReason ? t(disabledReason) : null}</p> : null}
 
@@ -59,7 +59,7 @@ export function CaseReplyPanel({ caseId, status }: { caseId: string; status: Cas
             aria-checked={action === opt.action}
             onClick={() => setAction(opt.action)}
             className={cn(
-              "rounded-sm border p-3 text-left transition-colors",
+              "rounded-md border p-3 text-left transition-colors",
               action === opt.action ? "border-accent bg-accent-soft" : "border-border hover:border-border-strong",
               disabled && "cursor-not-allowed opacity-55",
             )}

@@ -21,7 +21,7 @@ export function DoneClient({
   const pendentes = itens.filter((i) => !i.feito);
 
   return (
-    <div className="space-y-6 rounded-lg border bg-background p-6">
+    <div className="space-y-6 rounded-2xl border bg-background p-6">
       <div className="space-y-1 text-center">
         <h2 className="text-2xl font-semibold tracking-tight">{t("Tudo pronto!")}</h2>
         <p className="text-sm text-muted-foreground">
@@ -84,7 +84,7 @@ export function DoneClient({
         */}
         <ul className="grid gap-2 sm:grid-cols-2">
           {pecas.map((p) => (
-            <li key={p.href} className="rounded-md border p-3">
+            <li key={p.href} className="rounded-xl border p-3">
               <a href={p.href} className="text-sm font-medium underline-offset-2 hover:underline">
                 {t(p.comoChamar)}
               </a>

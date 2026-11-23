@@ -70,7 +70,7 @@ function SerieDiaria({ dias }: { dias: LinhaDoDia[] }) {
       {dias.map((d) => (
         <div key={d.data} className="flex min-w-[18px] flex-1 flex-col items-center gap-1">
           <div
-            className="w-full rounded-sm bg-accent/70"
+            className="w-full rounded-md bg-accent/70"
             style={{ height: `${Math.max(2, (d.quantidade / teto) * 72)}px` }}
             title={`${d.rotulo}: ${d.quantidade}`}
             data-dia={d.data}
@@ -224,7 +224,7 @@ export function ActivityReportClient() {
                 {atividades.map((i: LinhaDeAtividade) => (
                   <li
                     key={i.id}
-                    className="flex flex-wrap items-baseline gap-x-2 gap-y-1 rounded-md border border-border p-2 text-sm"
+                    className="flex flex-wrap items-baseline gap-x-2 gap-y-1 rounded-xl border border-border p-2 text-sm"
                   >
                     <span className="shrink-0 tabular-nums text-xs text-muted-foreground">
                       {quandoLegivel(i.quando, "pt-BR")}

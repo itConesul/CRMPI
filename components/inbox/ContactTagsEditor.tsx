@@ -35,7 +35,7 @@ export function ContactTagsEditor({ contactId, tags }: Props) {
   }
 
   return (
-    <div className="mt-2 space-y-2 rounded-md border border-border p-2">
+    <div className="mt-2 space-y-2 rounded-xl border border-border p-2">
       <div className="flex flex-wrap gap-1">
         {tags.length > 0 ? (
           tags.map((tag) => (
@@ -46,7 +46,7 @@ export function ContactTagsEditor({ contactId, tags }: Props) {
                 onClick={() => remove(tag)}
                 disabled={mutation.isPending}
                 aria-label={`${t("Remover tag")} ${tag}`}
-                className="rounded-sm hover:text-destructive"
+                className="rounded-md hover:text-destructive"
               >
                 <X size={10} weight="bold" aria-hidden />
               </button>

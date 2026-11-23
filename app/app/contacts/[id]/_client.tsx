@@ -70,7 +70,7 @@ export function ContactDetailClient({ contactId }: Props) {
       {contact.is_anonymized && (
         <div
           role="alert"
-          className="border-error-fg/30 sticky top-0 z-20 flex items-center gap-3 rounded-md border bg-error-bg p-3 text-sm text-error-fg"
+          className="border-error-fg/30 sticky top-0 z-20 flex items-center gap-3 rounded-xl border bg-error-bg p-3 text-sm text-error-fg"
         >
           <ShieldCheck size={18} weight="duotone" aria-hidden />
           <span>
@@ -87,7 +87,7 @@ export function ContactDetailClient({ contactId }: Props) {
           {/* Sem truncar: nome é dado que a tela existe pra mostrar, e cortar
               com reticências sem um jeito de ver o resto violaria o princípio
               de nunca esconder informação crítica. Deixa quebrar linha. */}
-          <h1 className="break-words text-2xl font-semibold tracking-tight">{displayName}</h1>
+          <h1 className="break-words font-serif text-3xl font-bold tracking-tight">{displayName}</h1>
           <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
             {contact.email && <span>{contact.email}</span>}
             {contact.email && contact.phone_number && <span>•</span>}

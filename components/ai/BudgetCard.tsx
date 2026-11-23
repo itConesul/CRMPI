@@ -200,7 +200,7 @@ export function BudgetCard({ initialData, isAdmin }: Props) {
       </div>
 
       {chave && (
-        <p className="mt-3 rounded-md border border-amber-500/40 bg-amber-500/10 p-2 text-xs text-amber-900 dark:text-amber-200">
+        <p className="mt-3 rounded-xl border border-amber-500/40 bg-amber-500/10 p-2 text-xs text-amber-900 dark:text-amber-200">
           {chave}
         </p>
       )}
@@ -208,7 +208,7 @@ export function BudgetCard({ initialData, isAdmin }: Props) {
       {status.gasto_incompleto && (
         <p
           data-testid="aviso-medicao-incompleta"
-          className="mt-3 rounded-md border border-amber-500/40 bg-amber-500/10 p-2 text-xs text-amber-900 dark:text-amber-200"
+          className="mt-3 rounded-xl border border-amber-500/40 bg-amber-500/10 p-2 text-xs text-amber-900 dark:text-amber-200"
         >
           {t(AVISO_DE_MEDICAO)}
         </p>
@@ -280,7 +280,7 @@ function OpcaoDeModo({
     <label
       data-testid={`opcao-orcamento-${valor}`}
       data-marcada={marcado ? "sim" : "nao"}
-      className={`flex items-start gap-3 rounded-lg border p-3 transition-colors ${
+      className={`flex items-start gap-3 rounded-2xl border p-3 transition-colors ${
         disabled
           ? "cursor-not-allowed border-border opacity-60"
           : marcado
@@ -481,7 +481,7 @@ function EditBudgetDialog({ status }: { status: BudgetStatus }) {
           )}
 
           {armando && (
-            <div className="space-y-1.5 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3">
+            <div className="space-y-1.5 rounded-2xl border border-amber-500/40 bg-amber-500/10 p-3">
               <p className="text-xs">
                 {t("A parada começa a valer")} <strong>72 {t("horas")}</strong> {t("depois de salvar. É o tempo de você ver o aviso chegar antes que alguma conversa pare.")}
               </p>

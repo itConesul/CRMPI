@@ -251,7 +251,7 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
           relê-la — ela está logo acima, no fio.
         */}
         {respondendo && mode === "reply" && (
-          <div className="mb-1 flex items-start gap-2 rounded-md border-l-2 border-primary bg-muted/60 px-2 py-1.5">
+          <div className="mb-1 flex items-start gap-2 rounded-xl border-l-2 border-primary bg-muted/60 px-2 py-1.5">
             <div className="min-w-0 flex-1">
               <div className="text-[11px] font-medium text-primary">
                 {respondendo.direction === "outbound" ? t("Você") : t("Cliente")}
@@ -264,7 +264,7 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
               type="button"
               onClick={onCancelarResposta}
               aria-label={t("Cancelar resposta")}
-              className="rounded-md p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+              className="rounded-xl p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
             >
               <X className="size-4" />
             </button>
@@ -329,7 +329,7 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
                 : t("Enter envia · Shift+Enter quebra linha")
             }
             className={cn(
-              "max-h-40 min-h-9 flex-1 resize-none rounded-md border border-input bg-background px-3 py-2 text-sm",
+              "max-h-40 min-h-9 flex-1 resize-none rounded-xl border border-input bg-background px-3 py-2 text-sm",
               "placeholder:text-muted-foreground focus:ring-1 focus:ring-ring focus:outline-hidden",
             )}
             disabled={mode === "note" ? isDisabled : respostaBarrada}

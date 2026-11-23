@@ -42,7 +42,7 @@ export const REGUA_DO_PRODUTO: Regua = {
     base: [
       {
         chave: "--color-bg",
-        hex: "#faf9f6",
+        hex: "#f8fafc",
       },
       {
         chave: "--color-surface",
@@ -50,7 +50,7 @@ export const REGUA_DO_PRODUTO: Regua = {
       },
       {
         chave: "--color-surface-elevated",
-        hex: "#f5f3ee",
+        hex: "#f1f5f9",
       },
     ],
     tingidas: [
@@ -319,4 +319,4 @@ export const REGUA_DO_PRODUTO: Regua = {
     },
     alfaDoSoft: 0.16,
   },
-} as const;
+};

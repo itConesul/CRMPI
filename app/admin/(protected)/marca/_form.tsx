@@ -267,7 +267,7 @@ export function FormularioDaMarca({
                 UM pixel e não mostra o que o sistema faz com ele. Quem ensina é a
                 tira abaixo. */}
             <label
-              className="relative h-10 w-10 shrink-0 cursor-pointer overflow-hidden rounded-sm border border-border"
+              className="relative h-10 w-10 shrink-0 cursor-pointer overflow-hidden rounded-md border border-border"
               style={{
                 backgroundColor: ehHexValido(hexLimpo)
                   ? normalizarHex(hexLimpo)

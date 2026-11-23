@@ -123,7 +123,7 @@ export function InviteForm() {
                 </h2>
                 <ul className="mt-2 space-y-2 text-sm">
                   {result.sent.map((s) => (
-                    <li key={s.email} className="rounded-md border p-2">
+                    <li key={s.email} className="rounded-xl border p-2">
                       <div className="font-medium">{s.email}</div>
                       <div className="text-xs text-muted-foreground">
                         {s.email_dispatched

@@ -177,7 +177,7 @@ export function PainelDeProvedores() {
   return (
     <div className="mx-auto w-full max-w-5xl p-6" data-testid="painel-de-provedores">
       <header className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight">{t("Provedores de IA")}</h1>
+        <h1 className="font-serif text-3xl font-bold tracking-tight">{t("Provedores de IA")}</h1>
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
           {t("Seu sistema usa inteligência artificial em")} {dados.pontos.length}{" "}
           {t("lugares diferentes. Aqui você vê qual está atendendo cada um — e troca, se quiser.")}
@@ -353,14 +353,14 @@ function CartaoDoPonto({
       </div>
 
       {/* O que a pessoa VÊ quando este ponto falha. É a razão de a tela existir. */}
-      <p className="mt-3 rounded-md bg-muted/50 p-2 text-xs text-muted-foreground">
+      <p className="mt-3 rounded-xl bg-muted/50 p-2 text-xs text-muted-foreground">
         <span className="font-medium">{t("Se falhar:")}</span> {t(ponto.sintomaDeFalha)}
       </p>
 
       {ponto.avisos.map((a) => (
         <p
           key={a}
-          className="mt-2 rounded-md bg-amber-500/10 p-2 text-xs text-amber-700 dark:text-amber-500"
+          className="mt-2 rounded-xl bg-amber-500/10 p-2 text-xs text-amber-700 dark:text-amber-500"
           data-testid={`aviso-${ponto.id}`}
         >
           {t(a)}

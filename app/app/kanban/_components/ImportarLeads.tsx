@@ -156,13 +156,13 @@ export function ImportarLeads({ funis }: { funis: FunilDaLista[] }) {
             </a>
 
             {erro ? (
-              <p role="alert" className="rounded-md bg-destructive/10 p-2 text-xs font-medium text-destructive">
+              <p role="alert" className="rounded-xl bg-destructive/10 p-2 text-xs font-medium text-destructive">
                 {erro}
               </p>
             ) : null}
 
             {resumo ? (
-              <div className="rounded-lg border p-3 text-sm" data-testid="resumo-da-importacao">
+              <div className="rounded-2xl border p-3 text-sm" data-testid="resumo-da-importacao">
                 <p className="font-medium">
                   {resumo.criados} {t("leads criados")} · {resumo.contatos_criados}{" "}
                   {t("contatos novos")} · {resumo.total_linhas} {t("linhas na planilha")}
