@@ -40,7 +40,7 @@ function formatTokens(n: number): string {
 
 function ChartCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-lg border bg-card p-4">
+    <div className="rounded-2xl border bg-card p-4">
       <h3 className="mb-4 text-sm font-medium text-muted-foreground">{title}</h3>
       {children}
     </div>

@@ -70,7 +70,7 @@ export function MeetDoCompromisso({
     failed: "O envio falhou. Confira o canal e tente novamente.",
   };
   return (
-    <section className="mt-3 space-y-3 rounded-md border p-3" aria-label={t("Google Meet")}>
+    <section className="mt-3 space-y-3 rounded-xl border p-3" aria-label={t("Google Meet")}>
       <h3 className="text-sm font-medium">Google Meet</h3>
       <p role="status" className="text-sm">
         {t(stateLabel[meeting.state] ?? "Link ainda não solicitado")}
@@ -136,7 +136,7 @@ export function MeetDoCompromisso({
           </label>
           <select
             id={`meet-destination-${id}`}
-            className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+            className="h-9 w-full rounded-xl border bg-background px-2 text-sm"
             value={sendTo}
             onChange={(e) => setDestination(e.target.value)}
             disabled={!meeting.destinations.length || action.isPending}

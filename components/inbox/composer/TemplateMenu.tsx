@@ -27,7 +27,7 @@ export function TemplateMenu({ open, query, templates, onPick, onClose: _onClose
   );
   return (
     <div
-      className="absolute bottom-14 left-3 z-20 max-h-64 w-80 overflow-y-auto rounded-lg border border-border bg-popover p-1 shadow-lg"
+      className="absolute bottom-14 left-3 z-20 max-h-64 w-80 overflow-y-auto rounded-2xl border border-border bg-popover p-1 shadow-lg"
       role="listbox"
       aria-label={t("Templates de script")}
     >
@@ -38,7 +38,7 @@ export function TemplateMenu({ open, query, templates, onPick, onClose: _onClose
           <button
             key={tpl.id}
             type="button"
-            className="flex w-full flex-col items-start gap-0.5 rounded-md px-3 py-2 text-left hover:bg-muted"
+            className="flex w-full flex-col items-start gap-0.5 rounded-xl px-3 py-2 text-left hover:bg-muted"
             onClick={() => onPick(tpl)}
           >
             <span className="text-sm font-medium">{tpl.title}</span>

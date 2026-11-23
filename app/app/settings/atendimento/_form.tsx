@@ -83,7 +83,7 @@ function Escolha({
     <label
       data-testid={`opcao-${nome}-${valor}`}
       data-marcada={marcado ? "sim" : "nao"}
-      className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors ${
+      className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-3 transition-colors ${
         marcado ? "border-primary bg-primary/5" : "border-border hover:bg-muted/40"
       }`}
     >
@@ -224,7 +224,7 @@ export function AtendimentoForm({ initial }: { initial: AtendimentoConfig }) {
         {combinacaoMorta ? (
           <p
             data-testid="aviso-combinacao-morta"
-            className="rounded-md border border-amber-500/40 bg-amber-50/60 p-3 text-xs dark:bg-amber-900/10"
+            className="rounded-xl border border-amber-500/40 bg-amber-50/60 p-3 text-xs dark:bg-amber-900/10"
           >
             {t("Com")} <strong>&ldquo;{t("só os seus")}&rdquo;</strong>{" "}
             {t(

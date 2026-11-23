@@ -22,7 +22,7 @@ export function SlaBanner({ requests }: SlaBannerProps) {
     return (
       <div
         role="alert"
-        className="flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-800 dark:bg-red-950/40 dark:text-red-300"
+        className="flex items-center gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-800 dark:bg-red-950/40 dark:text-red-300"
       >
         <Warning size={18} weight="fill" className="shrink-0 text-red-600 dark:text-red-400" aria-hidden />
         <span>
@@ -38,7 +38,7 @@ export function SlaBanner({ requests }: SlaBannerProps) {
     return (
       <div
         role="alert"
-        className="flex items-center gap-3 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800 dark:border-yellow-800 dark:bg-yellow-950/40 dark:text-yellow-300"
+        className="flex items-center gap-3 rounded-2xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800 dark:border-yellow-800 dark:bg-yellow-950/40 dark:text-yellow-300"
       >
         <Warning size={18} weight="fill" className="shrink-0 text-yellow-600 dark:text-yellow-400" aria-hidden />
         <span>

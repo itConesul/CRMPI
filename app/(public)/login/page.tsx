@@ -35,12 +35,12 @@ export default async function LoginPage({
   return (
     <div className="space-y-6">
       <div className="space-y-1.5 text-center">
-        <h1 className="text-2xl font-semibold tracking-tight">{t("Entrar")}</h1>
-        <p className="text-sm text-muted-foreground">{branding().name}</p>
+        <h1 className="font-serif text-3xl font-bold tracking-tight text-accent">{t("Entrar")}</h1>
+        <p className="text-[11px] font-black uppercase tracking-[0.25em] text-gold-ink">{branding().name}</p>
       </div>
       {reset === "success" && (
         <div
-          className="rounded-md border border-primary/30 bg-primary/10 px-3 py-2 text-sm"
+          className="rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-sm"
           role="status"
         >
           {t("Senha redefinida com sucesso. Entre com a nova senha.")}
@@ -48,7 +48,7 @@ export default async function LoginPage({
       )}
       {error === "link_invalido" && (
         <div
-          className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+          className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
           role="alert"
         >
           {t("Link inválido ou expirado. Peça um novo em Recuperar senha ou refaça o cadastro.")}
@@ -61,7 +61,7 @@ export default async function LoginPage({
       */}
       {error === "convite_invalido" && (
         <div
-          className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+          className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
           role="alert"
         >
           {t(
@@ -71,7 +71,7 @@ export default async function LoginPage({
       )}
       {error === "template_padrao" && (
         <div
-          className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+          className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
           role="alert"
         >
           {t(
@@ -83,7 +83,7 @@ export default async function LoginPage({
       )}
       {error === "provisionamento" && (
         <div
-          className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+          className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
           role="alert"
         >
           {t(
@@ -96,7 +96,7 @@ export default async function LoginPage({
         <p>
           <Link
             href="/login/forgot"
-            className="text-muted-foreground underline underline-offset-4 hover:text-foreground"
+            className="text-[11px] font-black uppercase tracking-widest text-gold-ink hover:underline"
           >
             {t("Esqueci minha senha")}
           </Link>
@@ -105,7 +105,7 @@ export default async function LoginPage({
           {t("Não tem conta?")}{" "}
           <Link
             href="/signup"
-            className="font-medium text-foreground underline underline-offset-4"
+            className="font-black uppercase tracking-widest text-accent underline decoration-gold/30 underline-offset-4 transition-colors hover:text-gold-ink"
           >
             {t("Criar conta")}
           </Link>

@@ -48,7 +48,7 @@ export function CaseList() {
             </p>
           </div>
         ) : (
-          <ul className="divide-y divide-border rounded-lg border border-border">
+          <ul className="divide-y divide-border rounded-2xl border border-border">
             {data.cases.map((c) => (
               <CaseRow
                 key={c.id}
