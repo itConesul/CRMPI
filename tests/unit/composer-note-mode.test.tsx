@@ -89,3 +89,12 @@ describe("Composer + modo nota interna", () => {
     expect(sendMock).not.toHaveBeenCalled();
   });
 });
+
+/**
+ * O Composer e o cabeçalho leem o expediente (PRD-01 / #67) por `useExpedienteBarra`. Esta suíte mede outra
+ * coisa, então fixa o estado de quase toda instalação: sem expediente, nada barrado. O comportamento
+ * fora do expediente tem suíte própria em `expediente-ui-trava-as-acoes.test.tsx`.
+ */
+vi.mock("@/hooks/expediente/useExpediente", () => ({
+  useExpedienteBarra: () => ({ barrado: false, data: undefined, isLoading: false }),
+}));

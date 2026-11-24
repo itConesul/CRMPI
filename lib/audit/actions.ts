@@ -203,6 +203,8 @@ export const AUDIT_ACTIONS = [
   "leads.bulk_assigned",
   "attendant.availability_changed",
   "routing.config_changed",
+  // PRD-01 (#67): o admin mudou o expediente da organização (`settings.business_hours`).
+  "expediente.config_changed",
   // Mudar a régua do abandono (spec 16 §5.2) muda como TODO período passa a ser
   // lido — é mutação relevante, não preferência de exibição.
   "metrics.atrito_regua_changed",

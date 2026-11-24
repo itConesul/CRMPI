@@ -32,6 +32,7 @@ ser fonte sem ninguém decidir isso.
 | `marca-propria.architecture.json` | marca própria (white-label) — 37 peças, 54 arestas, 6 faixas; a pilha org → instalação → `.env` → padrão, as saídas SEM DOM (`marcaDaSaida`) e a **não-ligação declarada** do PDF de LGPD, que imprime o CONTROLADOR e nunca a marca de quem revende |
 | `historico-whatsapp.architecture.json` | histórico do WhatsApp no pareamento — 11 peças, 11 arestas; o passado do aparelho entra como contexto (store do WAHA → importador em rodadas → `fn_importar_historico_whatsapp`) e a **não-ligação declarada** com IA, sentimento, follow-up e roteamento |
 | `retencao-de-historico.architecture.json` | poda do histórico (issue #261) — 16 peças, 18 arestas, 6 faixas; o que sai (`done`/`failed`/`dead` velho), o que tem dono e **não** sai (`pending`/`running`, e `dead` com aviso ainda aberto), e por que o expurgo do audit é uma `security definer` sem seletor de linha em vez de uma porta |
+| `expediente-e-setor.architecture.json` | expediente da empresa (#67), só o **gate** (T9a) — 21 peças, 22 arestas; o carimbo de método no `proxy.ts`, o gate fail-closed em `requireRole`, a leitura sob RLS que falha aberta, o contador de barrados e a distribuição só do `agent`; **cinco não-ligações declaradas** (RF-10, cron e webhooks, aviso ao lead, contador→audit, leitor do contador). Departamentos entram na T9b |
 
 > **Esta tabela já apodreceu uma vez:** ela listava 8 mapas quando o disco tinha 9 — faltava
 > `indice-de-atrito`. Nenhum teste lê este README (o gate lê os `.json`), então mapa novo que

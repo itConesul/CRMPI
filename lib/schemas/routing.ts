@@ -56,14 +56,25 @@ export const atendimentoConfigPatchSchema = routingConfigSchema.extend({
 });
 export type AtendimentoConfigPatch = z.infer<typeof atendimentoConfigPatchSchema>;
 
-/** Uma janela de disponibilidade: dow 0=domingo … 6=sábado, "HH:MM"–"HH:MM". */
-export const scheduleWindowSchema = z
-  .object({
-    dow: z.number().int().min(0).max(6),
-    start: z.string().regex(HHMM, "start deve ser HH:MM"),
-    end: z.string().regex(HHMM, "end deve ser HH:MM"),
-  })
-  .refine((w) => w.start < w.end, { message: "start deve ser antes de end" });
+/** A forma de uma janela, sem a regra de ordem — base comum da janela de atendente e do expediente. */
+const scheduleWindowShape = z.object({
+  dow: z.number().int().min(0).max(6),
+  start: z.string().regex(HHMM, "start deve ser HH:MM"),
+  end: z.string().regex(HHMM, "end deve ser HH:MM"),
+});
+
+/**
+ * Uma janela de disponibilidade: dow 0=domingo … 6=sábado, "HH:MM"–"HH:MM".
+ *
+ * **Não atravessa a meia-noite** (`start < end`) e isso é DE PROPÓSITO: esta mesma coluna
+ * (`attendant_availability.schedule`) também alimenta a agenda (`lib/agenda/horarios-livres.ts`),
+ * que lê `{ inicio, fim }` por dia e gera zero horários para `fim < inicio`. Aceitar a virada
+ * aqui faria o plantão noturno de um atendente sumir da agenda em silêncio. A virada de dia
+ * existe só no expediente da organização (`expedienteWindowSchema`).
+ */
+export const scheduleWindowSchema = scheduleWindowShape.refine((w) => w.start < w.end, {
+  message: "start deve ser antes de end",
+});
 export type ScheduleWindow = z.infer<typeof scheduleWindowSchema>;
 
 /**
@@ -94,6 +105,30 @@ export const availabilityScheduleSchema = z.object({
   windows: z.array(scheduleWindowSchema).max(50).default([]),
 });
 export type AvailabilitySchedule = z.infer<typeof availabilityScheduleSchema>;
+
+/**
+ * Janela do EXPEDIENTE da organização (PRD-01, #67): igual à do atendente, mas **pode virar o dia**.
+ *
+ * `end < start` é a virada (ex.: 22:00–06:00) e a janela pertence ao `dow` em que COMEÇA; só
+ * `start == end` é rejeitado (janela vazia ou de 24 h ambígua). `end = "00:00"` vale meia-noite.
+ */
+export const expedienteWindowSchema = scheduleWindowShape.refine((w) => w.start !== w.end, {
+  message: "start e end não podem ser iguais",
+});
+export type ExpedienteWindow = z.infer<typeof expedienteWindowSchema>;
+
+/**
+ * `organizations.settings.business_hours` — o expediente da organização.
+ *
+ * Mesmo formato do horário por atendente (`{ timezone, windows }`, `windows` vazio = sem
+ * restrição), com a virada de dia. O fuso reusa a MESMA validação do atendente: um fuso que o
+ * `Intl` não conhece lançaria `RangeError` em `localMoment`.
+ */
+export const expedienteConfigSchema = z.object({
+  timezone: availabilityScheduleSchema.shape.timezone,
+  windows: z.array(expedienteWindowSchema).max(50).default([]),
+});
+export type ExpedienteConfig = z.infer<typeof expedienteConfigSchema>;
 
 /** PATCH parcial de disponibilidade (o atendente muda a sua; manager, de todos). */
 export const availabilityPatchSchema = z
