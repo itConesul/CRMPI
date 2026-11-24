@@ -7,12 +7,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { audit } from "@/lib/audit";
 import { requireRole } from "@/lib/auth/require-role";
+import { lerBarradosDoDia } from "@/lib/expediente/contador";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 import { GET, PATCH } from "./route";
 
 vi.mock("@/lib/auth/require-role", () => ({ requireRole: vi.fn() }));
+vi.mock("@/lib/expediente/contador", () => ({ lerBarradosDoDia: vi.fn() }));
 vi.mock("@/lib/audit", () => ({ audit: vi.fn(async () => undefined) }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: vi.fn() }));
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: vi.fn() }));
@@ -100,6 +102,75 @@ describe("GET — lê o expediente e o estado avaliado pelo servidor", () => {
   it("devolve a resposta do gate quando o papel não basta", async () => {
     vi.mocked(requireRole).mockResolvedValue({ ok: false, response: new Response(null, { status: 403 }) as never });
     expect((await GET(get())).status).toBe(403);
+  });
+});
+
+describe("GET — `barrados_hoje` (RNF-5, opção (b); contrato em `02-design.md` §2.1)", () => {
+  const comPapel = (role: "viewer" | "agent" | "manager" | "admin") =>
+    vi.mocked(requireRole).mockResolvedValue({
+      ok: true,
+      user: { id: USER } as never,
+      org: { orgId: ORG, name: "Org", role },
+    });
+  const lerCom = async (settings: unknown) => {
+    const { client } = clienteComSettings(settings);
+    vi.mocked(createClient).mockResolvedValue(client);
+    const res = await GET(get());
+    const { data } = (await res.json()) as { data: Record<string, unknown> };
+    return { res, data };
+  };
+
+  it.each(["admin", "manager"] as const)("`%s` recebe o número, no fuso da organização", async (papel) => {
+    comPapel(papel);
+    vi.mocked(lerBarradosDoDia).mockResolvedValue(7);
+    const { res, data } = await lerCom({ business_hours: comercial });
+    expect(res.status).toBe(200);
+    expect(data.barrados_hoje).toBe(7);
+    expect(vi.mocked(lerBarradosDoDia)).toHaveBeenCalledWith(ORG, "America/Sao_Paulo");
+  });
+
+  it.each(["agent", "viewer"] as const)(
+    "`%s` recebe `null` e o Redis NÃO é consultado (a faixa chama a rota de todo usuário a cada 60 s)",
+    async (papel) => {
+      comPapel(papel);
+      vi.mocked(lerBarradosDoDia).mockResolvedValue(7);
+      const { data } = await lerCom({ business_hours: comercial });
+      expect(data.barrados_hoje).toBeNull();
+      expect(vi.mocked(lerBarradosDoDia)).not.toHaveBeenCalled();
+    },
+  );
+
+  it("`0` é um número: o Redis respondeu e nenhuma tentativa foi barrada hoje (a tela mostra `0`, não `—`)", async () => {
+    comPapel("manager");
+    vi.mocked(lerBarradosDoDia).mockResolvedValue(0);
+    const { data } = await lerCom({ business_hours: comercial });
+    expect(data.barrados_hoje).toBe(0);
+  });
+
+  it("Redis fora (a leitura devolve `null`): a rota responde 200 com `null`, não falha", async () => {
+    comPapel("admin");
+    vi.mocked(lerBarradosDoDia).mockResolvedValue(null);
+    const { res, data } = await lerCom({ business_hours: comercial });
+    expect(res.status).toBe(200);
+    expect(data.barrados_hoje).toBeNull();
+    expect(data.configurado).toBe(true); // o resto da resposta segue intacto
+  });
+
+  it.each([
+    ["sem expediente configurado", {}],
+    ["expediente inválido", { business_hours: { timezone: "Marte/Olimpo", windows: "nada" } }],
+  ])("%s: `null`, sem consulta (não há fuso da organização para dizer qual é \"hoje\")", async (_rotulo, settings) => {
+    comPapel("admin");
+    vi.mocked(lerBarradosDoDia).mockResolvedValue(7);
+    const { data } = await lerCom(settings);
+    expect(data.barrados_hoje).toBeNull();
+    expect(vi.mocked(lerBarradosDoDia)).not.toHaveBeenCalled();
+  });
+
+  it("o campo existe sempre (`null`, nunca ausente): a tela da T6 não precisa distinguir `undefined`", async () => {
+    comPapel("viewer");
+    const { data } = await lerCom({ business_hours: comercial });
+    expect(Object.prototype.hasOwnProperty.call(data, "barrados_hoje")).toBe(true);
   });
 });
 

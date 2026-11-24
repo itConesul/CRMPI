@@ -17,6 +17,16 @@ import { validarConfigRedisRest } from "@/lib/redis-config";
 
 const VALIDADE_SEGUNDOS = 48 * 60 * 60;
 
+/**
+ * Prazo de cada ida ao Redis. **Sem ele o cliente `@upstash/redis` espera para sempre**: medido
+ * (v1.38.3, #67/T2d) contra um servidor que aceita a conexão e nunca responde — com `retry: false` e
+ * sem `signal` a chamada seguia pendente aos 8 s; com `signal` abortou no prazo e virou erro. Isso
+ * importa porque a faixa do shell chama `GET /settings/expediente` a cada 60 s e o leitor do contador
+ * (`barrados_hoje`) roda nessa resposta: um Redis mudo seguraria a rota inteira. Perder a leitura só vira
+ * `null` (a tela mostra `—`); perder a contagem nunca muda o `403`.
+ */
+export const PRAZO_DO_REDIS_MS = 1500;
+
 let _redis: Redis | null | undefined;
 
 function redis(): Redis | null {
@@ -28,7 +38,14 @@ function redis(): Redis | null {
     return null;
   }
   // `retry: false`: Redis inalcançável não pode somar latência à resposta de um 403.
-  _redis = new Redis({ url: url!, token: token!, retry: false });
+  // `signal` é uma FUNÇÃO de propósito: o cliente é um singleton do módulo, e um `AbortSignal.timeout`
+  // fixo expiraria uma vez só e abortaria toda leitura seguinte. A função devolve um sinal novo por chamada.
+  _redis = new Redis({
+    url: url!,
+    token: token!,
+    retry: false,
+    signal: () => AbortSignal.timeout(PRAZO_DO_REDIS_MS),
+  });
   return _redis;
 }
 
