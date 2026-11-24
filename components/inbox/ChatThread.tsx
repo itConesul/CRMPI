@@ -203,7 +203,13 @@ export function ChatThread({ conversationId, onResponder }: Props) {
 
   return (
     <div {...sinalDoCanal} className="flex h-full flex-col">
-      <div ref={scrollerRef} className="flex-1 overflow-y-auto py-2">
+      {/* Degradê cinza bem suave SÓ no fundo de onde ficam as mensagens (pedido do dono):
+          de um cinza claro a um pouco mais escuro, SEMPRE mais escuro que o balão recebido
+          (`bg-muted`, #f1f5f9) — se o degradê cruzasse essa cor, o balão sumiria no meio. */}
+      <div
+        ref={scrollerRef}
+        className="flex-1 overflow-y-auto bg-linear-to-b from-surface-dark/70 to-border-strong/60 py-2"
+      >
         {q.hasNextPage && (
           <div className="flex justify-center py-2">
             <Button
