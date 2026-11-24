@@ -87,11 +87,16 @@ expediente da organização; rota ou tela `/app/fora-de-expediente`; erro `OUT_O
     assinante. Na sonda (**R1 apenas, não repetida**), tanto o `agent` B autenticado quanto um **cliente
     anônimo, só com a anon key e sem login**, receberam o payload (`conversation_id,reason`). Ou seja,
     quem souber o id da organização escuta os handoffs dela, **de qualquer setor e de qualquer
-    organização**, e a anon key é pública. O conteúdo da conversa não vai no payload. **Não é corrigido
-    aqui** (esta tarefa só mede); é decisão do dono do produto (canal privado com autorização, ou
-    remover o envio já que ninguém o consome). **Não medido:** os `broadcast` de `useAlertsRealtime.ts` e
-    `useTenantHealth.ts` (parecem de plataforma, não li os payloads) e se o Realtime do ambiente de
-    produção tem acesso público desligado (a sonda foi no local, com o padrão).
+    organização**, e a anon key é pública. O conteúdo da conversa não vai no payload. **Não foi corrigido
+    nesta tarefa** (ela só mede). **Desfecho (2026-11-24):** o dono do produto decidiu pela **Opção A**,
+    remover o envio ([#67](https://github.com/itConesul/CRMPI/issues/67#issuecomment-7133170911),
+    [#100](https://github.com/itConesul/CRMPI/pull/100#issuecomment-7132824541)); o PR #100 o removeu e
+    foi mergeado (`8a2d197`), com um teste que reprova qualquer emissor de `broadcast` em `app/`, `lib/` e
+    `workers/`. A Opção B (canal privado com política em `realtime.messages`) ficou descartada por ora.
+    **A medição acima descreve o estado de 2026-11-19, antes do #100.** **Continua não medido:** os
+    `broadcast` de `useAlertsRealtime.ts` e `useTenantHealth.ts` (só assinantes; parecem de plataforma, não
+    li os payloads) — issue própria, [#103](https://github.com/itConesul/CRMPI/issues/103) — e se o
+    Realtime do ambiente de produção tem acesso público desligado (a sonda foi no local, com o padrão).
   - **Limites da medição:** o `INSERT` do A não chegou na R1 e chegou na R2 e R3 (**perda não
     determinística, causa não investigada**); aguardei 2,5 s por escrita; o Realtime foi o do Supabase
     local, e o de um self-host pode ter outra versão; a sonda não está no repositório, então
@@ -566,8 +571,13 @@ Dois mecanismos independentes, cada um com uma **função pura** testável sem b
   `visibility_mode` já existente a admite. As duas restrições **somam**; nenhuma substitui a outra.
 - **Realtime:** `postgres_changes` aplica a RLS de SELECT ao assinante, então a mudança de policy
   cobre RF-9 sem código novo — **desde que não haja canal de broadcast**. **Medido em 2026-11-19 (§1,
-  T0(b)): há um** (`org:<org>:queue`, público, sem assinante no app, com `conversation_id` e `reason`),
-  então esta frase **não vale sem a decisão do dono do produto sobre esse canal**.
+  T0(b)): havia um** (`org:<org>:queue`, público, sem assinante no app, com `conversation_id` e `reason`).
+  **O dono decidiu removê-lo em 2026-11-24** ([#67](https://github.com/itConesul/CRMPI/issues/67#issuecomment-7133170911))
+  e o #100 o removeu (`8a2d197`), então a condição **passa a valer com o #100 na `develop`**; antes da
+  T4b/T8, **conferir que ele está lá** (`git branch -r --contains 8a2d197`). Restam os dois `broadcast`
+  (`alerts-platform`, `tenant-health`), só assinantes, a medir na #103: pelo nome parecem de
+  plataforma, mas **ninguém leu os payloads nem achou quem emite**; não afirmo que não carreguem dado de
+  conversa.
   Limites medidos na T0 (§1) e a provar na T8: a conversa que **sai** do escopo não gera evento
   de remoção; o `DELETE` não passa pela RLS e só leva o id, mas **com o filtro que o app usa nem chega**.
 - **Escrita (N2, RF-14):** a mesma regra vale em `UPDATE`/`DELETE` de `conversations` e em
