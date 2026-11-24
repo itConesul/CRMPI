@@ -144,6 +144,11 @@ export async function changePassword(input: ChangePasswordInput): Promise<Change
  * sessão da pessoa por uma nova, em `aal1` — e a troca seguinte, numa conta com
  * MFA, passaria a ser recusada. O client avulso não toca no cookie, e a sessão
  * que ele abre é encerrada na hora para não deixar linha órfã no GoTrue.
+ *
+ * ⚠️ O ENCERRAMENTO É `scope: "local"`, E ISSO NÃO É DETALHE. O padrão do
+ * `signOut()` é `global`, que revoga TODAS as sessões da conta — inclusive a de
+ * quem está trocando a senha. Foi o que o e2e mostrou: a troca certa mandava a
+ * própria pessoa para o login. `local` encerra só a sessão que este client abriu.
  */
 async function confereSenhaAtual(email: string, senha: string): Promise<boolean> {
   const avulso = createSupabaseClient(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, {
@@ -151,7 +156,7 @@ async function confereSenhaAtual(email: string, senha: string): Promise<boolean>
   });
   const { data, error } = await avulso.auth.signInWithPassword({ email, password: senha });
   if (error || !data.session) return false;
-  await avulso.auth.signOut();
+  await avulso.auth.signOut({ scope: "local" });
   return true;
 }
 

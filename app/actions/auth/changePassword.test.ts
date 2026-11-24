@@ -133,7 +133,10 @@ describe("changePassword", () => {
     await chamar();
 
     expect(avulsoSignIn).toHaveBeenCalledWith({ email: "ana@example.com", password: ATUAL });
+    // `local`, nunca o padrão `global`: o global revoga TODAS as sessões da conta,
+    // inclusive a de quem está trocando a senha (achado do e2e, issue #106).
     expect(avulsoSignOut).toHaveBeenCalledTimes(1);
+    expect(avulsoSignOut).toHaveBeenCalledWith({ scope: "local" });
     // O client de sessão jamais pergunta a senha: faria a sessão virar aal1.
     expect(sessaoSignIn).not.toHaveBeenCalled();
   });
