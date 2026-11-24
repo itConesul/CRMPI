@@ -847,6 +847,7 @@ create unique index idx_recovery_unique on public.user_recovery_codes(user_id, c
 - `auth.mfa_failed`
 - `auth.mfa_disabled`
 - `auth.password_changed`
+- `auth.password_change_failed`
 - `auth.password_reset_requested`
 - `auth.password_reset_completed`
 - `auth.recovery_code_used`

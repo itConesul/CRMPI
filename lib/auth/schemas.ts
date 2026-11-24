@@ -75,3 +75,24 @@ export const resetPasswordSchema = z
   });
 
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+
+/**
+ * Trocar a PRÓPRIA senha, já logado (Configurações › Segurança).
+ *
+ * Difere do `resetPasswordSchema` em um campo: a senha ATUAL. A recuperação por
+ * e-mail prova a posse da caixa de entrada; aqui a prova é a senha de hoje —
+ * sem ela, uma sessão esquecida aberta trocaria a senha de quem sentou nela.
+ * A regra da senha nova (mínimo, confirmação) é a mesma, de propósito.
+ */
+export const changePasswordSchema = z
+  .object({
+    current_password: z.string().min(1, "Informe a senha atual"),
+    password: z.string().min(8, "Senha deve ter pelo menos 8 caracteres"),
+    password_confirm: z.string(),
+  })
+  .refine((v) => v.password === v.password_confirm, {
+    path: ["password_confirm"],
+    message: "As senhas não coincidem",
+  });
+
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;

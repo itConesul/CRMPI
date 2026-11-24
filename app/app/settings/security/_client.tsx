@@ -13,6 +13,7 @@ import {
   desativarMfaDaConta,
 } from "@/app/actions/auth/politicaDeMfa";
 import { useT } from "@/hooks/i18n/useT";
+import { TrocaDeSenha } from "./_troca-de-senha";
 
 export function SecurityClient({
   mfaEnrolled,
@@ -70,6 +71,8 @@ export function SecurityClient({
       {/* O modal é o MESMO do bloqueador de tela cheia — reusado, não copiado.
           Ele recarrega a página ao terminar, e o servidor reavalia o estado. */}
       {ativando ? <MfaEnrollModal motivo="escolha" /> : null}
+
+      <TrocaDeSenha />
 
       <Card className="space-y-3 p-6">
         <div className="flex items-start justify-between gap-4">
