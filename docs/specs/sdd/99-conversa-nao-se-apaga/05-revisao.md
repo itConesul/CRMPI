@@ -43,4 +43,7 @@ Itens que **eu** achei ao responder, fora do que foi pedido:
   escopo; anotado em `01-requisitos.md` para a issue da D.
 
 ## Aprovação
-- [ ] **Aprovada por:** <nome> em <AAAA-MM-DD> — implementação liberada
+- [x] **Aprovada por:** Sciuba em 2026-11-24 — implementação liberada. `APPROVED` sobre `d949618` no PR #105
+  (mergeado em `6149baa`). Condições do revisor para o PR de código: **seguir a spec à risca**, rodar
+  **`pnpm test:db` completo** e **provar pela tela** que `agent` e `viewer` não veem o botão "Excluir contato".
+  O PR de código cita "Ref. #99", nunca "Closes".

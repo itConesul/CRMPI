@@ -1,7 +1,7 @@
 # Conversa não se apaga pela API (endurecer a RLS de `conversations` e `messages`)
 
 **Issue:** #99 — https://github.com/itConesul/CRMPI/issues/99
-**Estado:** `em-revisao`  <!-- rascunho | em-revisao | aprovada | implementando | concluida | substituida -->
+**Estado:** `aprovada`  <!-- rascunho | em-revisao | aprovada | implementando | concluida | substituida -->
 **Autor:** cMoreiraSul (com Claude)
 **Medido em:** `a673ace`; reconferido em `3be7195` (develop, após a v1.23.7, 2026-11-24) — ver `02-design.md`
 **Origem:** T7 da spec da #70 (`docs/specs/sdd/70-modo-espiao/`, RNF-4)
@@ -31,10 +31,14 @@ conversa em `visibility_mode=all`. Isso fica para a RPC do contador (opção C) 
 | [`05-revisao.md`](05-revisao.md) | Decisões do dono e aprovação |
 
 ## Checklist de aprovação
-- [ ] Cada requisito rastreia para um trecho da issue ou de uma decisão do dono
-- [ ] Toda afirmação sobre o código existente cita arquivo e foi verificada
-- [ ] Todo critério de aceite tem dono de prova em `03-testes.md`
-- [ ] Fora de escopo está explícito (inclusive o que a #99 deixa aberto)
-- [ ] Impacto em schema, RLS, API e `.changes/` declarado
-- [ ] Living System Checklist respondido em `02-design.md`
-- [ ] Revisor registrou a aprovação em `05-revisao.md`
+- [x] Cada requisito rastreia para um trecho da issue ou de uma decisão do dono
+- [x] Toda afirmação sobre o código existente cita arquivo e foi verificada
+- [x] Todo critério de aceite tem dono de prova em `03-testes.md`
+- [x] Fora de escopo está explícito (inclusive o que a #99 deixa aberto)
+- [x] Impacto em schema, RLS, API e `.changes/` declarado
+- [x] Living System Checklist respondido em `02-design.md`
+- [x] Revisor registrou a aprovação em `05-revisao.md`
+
+Aprovada pelo Sciuba em 2026-11-24 (PR #105, `APPROVED` sobre `d949618`, mergeado em `6149baa`).
+**Implementação liberada**, seguindo `04-tarefas.md` à risca. O PR de código cita **"Ref. #99"**, nunca
+"Closes" (a #99 segue aberta: o `UPDATE` direto em `conversations` não é fechado por esta spec).
