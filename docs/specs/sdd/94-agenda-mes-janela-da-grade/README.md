@@ -1,9 +1,10 @@
 # Agenda · visão Mês busca a mesma janela que desenha
 
 **Issue:** #94 — https://github.com/itConesul/CRMPI/issues/94
-**Estado:** `aprovada` — aprovada pelo Sciuba no review do PR #95, em 2026-11-23  <!-- rascunho | em-revisao | aprovada | implementando | concluida | substituida -->
+**Estado:** `concluida` — aprovada pelo Sciuba no review do PR #95 (2026-11-23); implementada no PR #97 (`4223785`, mergeado em `develop` em 2026-11-23)  <!-- rascunho | em-revisao | aprovada | implementando | concluida | substituida -->
 **Autor:** cMoreiraSul (com Claude)
-**Medido em:** `365a670` (develop)
+**Medido em:** `365a670` (develop, antes da implementação); referências de código reconferidas em `f6de4a9` (develop, com o #97) — ver `02-design.md`
+**Pendente fora desta spec:** #96 (limite de 200 linhas da listagem), risco aceito em P4
 
 ## Resumo
 A visão Mês da Agenda desenha 6 semanas (42 dias), mas só busca os agendamentos do mês corrente.

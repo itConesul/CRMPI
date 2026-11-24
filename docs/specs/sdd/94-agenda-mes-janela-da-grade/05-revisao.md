@@ -45,5 +45,14 @@ O `e2e-parte (2)` vermelho era o defeito que esta spec descreve. Com a implement
 
 Data da execução (CA-5, regressão sem dia exigido): 2026-11-23. O cenário de 22 e 23 de novembro é provado pelo CA-1 (unitário, âncoras fixas).
 
+## Fechamento da spec (2026-11-24)
+Com a implementação já na `develop` (#97), a spec foi posta em dia, sem mudar nenhum requisito, critério ou decisão:
+- `README.md`: estado `concluida`; `Medido em` ganhou a reconferência em `f6de4a9`; #96 listada como pendência externa.
+- `02-design.md`: §1 virou "o que existia antes" (diagnóstico preservado), com nota das referências atuais; T0 medido (sem entrada nova no mapa vivo).
+- `03-testes.md`: CA-1 a CA-8 com evidência e `cumprido`; CA-7 medido de novo sobre o diff do #97; gates registrados.
+- `04-tarefas.md`: T0 a T4 marcadas, com o registro de que o #97 entrou antes da aprovação do #95.
+
+O que **não** foi reexecutado nesta atualização: os testes e o e2e. O estado deles vem do CI do #97 e do relato do próprio PR.
+
 ## Correção depois da aprovação (review do Sciuba, 2026-11-23)
 O CA-4 dizia "sempre há ao menos 11 células" do mês seguinte, o que está errado: um mês de 31 dias que começa no sábado deixa 5 (6 + 31 = 37 de 42). Corrigido para "ao menos 5" (intervalo medido: 5 a 14, para meses de 28 a 31 dias). A prova do CA-4 não muda.

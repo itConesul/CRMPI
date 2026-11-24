@@ -2,7 +2,16 @@
 
 **Verificado em:** `365a670` · **Comando:** `git rev-parse --short HEAD`
 
-## 1. O que existe hoje (verificado)
+> **Atualização (implementação no PR #97, `4223785`).** A §1 abaixo descreve o código **antes** do
+> conserto, medido em `365a670`: é o diagnóstico que justifica a decisão, e fica como registro.
+> Hoje, em `f6de4a9`: `VisaoDeMes` obtém o início da grade e o tamanho dela de
+> `lib/agenda/janela-da-grade.ts` (`GradeDaAgenda.tsx:642`, `:649`); `recorteDaGrade` de
+> `_client.tsx:208` é `janelaDaGrade(visao, ancora)`, consumido em `:228` (`useAgendamentos`) e
+> `:813` (prop `recorte`). O que segue igual: `PainelDeMarcacao.tsx:187` (exceção P1),
+> `MAXIMO_DE_DIAS = 62` (`consulta.ts:50`) e `.limit(params.limite)` (`consulta.ts:492`). A §2 e a
+> §3 foram implementadas como escritas (nomes, contratos e constante conferidos no arquivo).
+
+## 1. O que existia antes do conserto (verificado em `365a670`)
 | Peça | Onde | Observação |
 |---|---|---|
 | Desenha a grade do Mês | `components/agenda/GradeDaAgenda.tsx:639` (`VisaoDeMes`) | `startOfWeek(startOfMonth(ancora), { weekStartsOn: 0 })` e 6 semanas × 7 dias |
@@ -15,9 +24,14 @@
 Reproduza as medições: `grep -rn "startOfWeek(startOfMonth" app components lib` e
 `grep -n "MAXIMO_DE_DIAS" lib/agenda/consulta.ts`.
 
-**NÃO VERIFICADO:** o comportamento em navegador (a causa vem de leitura de código e da simulação
-de datas da issue); o defeito no mês anterior (P2: o CA-4 prova); se o mapa vivo
-(`docs/architecture/`) lista `lib/agenda/*` (a T0 confere).
+**Era NÃO VERIFICADO, e hoje está resolvido:**
+- O comportamento em navegador: provado pelo CA-4 (e2e pela tela) e pela regressão `:218`, ambos
+  verdes no CI (ver `05-revisao.md`). O defeito no mês anterior (P2) é o outro lado do CA-4.
+- O mapa vivo (T0, medido em `f6de4a9`): `grep -rn "janela-da-grade\|GradeDaAgenda" docs/architecture`
+  devolve vazio. Os mapas de agenda (`agenda-google-sync.architecture.json`) cobrem sincronização,
+  não a grade; `lib/agenda/janela-da-grade.ts` é função pura de apresentação, sem worker, tabela,
+  log ou evento. **Nenhuma entrada nova no mapa.** As duas arestas dela (`VisaoDeMes` e
+  `_client.tsx`) são imports de tela, que o mapa não modela.
 
 **Efeito do recorte maior em horários livres (verificado por leitura, review do Sciuba):** a rota
 aceita até 62 dias (`app/api/v1/agenda/horarios-livres/route.ts:86`, `MAXIMO_DE_DIAS`) e
@@ -82,7 +96,7 @@ Nenhuma mudança de schema, RLS, API ou contrato. Sem migration, sem `baseline.s
 - Porta na navegação: nenhuma tela nova.
 - Mecanismo anti-morte: o teste CA-3 impede que o cálculo volte a duplicar.
 - Laço de retorno: se o recorte errar de novo, o unitário CA-1 reprova antes do e2e.
-- Mapa vivo (`docs/architecture/`): sem peça nova com aresta; função pura dentro de `lib/agenda/` (ver NÃO VERIFICADO).
+- Mapa vivo (`docs/architecture/`): sem peça nova; função pura de apresentação dentro de `lib/agenda/`, fora do que os mapas modelam (T0 medido, ver §1).
 
 ## 7. Riscos
 | Risco | Mitigação |
