@@ -14,7 +14,7 @@ import { headers } from "next/headers";
 const generateLink = vi.fn();
 const sendEmail = vi.fn();
 const emailConfigurado = vi.fn();
-const audit = vi.fn(async () => undefined);
+const audit = vi.fn(async (_evento?: unknown) => undefined);
 const resetPasswordForEmail = vi.fn();
 
 vi.mock("next/headers", () => ({ headers: vi.fn() }));
@@ -30,7 +30,7 @@ vi.mock("@/lib/email/resend", () => ({
 }));
 vi.mock("@/lib/audit", async (orig) => ({
   ...(await orig<Record<string, unknown>>()),
-  audit: (...a: unknown[]) => audit(...a),
+  audit: (evento: unknown) => audit(evento),
 }));
 vi.mock("@/lib/branding/saida", () => ({
   marcaDaSaida: async () => ({
