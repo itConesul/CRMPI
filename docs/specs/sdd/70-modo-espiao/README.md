@@ -1,0 +1,56 @@
+# PRD-04 · Modo espião: supervisão sem zerar o não lido do titular
+
+**Issue:** #70 — https://github.com/itConesul/CRMPI/issues/70
+**Estado:** `aprovada`  <!-- rascunho | em-revisao | aprovada | implementando | concluida | substituida -->
+**Autor:** cMoreiraSul (com Claude)
+**Medido em:** `365a670` (develop, 2026-11-19)
+
+## Resumo
+Hoje **qualquer pessoa que abra uma conversa zera o contador de não lidas do titular**: o handler
+de `mark-read` filtra só por `id` e organização. Esta spec propõe (1) que só o titular zere o
+próprio contador, no servidor; (2) um **selo fixo e neutro**, "Conversa de <titular>", para
+`manager`/`admin` no cabeçalho do chat, sem ligar nem desligar (decisão do dono: o toggle saiu
+porque o item 1 já protege e um controle sem efeito engana); (3) auditoria
+`conversation.spy_viewed` em `api_audit_log`, gravada **pelo servidor na leitura das mensagens**,
+com dedupe de 30 min. **Sem migration** e **sem rota nova**. Limitações declaradas: RLS de `UPDATE`
+aberta a `agent`+ (RNF-4) e Realtime/PostgREST sem rastro (RNF-5).
+
+Revisada em 2026-11-23 após o review do Sciuba; ver "Comentários de review" em
+[`05-revisao.md`](05-revisao.md).
+
+## Documentos
+| Arquivo | Conteúdo |
+|---|---|
+| [`01-requisitos.md`](01-requisitos.md) | O quê, rastreado à issue, e as perguntas em aberto |
+| [`02-design.md`](02-design.md) | Como: o que existe (medido), decisão, riscos, Living System |
+| [`03-testes.md`](03-testes.md) | Critério → prova |
+| [`04-tarefas.md`](04-tarefas.md) | Ordem de implementação |
+| [`05-revisao.md`](05-revisao.md) | Review, decisões e aprovação |
+
+## O que o projeto já responde, e o que vai para o review
+Antes de abrir perguntas, o projeto foi varrido (grep em `docs/`, `lib/`, `app/`, `supabase/baseline.sql`).
+Resultado, com a medição em [`02-design.md`](02-design.md) §1:
+
+| Questão | O projeto define? | Destino |
+|---|---|---|
+| "Modo espião" / `spy` já existe? | **Não.** Zero ocorrência fora de nomes de mock em testes | Novo, esta spec |
+| O contador pertence ao titular? | **Sim, pelo nome e pelo desenho:** coluna `unread_count_for_assignee`; `fn_conversation_assign` o zera quando o dono muda; a ingestão o incrementa | RF-1 propõe o conserto; **decisão Q1 no review** (a issue diz "a decidir") |
+| Há confirmação de leitura enviada ao provedor? | **Não** em `app/`, `lib/`, `workers/` (grep por `markAsRead`/`sendSeen`/`mark_as_read` etc. vazio) | "Ticks cinzas" **não é provável** com o código de hoje → **Q3** |
+| Quem vê conversa sem dono? | **Sim:** `fn_can_view_conversation` (baseline 5522) — `manager`/`admin`/`viewer` veem tudo; `agent` vê as suas e as sem dono (default `own_and_unassigned`) | Quem **zera** a sem dono: **não definido → Q2** |
+| Como se audita ação de conversa? | **Sim:** `audit()` + vocabulário `AUDIT_ACTIONS` em TS; a coluna `action` não tem CHECK | RF-5 segue o padrão, no servidor, com dedupe; **janela → Q4** |
+| Resposta também zera o contador? | **Sim, e a issue não menciona:** `messages/_handler.ts` e `fn_mark_conversation_message` (outbound) zeram | Fora do texto da issue → **Q5 (alerta de escopo)** |
+| Onde mora o toggle / persiste? | **Não definido** | Q6 **removida**: o toggle virou selo (Q7), sem estado a persistir |
+
+## Checklist de aprovação
+- [ ] Cada requisito rastreia para um trecho da issue
+- [ ] Toda afirmação sobre o código existente cita arquivo e foi verificada
+- [ ] Todo critério de aceite tem dono de prova em `03-testes.md`
+- [ ] Fora de escopo está explícito
+- [ ] Impacto em schema, RLS, API e `.changes/` declarado
+- [ ] Living System Checklist respondido em `02-design.md`
+- [x] Perguntas Q1–Q7 decididas e registradas em `05-revisao.md`
+- [x] Revisor registrou a aprovação em `05-revisao.md` (Sciuba, 2026-11-23 16:01)
+- [ ] Sciuba reconferiu as linhas pós-aprovação (selo neutro, CA-9, Q5 na §1.4) — pendente
+
+> **Antes de implementar:** a spec precisa estar **mergeada na `develop`** (`04-tarefas.md`) e a T0
+> tem 5 medições abertas que não mudam a regra. Nenhuma tarefa começou.
