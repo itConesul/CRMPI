@@ -341,6 +341,30 @@ Dois mecanismos independentes, cada um com uma **função pura** testável sem b
       `null` com o Redis fora) **só a `admin`/`manager`**; `agent` e `viewer` recebem `null`. O laço fecha
       já, o código existente é reaproveitado, e a tela da T6 só passa a consumir o que a API já dá.
       Custo: o contrato da rota ganha um campo que depende do papel.
+      **Contrato do campo (detalhe da (b); proposta do autor em 2026-11-24, não muda a escolha do dono):**
+      1. **Forma:** `data.barrados_hoje: number | null`, ao lado de `agora`, `dentro` e `opens_at` (que
+         `descreverExpediente` já devolve). Só leitura: o `GET` nunca escreve nem grava audit (a
+         auditoria do `CLAUDE.md` vale para mutação).
+      2. **Quem:** o papel vem de `authz.org.role` (já devolvido pelo `requireRole("viewer")` da rota).
+         `admin` e `manager` recebem o número; `agent` e `viewer` recebem `null` **sem nenhuma ida ao
+         Redis**. Isso importa porque a faixa do shell consulta esta rota de **todo usuário logado, a cada
+         60 s** (`hooks/expediente/useExpediente.ts`: `refetchInterval: 60_000`, `staleTime: 30_000`):
+         com o filtro por papel, o Redis só é consultado para `admin`/`manager`, uma vez por minuto por aba.
+         Sessão de suporte entra pelo papel que o `requireRole` já lhe dá (`full` → `admin`, senão `viewer`).
+      3. **"Hoje":** o dia de `agora` no fuso da organização, a mesma `chaveDoContador` que o gate usa
+         para escrever (`lib/expediente/contador.ts`).
+      4. **`0` e `null` são coisas diferentes** (e já são o que `lerBarradosDoDia` devolve): **número,
+         inclusive `0`,** quando o Redis respondeu (chave ausente = nenhuma tentativa barrada hoje);
+         **`null`** quando o Redis está ausente, malformado ou fora. A tela mostra `0` e `—`, respectivamente.
+      5. **Sem expediente configurado** (`business_hours` ausente ou inválido): **proposta:** `null`. Sem
+         configuração o gate nunca barra, então nada foi contado, mas também não há fuso da organização
+         para dizer qual é "hoje"; `null` evita inventar um dia em UTC. **A confirmar** (é detalhe de
+         contrato, não de produto, mas a tela da T6 depende dele).
+      6. **Falha do Redis não derruba nem atrasa o `GET`.** A falha vira `null` (o cliente é criado com
+         `retry: false`). **NÃO VERIFICADO:** se o cliente `@upstash/redis` tem timeout próprio; sem ele,
+         um Redis que aceita a conexão e não responde seguraria a resposta que a faixa pede a cada minuto.
+         A T2d mede isso antes de declarar o item fechado e, se faltar, limita a leitura com um prazo
+         curto (a leitura é opcional: perdê-la só vira `null`).
     - **(c)** Tirar a escrita do contador do PR do gate e entregá-la **junto com** o leitor, na T6.
       Nada escrito sem leitor e nada se perde (só "hoje"); o custo é descartar código já escrito e
       testado para reescrevê-lo depois.
