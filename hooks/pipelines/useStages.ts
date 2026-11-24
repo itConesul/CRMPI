@@ -36,6 +36,8 @@ export interface PatchDeEtapa {
   name?: string;
   is_won?: boolean;
   is_lost?: boolean;
+  /** Uma cor da paleta (`lib/leads/cores-de-etapa.ts`) ou `null` para tirar a cor. */
+  color?: string | null;
   depois_de?: string | null;
 }
 

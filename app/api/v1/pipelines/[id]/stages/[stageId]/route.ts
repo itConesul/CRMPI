@@ -1,7 +1,7 @@
 import { requireSupportWrite } from "@/lib/impersonate/support";
 /**
- * PATCH/DELETE /api/v1/pipelines/[id]/stages/[stageId] — renomear, marcar
- * ganho/perda, reordenar e arquivar uma etapa.
+ * PATCH/DELETE /api/v1/pipelines/[id]/stages/[stageId] — renomear, colorir,
+ * marcar ganho/perda, reordenar e arquivar uma etapa.
  *
  * ⚠️ DELETE ARQUIVA, NÃO APAGA. `crm_leads_stage_id_fkey` é `ON DELETE RESTRICT`:
  * etapa com negócio não pode ser apagada — e não deveria mesmo, porque o
@@ -43,6 +43,8 @@ const bodySchema = z
     name: z.string().min(1).max(80).optional(),
     is_won: z.boolean().optional(),
     is_lost: z.boolean().optional(),
+    // Formato aqui, paleta em `atualizarEtapa`: a rota só transporta (ver o cabeçalho).
+    color: z.string().regex(/^#[0-9a-fA-F]{6}$/).nullable().optional(),
     depois_de: z.string().min(1).nullable().optional(),
   })
   .strict()

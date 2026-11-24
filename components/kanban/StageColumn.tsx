@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import type { Lead } from "@/lib/types/leads";
 import type { Stage } from "@/lib/kanban/types";
 import { buildCardInput } from "@/lib/kanban/card-state";
+import { frenteDoCabecalho } from "@/lib/leads/cores-de-etapa";
 import { intervaloDaColuna } from "@/lib/kanban/selecao";
 import { KanbanCard, type GestoDeSelecao } from "./KanbanCard";
 
@@ -87,13 +88,28 @@ export function StageColumn({
     ancora.current = null;
     onSelectMany?.(idsVisiveis, !todosSelecionados);
   };
-  const accentStyle: CSSProperties | undefined = stage.color
-    ? { backgroundColor: stage.color }
+  // ⚠️ O CABEÇALHO É PINTADO COM A COR DA ETAPA, e o texto por cima NUNCA é
+  // escolha de quem configurou: sai de `frenteDoCabecalho()`, calculado sobre o
+  // fundo. Vale também para cor fora da paleta (etapa de antes da tela de
+  // configuração) — ela é pintada do mesmo jeito, com texto legível. O formato é
+  // conferido antes de calcular: `color` é texto do banco, e o cálculo de
+  // contraste não deve receber lixo.
+  const corDoCabecalho =
+    stage.color && /^#[0-9a-fA-F]{6}$/.test(stage.color) ? stage.color : null;
+  const estiloDoCabecalho: CSSProperties | undefined = corDoCabecalho
+    ? { backgroundColor: corDoCabecalho, color: frenteDoCabecalho(corDoCabecalho) }
     : undefined;
 
   return (
     <div className="flex w-80 shrink-0 flex-col rounded-2xl border border-border bg-surface-muted/40">
-      <div className="group/etapa flex items-center gap-2 border-b border-border px-3 py-2.5">
+      <div
+        className={cn(
+          "group/etapa flex items-center gap-2 border-b border-border px-3 py-2.5",
+          corDoCabecalho && "rounded-t-2xl",
+        )}
+        style={estiloDoCabecalho}
+        data-testid={`cabecalho-${stage.id}`}
+      >
         {/* "Selecionar a etapa inteira" é o gesto que faz a ação em lote valer a
             pena: sem ele, mover trinta cards deixa de ser trinta arrastes e vira
             trinta cliques com modificador. Fica no cabeçalho porque é ali que a
@@ -120,15 +136,11 @@ export function StageColumn({
             selecionadosAqui > 0 ? "opacity-100" : "opacity-0 group-hover/etapa:opacity-100",
           )}
         />
-        <span
-          className={cn(
-            "h-2 w-2 rounded-full",
-            !stage.color && "bg-text-muted/40",
-          )}
-          style={accentStyle}
-          aria-hidden
-        />
-        <h2 className="flex-1 truncate text-sm font-semibold text-text">
+        {/* Sem cor, o ponto cinza de sempre. Com cor, o próprio cabeçalho já a diz. */}
+        {!corDoCabecalho && (
+          <span className="h-2 w-2 rounded-full bg-text-muted/40" aria-hidden />
+        )}
+        <h2 className={cn("flex-1 truncate text-sm font-semibold", !corDoCabecalho && "text-text")}>
           {stage.name}
         </h2>
         <span className="rounded-full bg-surface px-2 py-0.5 text-[11px] font-medium tabular-nums text-text-muted">
