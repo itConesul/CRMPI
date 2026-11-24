@@ -76,7 +76,7 @@ Entregar a camada de IA conversacional do DeskcommCRM: bot que responde inbounds
 | `event.message.received` | domain_event | EPIC-03 | Trigger principal de bot + sentiment |
 | `event.message.send_requested` | domain_event | EPIC-03 | Bot emite pra dispatcher WAHA enviar |
 | `event.nuvemshop.product_synced` | domain_event | EPIC-07 (stub no MVP-B se ainda não pronto) | Re-indexa catálogo |
-| `realtime.org-{org_id}` | realtime_channel | EPIC-01 | Broadcast `handoff_pending` |
+| `realtime.org-{org_id}` | realtime_channel | EPIC-01 | ~~Broadcast `handoff_pending`~~ — removido no PR #100 (canal público; nada o assinava) |
 
 ### 4.2 Contracts expostos (consumíveis por epics futuros)
 
@@ -354,7 +354,7 @@ Centraliza os 4 gatilhos em um único orchestrator chamado por: (a) triagem sín
 6. Consumer `ai.sentiment_alert` chama `triggerHandoff(reason='low_sentiment')`
 7. `bot_silenced_until='infinity'` — em `buildContext` checar `if (conv.bot_silenced_until > now()) skip="bot_silenced"`
 8. Endpoint `POST /api/v1/conversations/:id/reactivate-bot`: requer role >= agent, audita `ai_reactivated_by_agent`, set `bot_silenced_until=null`
-9. Realtime broadcast em `org:{org_id}:queue` com `event: 'handoff_pending'`
+9. ~~Realtime broadcast em `org:{org_id}:queue` com `event: 'handoff_pending'`~~ — **removido no PR #100** (canal público; nada o assinava). A UI acende por `postgres_changes` de `conversations` e pelo `event_log`
 
 #### Acceptance Criteria
 
@@ -365,7 +365,7 @@ Then triage síncrono detecta G1 (regex)
 And NÃO invoca Sonnet
 And conversations.status='pending', activity handoff_triggered com trigger_reason='requested_human'
 And evento ai.handoff_triggered emitido
-And broadcast realtime org:{org_id}:queue recebe handoff_pending
+# (removido no PR #100) And broadcast realtime org:{org_id}:queue recebe handoff_pending
 ```
 
 ```gherkin
@@ -404,7 +404,7 @@ And audit log registra ai_reactivated_by_agent
 | t2 | worker | G2 dispara após sentiment | Mock score=0.1 → poll activities |
 | t3 | worker | G3 confidence | Mock RAG score baixo → handoff |
 | t4 | worker | G4 stage critical | Lead em stage com `requires_human=true` → handoff |
-| t5 | rt | Broadcast handoff_pending recebido | Subscribe channel, emit event, verificar |
+| t5 | unit | ~~Broadcast handoff_pending recebido~~ — substituído por `tests/unit/handoff-nao-emite-em-canal-publico.test.ts` (PR #100) | O handoff roda e NÃO abre canal nem envia broadcast |
 | t6 | guard | Bot não reassume | 2 inbounds seguidos pós-handoff, segundo é skipado |
 | t7 | api | Reactivate endpoint requer role agent+ | curl como `viewer` → 403 |
 
@@ -423,7 +423,7 @@ exposes:
     id: "ai.handoff_triggered"
     payload: "{ conversation_id, organization_id, reason: 'requested_human'|'low_sentiment'|'low_confidence'|'critical_stage'|'legal_mention'|'refund_mention', metadata }"
   - type: realtime_channel
-    id: "org:{org_id}:queue"
+    id: "org:{org_id}:queue"   # REMOVIDO no PR #100
     events: ["handoff_pending"]
 ```
 
@@ -1159,7 +1159,7 @@ exposes:
 | API contracts (5 routes + reindex + reactivate-bot + budget) | 14 | S-06.01, S-06.05, S-06.06, S-06.08, S-06.09, S-06.10, S-06.11 |
 | Worker behavior (4 workers + 2 crons) | 18 | todas |
 | RLS isolation (7 tabelas ai_*) | 7 | S-06.01 |
-| Realtime (handoff_pending + budget alarms) | 4 | S-06.03, S-06.11 |
+| Realtime (~~handoff_pending~~ removido no #100 + budget alarms) | 4 | S-06.03, S-06.11 |
 | Guardrails (5 kinds + post-process) | 6 | S-06.01, S-06.03, S-06.08 |
 | Handoff triggers G1-G4 + reactivate-bot | 6 | S-06.03 |
 | Anonymizer (4 PII types + nome) | 5 | S-06.07 |
