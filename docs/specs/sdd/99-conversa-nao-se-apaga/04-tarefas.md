@@ -6,7 +6,7 @@ do `README.md` for `aprovada`.
 | # | Tarefa | Cobre | Prova | Feito |
 |---|---|---|---|---|
 | T0a | **Provar no banco** o `viewer` e a sessão de suporte (item 2 da medição) | RF-2 | `02-design.md` §1.2 | [x] |
-| T0b | **Medir** como `requireRole("manager")` trata `platform admin` e sessão de suporte, e escolher o predicado único de rota e UI. Colar a saída em `02-design.md` §1.2 | RF-5, RF-6 | saída colada | [ ] |
+| T0b | **Medir** como `requireRole("manager")` trata `platform admin` e sessão de suporte, e escolher o predicado único de rota e UI. Resultado em `02-design.md` §1.3: predicado da tela = **só** `ROLE_RANK[activeOrg.role] >= ROLE_RANK.manager`, sem `is_platform_admin` | RF-5, RF-6 | `02-design.md` §1.3 | [x] |
 | T1 | Escrever o invariante **vermelho** (sem a migration) e provar a sabotagem | RF-1, RF-2 | CA-1, CA-2 | [ ] |
 | T2 | Migration `0239` + apêndice no `baseline.sql` + linha no `MANIFEST`. Invariante verde; `test:db` completo | RF-1, RF-2, RNF-1 | CA-1, CA-2, CA-8, CA-9 | [ ] |
 | T3 | `deleteContactHandler`: sai o `delete` de `messages` e `conversations`; `23503` vira 409 com a mensagem do administrador. Teste vermelho antes | RF-3, RF-4 | CA-3, CA-4 | [ ] |

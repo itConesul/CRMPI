@@ -39,9 +39,28 @@ Postgres descartável `pgvector/pgvector:pg15`, `baseline.sql` aplicado com `ON_
 
 A sessão de suporte **não abre** caminho extra de `DELETE`: as policies dela são restritivas.
 
+### 1.3 T0b — quem passa em `requireRole("manager")` (medido por leitura do código)
+`lib/auth/require-role.ts` e `fn_user_role_in_org` (definição final em `baseline.sql:18399`, que
+substitui a primeira de `baseline.sql:817`). O papel efetivo vem **do banco**, não do cookie:
+
+| Quem | Papel efetivo | `requireRole("manager")` |
+|---|---|---|
+| Membro `manager` ou `admin` da org | o da membership | **passa** |
+| Membro `agent` ou `viewer` | o da membership | 403 `forbidden_role` |
+| Sessão de suporte **`full`** na org | `admin` | **passa** |
+| Sessão de suporte **somente leitura** | `viewer` | 403 |
+| `platform admin` **sem** membership e sem sessão de suporte | `null` (rank 0) | **403** (`allowPlatformAdmin` é `false` por padrão e a rota de contatos não o liga) |
+
+A UI lê o mesmo mapeamento em `lib/auth/server.ts:270-275` (`support.access_mode === "full" ? "admin" :
+"viewer"`), então `ROLE_RANK[activeOrg.role] >= ROLE_RANK.manager` **espelha a rota exatamente**.
+
+**Armadilha de desenho:** outros componentes somam `user.is_platform_admin ||` ao predicado
+(`components/kanban/BulkActionBar.tsx:63`, `app/app/ads/meta/page.tsx:50`). **Aqui isso não pode ser
+copiado**: um `platform admin` sem membership veria o botão e a rota responderia 403. O predicado da tela
+é **só** `ROLE_RANK[activeOrg.role] >= ROLE_RANK.manager`.
+
 **NÃO VERIFICADO** (declarado, não escondido):
-- a) Como `requireRole("manager")` trata `platform admin` e sessão de suporte, e se a UI deve espelhar. A
-  tarefa T0b mede isso e copia o predicado da rota, em vez de reinventá-lo.
+- a) ~~Como `requireRole("manager")` trata platform admin e sessão de suporte~~ — **medido em §1.3**.
 - b) Comportamento de uma **sessão de suporte real** (`platform_support_sessions`) tentando apagar
   contato. Só as flags `RESTRICTIVE` foram medidas.
 - c) O modo `none` de `visibility_mode`.

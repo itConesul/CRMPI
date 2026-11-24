@@ -35,7 +35,7 @@ O dono do produto quer manter o log das conversas. As decisões estão nos comen
 | CA-3 | `deleteContactHandler`, com contato que tem conversa: responde 409 `state_conflict`, mensagem contendo "administrador", **não** chama `delete` em `messages` nem em `conversations`, **não** audita | RF-3, RNF-3 |
 | CA-4 | `deleteContactHandler`, com contato sem conversa: apaga **só** `contacts` e audita `contact.deleted`. Contato inexistente: 404 | RF-4 |
 | CA-5 | `DELETE /api/v1/contacts/[id]` como `agent` → **403** `forbidden_role`, sem chamar o handler. Como `manager` → 204 | RF-5 |
-| CA-6 | Na lista de contatos, o botão "Excluir contato" **não existe** no DOM para `agent` e `viewer`, e existe para `manager` e `admin` | RF-6 |
+| CA-6 | Na lista de contatos, o botão "Excluir contato" **não existe** no DOM para `agent` e `viewer`, e existe para `manager` e `admin`. Um `platform admin` **sem** membership na org **não** o vê (a rota o negaria; `02-design.md` §1.3) | RF-6 |
 | CA-7 | O diálogo não contém "conversa associada"; a mensagem do 409 existe em `pt-BR` e `es` | RF-7 |
 | CA-8 | `supabase/baseline.sql` aplica em modo install **e** update (`ON_ERROR_STOP=1`) sem erro, e re-aplicar a migration não muda nada | RNF-1 |
 | CA-9 | O cascade de LGPD continua funcionando: anonimizar um contato com conversa funciona e **não** depende do `DELETE` do usuário | RF-1 |
