@@ -4064,6 +4064,26 @@ export const DICIONARIO: Traducoes = {
   "Regenerar códigos de recuperação": { es: "Regenerar códigos de recuperación" },
   "Habilite MFA antes de gerar códigos.": { es: "Habilita MFA antes de generar códigos." },
   "Sessões ativas": { es: "Sesiones activas" },
+  "Troque a senha da sua conta. Ao concluir, os outros aparelhos em que você está conectado são desconectados.": {
+    es: "Cambia la contraseña de tu cuenta. Al terminar, los otros dispositivos en los que estás conectado se desconectan.",
+  },
+  "Senha atual": { es: "Contraseña actual" },
+  "Informe a senha atual": { es: "Ingresa la contraseña actual" },
+  "Trocar senha": { es: "Cambiar contraseña" },
+  "Trocando…": { es: "Cambiando…" },
+  "Senha alterada. Os outros aparelhos foram desconectados.": {
+    es: "Contraseña cambiada. Los otros dispositivos fueron desconectados.",
+  },
+  "A senha atual está incorreta.": { es: "La contraseña actual es incorrecta." },
+  "Muitas tentativas. Aguarde alguns minutos e tente de novo.": {
+    es: "Demasiados intentos. Espera unos minutos e inténtalo de nuevo.",
+  },
+  "Sua conta tem verificação em duas etapas. Saia, entre de novo e informe o código de 6 dígitos antes de trocar a senha.": {
+    es: "Tu cuenta tiene verificación en dos pasos. Sal, entra de nuevo e ingresa el código de 6 dígitos antes de cambiar la contraseña.",
+  },
+  "Não foi possível trocar a senha. Tente novamente.": {
+    es: "No fue posible cambiar la contraseña. Inténtalo de nuevo.",
+  },
   "Listagem de sessões — em breve. Por enquanto, deslogue todos os dispositivos:": {
     es: "Listado de sesiones — próximamente. Por ahora, cierra sesión en todos los dispositivos:",
   },
