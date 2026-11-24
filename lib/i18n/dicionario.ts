@@ -5878,6 +5878,9 @@ export const DICIONARIO: Traducoes = {
   "Muitas tentativas. Aguarde alguns minutos.": {
     es: "Demasiados intentos. Espera unos minutos.",
   },
+  "O envio de e-mail não está configurado nesta instalação. Peça a quem administra para configurar o Resend.": {
+    es: "El envío de correo no está configurado en esta instalación. Pide a quien administra que configure Resend.",
+  },
   "Não tem conta?": { es: "¿No tienes cuenta?" },
   "Recuperar senha": { es: "Recuperar contraseña" },
   "Informe seu e-mail e enviaremos um link de redefinição": {

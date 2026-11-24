@@ -42,11 +42,6 @@ const ler = (p: string) => readFileSync(join(raiz, p), "utf8");
 
 const PARES = [
   {
-    fluxo: "recovery",
-    action: "app/actions/auth/requestPasswordReset.ts",
-    template: "supabase/templates/recovery.html",
-  },
-  {
     fluxo: "signup",
     action: "app/actions/auth/signUp.ts",
     template: "supabase/templates/confirmation.html",
@@ -82,4 +77,17 @@ describe("o link do e-mail de auth tem UMA query só", () => {
       ).toBe("{{ .RedirectTo }}&token_hash={{ .TokenHash }}");
     });
   }
+});
+
+/**
+ * A recuperação deixou de passar pelo GoTrue: o link é montado e enviado pelo Resend
+ * (`requestPasswordReset.ts`), então o par Action↔template acima não se aplica a
+ * ela. O que vale aqui é o link ter UMA query, com `token_hash` e `type` juntos.
+ */
+describe("o link de recuperação enviado pelo Resend", () => {
+  it("abre a query uma vez: ?token_hash=…&type=recovery", () => {
+    const fonte = ler("app/actions/auth/requestPasswordReset.ts");
+    expect(fonte).toMatch(/\/auth\/confirm\?token_hash=\$\{encodeURIComponent\(tokenHash\)\}&type=recovery/);
+    expect(fonte).not.toMatch(/\/auth\/confirm\?type=recovery/);
+  });
 });

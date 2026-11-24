@@ -36,6 +36,10 @@ export function ForgotPasswordForm() {
       }
       if (res.error === "rate_limited") {
         setServerError(t("Muitas tentativas. Aguarde alguns minutos."));
+      } else if (res.error === "email_not_configured") {
+        setServerError(
+          t("O envio de e-mail não está configurado nesta instalação. Peça a quem administra para configurar o Resend."),
+        );
       } else if (res.error === "validation_error") {
         setServerError(t("Email inválido. Confira o campo."));
       } else {
