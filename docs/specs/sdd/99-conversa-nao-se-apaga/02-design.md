@@ -1,6 +1,9 @@
 # 02 — Design
 
-**Verificado em:** `a673ace` · **Comando:** `git rev-parse --short origin/develop`
+**Verificado em:** `3be7195` (develop, após a v1.23.7) · **Comando:** `git rev-parse --short origin/develop`
+**Medições originais em `a673ace`.** Conferido que nenhum arquivo citado nesta spec mudou entre os dois:
+`git diff --name-only a673ace 3be7195 -- supabase/baseline.sql supabase/migrations app/api/v1/contacts components/contacts/ContactsTable.tsx lib/auth hooks/contacts app/api/v1/lgpd lib/lgpd workers/lgpd-redact-worker.ts tests/unit/contato-delete.test.ts`
+devolve vazio. As sondas em banco (§1.2) usaram o `baseline.sql` de `a673ace`, que é idêntico.
 
 ## 1. O que existe hoje (verificado)
 
