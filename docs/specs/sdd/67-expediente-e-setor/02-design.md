@@ -42,8 +42,11 @@ expediente da organização; rota ou tela `/app/fora-de-expediente`; erro `OUT_O
 - **Realtime (condição 6 da aprovação), comportamento esperado a medir com 2 usuários:**
   (i) um `UPDATE` em que a linha **sai** do escopo do usuário (conversa transferida para setor alheio)
   **não** gera evento para quem perdeu o acesso, então a lista dele fica obsoleta até recarregar;
-  (ii) um `DELETE` **não passa pela RLS** (o `postgres_changes` entrega a todos os assinantes da
-  organização) mas, com `REPLICA IDENTITY DEFAULT`, só leva o id. A mitigação desenhada é o refetch
+  (ii) um `DELETE` **não passa pela RLS** e, com `REPLICA IDENTITY DEFAULT`, só leva o id — **mas a
+  premissa original ("o `postgres_changes` entrega a todos os assinantes da organização") estava
+  errada para o app**: medido na T0(c), com o filtro `organization_id=eq.<org>` que o app usa o
+  `DELETE` **não chegou a ninguém**; sem filtro chegou a todos, só com o id (detalhe em "MEDIDO", abaixo).
+  A mitigação desenhada é o refetch
   que a lista já faz ao voltar o foco da janela; a T0 mede e a T8 prova com **transferência entre
   setores em dois navegadores**.
   **MEDIDO em 2026-11-19 (T0(c) e T0(b)).** Sonda descartável, **não commitada**, contra o Supabase
