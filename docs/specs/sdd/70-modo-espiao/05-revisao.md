@@ -30,7 +30,7 @@ resolvidas** — quem resolve é o revisor. Cada ponto aponta o commit que o cob
 | # | Ponto | Resposta | Commit |
 |---|---|---|---|
 | 1 | Auditoria dependia do cliente | **Acatado.** Auditoria passa para o servidor, na leitura (`listMessagesHandler`); rota `spy-view` removida. Limite declarado em RNF-5 (Realtime/PostgREST) | `b12cf76` |
-| 2 | RLS `conversations_agent_update` deixa `UPDATE` direto | **Acatado como limitação** (RNF-4, `02-design.md` §2.5), com teste de caracterização e T7 (issue própria). **Não** relaxei o RNF-2 | `b12cf76` |
+| 2 | RLS `conversations_agent_update` deixa `UPDATE` direto | **Acatado como limitação** (RNF-4, `02-design.md` §2.5), com teste de caracterização e T7 (issue própria: #99). **Não** relaxei o RNF-2 | `b12cf76` |
 | 3 | Toggle redundante com o RF-1 | **Virou decisão explícita (Q7)**, com a lista do que cai se sair. Não removi sozinho: a issue o pede. **Depois resolvido pelo dono: selo fixo e neutro** (ver as 3 linhas abaixo) | `67c6742`, `2ad9f3f` |
 | 7 | **Pós-aprovação (16:03):** toggle → selo fixo, só indicador; Q6 cai; RF-2, RF-3/CA-3, CA-5 e T4 mudam | **Acatado.** RF-2 descreve o selo, CA-5 o verifica, T4 troca "toggle" por "selo", Q6 marcada como removida com o motivo | `2ad9f3f` |
 | 8 | **Pós-aprovação (16:07):** texto do selo neutro, "Conversa de <titular>"; teste de o gestor virar titular | **Acatado.** Texto neutro em RF-2/CA-5; **CA-9 novo** (`claim`/`transfer` → selo some e `mark-read` zera para o gestor) | `2ad9f3f` |
@@ -45,5 +45,5 @@ Eu não postei nada na #70.
 ## Aprovação
 - [x] Q1–Q7 decididas (Q6 removida; Q7 revista duas vezes) — links no topo
 - [x] Revisor aprovou a spec: Sciuba, 2026-11-23 16:01 (`APPROVED`). **A aprovação vale para o restante
-  da spec**; os ajustes pós-aprovação (linhas 7 a 9 acima) aguardam a **reconferência só dessas linhas**
-  pelo Sciuba, como ele pediu.
+  da spec**. Os ajustes pós-aprovação (linhas 7 a 9 acima) foram reconferidos pelo Sciuba, que
+  reaprovou em 2026-11-23 21:56 sobre `71dc785`. A spec foi mergeada na `develop` (PR #90).

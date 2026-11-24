@@ -33,7 +33,7 @@
 import type { Regua, TemaDaRegua } from "./contraste";
 
 /** O formato que `Viewport["themeColor"]` do Next aceita. */
-export type CorDaBarra = { readonly media: string; readonly color: string };
+export type CorDaBarra = { readonly media?: string; readonly color: string };
 
 /** A chave da superfície de fundo dentro de `TemaDaRegua.base`. */
 const TOKEN_DE_FUNDO = "--color-bg";
@@ -43,17 +43,16 @@ function corDeFundo(tema: TemaDaRegua): string | undefined {
 }
 
 /**
- * As duas entradas de `theme-color`, na ordem claro → escuro.
+ * A entrada de `theme-color`: só o claro, SEM condição de tema. O produto é sempre claro (sem opção de
+ * trocar), então uma entrada `prefers-color-scheme: dark` pintaria a barra do
+ * navegador de escuro, em quem tem o sistema escuro, sobre uma página clara.
  *
  * `flatMap` e não `map`: é o que descarta o tema sem cor sem precisar de `!`
  * num campo que o tipo do Next declara obrigatório — o cast que a doutrina
  * proíbe, e que aqui esconderia justamente a régua quebrada.
  */
 export function coresDaBarraDoNavegador(regua: Regua): CorDaBarra[] {
-  return (
-    [
-      ["(prefers-color-scheme: light)", corDeFundo(regua.claro)],
-      ["(prefers-color-scheme: dark)", corDeFundo(regua.escuro)],
-    ] as const
-  ).flatMap(([media, color]) => (color ? [{ media, color }] : []));
+  // Sem `media`: vale para TODO navegador, inclusive o de quem tem o sistema escuro.
+  const color = corDeFundo(regua.claro);
+  return color ? [{ color }] : [];
 }

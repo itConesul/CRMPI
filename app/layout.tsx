@@ -151,8 +151,10 @@ export const viewport: Viewport = {
 };
 
 // Inline FOUC-prevention. Conteúdo é string literal estática (zero input do usuário),
-// portanto seguro. Lê localStorage + prefers-color-scheme antes do primeiro paint.
-const THEME_INIT_SCRIPT = `(function(){try{var s=localStorage.getItem('deskcomm-theme');var d=window.matchMedia('(prefers-color-scheme: dark)').matches;var r=(s==='dark'||s==='light')?s:((s==='system'||!s)&&d?'dark':'light');document.documentElement.setAttribute('data-theme',r);}catch(e){document.documentElement.setAttribute('data-theme','light');}})();`;
+// portanto seguro. O sistema é SEMPRE claro — decisão do dono do produto, sem opção de
+// trocar —, então o script não lê preferência nenhuma (nem `prefers-color-scheme`): fixa
+// o tema claro antes do primeiro paint e apaga a escolha antiga que ficou no navegador.
+const THEME_INIT_SCRIPT = `(function(){document.documentElement.setAttribute('data-theme','light');try{localStorage.removeItem('deskcomm-theme');}catch(e){}})();`;
 
 /**
  * Motivos já registrados neste processo. `EstiloDaMarca` roda em TODA
