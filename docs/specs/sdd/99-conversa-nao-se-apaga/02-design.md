@@ -136,7 +136,7 @@ administrador para anonimizar**, porque anonimizar preserva a linha; (2) um cont
 compromisso devolve **uma** violação por vez (o Postgres reporta uma; **não medi** o caso com as duas
 causas juntas), e um texto por causa poderia mandar o usuário remover o compromisso para só então
 descobrir a conversa. **Regra proposta para o compromisso**
-(`01-requisitos.md` RF-4b, a confirmar pelo revisor): o que é permitido **não muda** (contato com
+(`01-requisitos.md` RF-4b, **confirmada** pelo revisor em 2026-11-24): o que é permitido **não muda** (contato com
 compromisso já era recusado hoje, pelo mesmo `RESTRICT`); só a mensagem passa a explicar.
 **NÃO VERIFICADO:** (e) que anonimizar um contato que tem compromisso conclui sem erro em produção
 (`tests/invariants/agenda-lgpd-alcanca.test.ts` cobre a agenda no cascade de LGPD, mas não é essa
@@ -226,7 +226,7 @@ Provado re-aplicando a migration duas vezes, e o baseline em install e update.
 ## 7. Riscos
 | Risco | Mitigação |
 |---|---|
-| **`agent` perde o direito de excluir contato** (mudança que existia e deixou de existir) | Fragmento `exige_acao` com "Requer atenção"; confirmar a classificação com o revisor (`04-tarefas.md` T7) |
+| **`agent` perde o direito de excluir contato** (mudança que existia e deixou de existir) | Fragmento `exige_acao` com "Requer atenção" (**decidido pelo dono**, release major 2.0.0; `04-tarefas.md` T7). O texto precisa dizer que `agent` e `viewer` perdem o botão |
 | Contato com conversa **ou compromisso** vira beco sem saída para `manager` | A mensagem do 409 manda pedir a um administrador. Se o 409 for frequente, a D resolve |
 | Comentário desatualizado no baseline (`baseline.sql:15206-15207`: "as duas únicas FKs RESTRICT do schema") repete a frase falsa e pode enganar a próxima medição | T3 corrige o **comentário** do apêndice da Agenda no baseline (só texto, sem efeito de schema). Não se edita a migration de origem, que é histórica. O revisor decide se entra neste PR ou fica de fora |
 | Janela no `update.sh` em que o `DELETE` volta | Mesma natureza dos outros blocos do apêndice; detalhada em §4. Não há como fechá-la sem editar o dump |

@@ -14,8 +14,11 @@ do `README.md` for `aprovada`.
 | T4 | Rota: `requireRole("manager")`; teste de 403 para `agent`/`viewer` e 204 para `manager` | RF-5 | CA-5 | [ ] |
 | T5 | `ContactsTable`: botão só para `manager`+ (predicado da T0b); texto do diálogo; chaves `es` | RF-6, RF-7 | CA-6, CA-7 | [ ] |
 | T6 | E2E **pela tela** em ambiente fresco; registrar em `SPECS_PARTE_*` (`e2e-cobertura-completa.test.ts`) e em `docs/testing/user-journey-map.md`; evidência em `.superpowers/evidence/` | CA-6 | `tests/e2e/contato-excluir-so-manager.spec.ts` | [ ] |
-| T7 | Fragmento em `.changes/`. **Proposta: `exige_acao`** (a régua trata "algo que existia mudou de forma" como `exige_acao`), com "Requer atenção" avisando a equipe. **O revisor confirma ou rebaixa a classificação**. DoD 16: procurar afirmações sobre "excluir contato apaga a conversa" nos docs de autoridade | DoD 16, 17 | `pnpm release:conferir` | [ ] |
+| T7 | Fragmento em `.changes/` com **`impacto: exige_acao`** (**decidido pelo dono**: release **major**, v1.23.7 → 2.0.0), com "Requer atenção" avisando que `agent` e `viewer` perdem o botão e que apagar contato com conversa ou compromisso passa a ser recusado. `secao: alterado`. DoD 16: procurar afirmações sobre "excluir contato apaga a conversa" nos docs de autoridade | DoD 16, 17 | `pnpm release:conferir` | [ ] |
 | T8 | Abrir as **duas issues de seguimento**: exclusão lógica (D) e RPC do contador / `UPDATE` direto de `conversations` (C). Linkar em `05-revisao.md` e na #99 | fora de escopo | links | [ ] |
+
+**Referência à issue:** o PR de código e os commits citam **"Ref. #99"**, **nunca** "Closes"/"Fixes": a
+#99 fica aberta, porque o `UPDATE` direto em `conversations` segue aberto (decisão P3).
 
 **Ordem:** T0b e T0c (feitas) → T1 → T2 → T3 → T4 → T5 → T6 → T7 → T8. T1 e T2 já fecham o buraco do banco, antes de
 qualquer mudança de produto.

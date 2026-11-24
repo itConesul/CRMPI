@@ -10,13 +10,21 @@ Tomadas pelo dono do produto em 2026-11-24 e registradas na #99 pelo Sciuba:
 | 2026-11-24 | Quem apaga contato | **Só `manager` ou `admin`.** Rota a `manager`, botão some para `agent`/`viewer`, teste de 403 | [#99, pedido da spec](https://github.com/itConesul/CRMPI/issues/99#issuecomment-7133157545) |
 | 2026-11-24 | Mensagem do 409 | Orienta **pedir a um administrador**, não "anonimize": anonimizar exige `admin` (+ MFA) | idem |
 | 2026-11-24 | Processo | A #99 ganha spec SDD própria, em PR de spec, **antes** de qualquer migration; T0 = prova do `viewer` e da sessão de suporte | idem |
+| 2026-11-24 | **P1** — classificação do fragmento | **`impacto: exige_acao`**, que pela régua (`BUMP_DO_IMPACTO`) leva a um release **major** (hoje v1.23.7, viraria **2.0.0**). Motivo: algo que existia sumiu, o direito de `agent` excluir contato. O fragmento traz "Requer atenção" avisando que `agent` e `viewer` perdem o botão e que apagar contato com conversa passa a ser recusado. O release major é decisão **já tomada** | [#99, P1 a P3](https://github.com/itConesul/CRMPI/issues/99#issuecomment-7135555771) |
+| 2026-11-24 | **P2** — quem passa em "manager ou admin" | **Como medido na T0b** (`02-design.md` §1.3): membro `manager`/`admin` e sessão de suporte `full` (conta como `admin`) passam; suporte somente leitura e `platform admin` sem membership **não**, na rota e na tela. A tela espelha a rota e **não** soma `is_platform_admin` | idem |
+| 2026-11-24 | **P3** — a #99 | **Fica aberta e é retitulada pelo Sciuba**, para dizer o que falta (o `UPDATE` direto em `conversations`). A spec e o PR de código citam **"Ref. #99"**, **nunca** "Closes" | idem |
+| 2026-11-24 | **RF-4b** — contato com compromisso | **Confirmado.** Contato com compromisso e sem conversa continua **recusado**, como já é hoje; só a mensagem explica | [#105, confirmação](https://github.com/itConesul/CRMPI/pull/105#issuecomment-7135869227) |
+| 2026-11-24 | Texto do 409 | **Único**: "conversas ou compromissos… peça a um administrador para anonimizá-lo" (não um texto por causa) | idem |
+| 2026-11-24 | Comentário do baseline (`baseline.sql:15206-15207`) | **Corrigir só o texto**, na T3, **no PR de código** | idem |
 
-## Perguntas ao revisor
-| # | Pergunta | Recomendação do autor |
-|---|---|---|
-| P1 | O fragmento é `exige_acao` (a régua trata "algo que existia mudou de forma" assim) ou `nada_mudou`/`alterado`? O primeiro implica um release **major** | Seguir a letra da régua: `exige_acao`, com "Requer atenção". É o dono do release quem decide. **Versão em vigor: v1.23.7**; pela régua, `exige_acao` levaria a `2.0.0` |
-| P2 | `manager`+ inclui `platform admin` e sessão de suporte na tela? | **Medido (T0b, `02-design.md` §1.3):** sessão de suporte `full` conta como `admin` e passa; suporte só leitura e `platform admin` sem membership **não** passam. A tela espelha a rota e **não** soma `is_platform_admin`. Confirme que é isso que se quer |
-| P3 | Quer que o título da #99 mude? Ela nasceu como "`agent`+ faz `UPDATE` direto", e o `UPDATE` **segue aberto** neste escopo | Retitular ou deixar a #99 aberta até C/D, para não fechar por engano |
+## Perguntas ao revisor (todas decididas em 2026-11-24)
+O enunciado original fica como histórico; a decisão está na tabela acima.
+
+| # | Pergunta | Recomendação do autor | Decisão |
+|---|---|---|---|
+| P1 | O fragmento é `exige_acao` ou outro? **Correção registrada:** a pergunta original oferecia "`nada_mudou`/`alterado`", mas **`alterado` não é um `impacto`**: é uma **seção** do changelog. O enum é `nada_mudou \| capacidade_nova \| exige_acao` (`lib/release/fragmento.ts:26`). Não reutilizar a opção "alterado/minor" | `exige_acao` | ✅ **`exige_acao`** (major, 2.0.0) |
+| P2 | `manager`+ inclui `platform admin` e sessão de suporte na tela? | Medido na T0b: suporte `full` passa; suporte só leitura e `platform admin` sem membership não. A tela espelha a rota | ✅ **como medido** |
+| P3 | Quer que o título da #99 mude? | Retitular, para não fechar por engano | ✅ **a #99 fica aberta** e o Sciuba a retitula; "Ref. #99", nunca "Closes" |
 
 ## Comentários de review
 Review do Sciuba em 2026-11-24 15:00, sobre `79b722f` (`CHANGES_REQUESTED`). **As threads não foram
