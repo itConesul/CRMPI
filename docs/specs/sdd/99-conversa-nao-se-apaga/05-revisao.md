@@ -40,7 +40,8 @@ Itens que **eu** achei ao responder, fora do que foi pedido:
 - O comentário do baseline (`baseline.sql:15206-15207`, "as duas únicas FKs RESTRICT do schema") repete a
   frase falsa. Proposta na T3: corrigir só o texto. **Decisão do revisor.**
 - Apagar contato **sem** conversa também leva em cascata 12 tabelas (notas, demandas, follow-ups…). Fora de
-  escopo; anotado em `01-requisitos.md` para a issue da D.
+  escopo; anotado em `01-requisitos.md` e levado para a issue da D, a **[#116](https://github.com/itConesul/CRMPI/issues/116)**
+  (aberta em 2026-11-24, T8). A segunda issue de seguimento (C / `UPDATE` direto) é a **própria #99**.
 
 ## Aprovação
 - [x] **Aprovada por:** Sciuba em 2026-11-24 — implementação liberada. `APPROVED` sobre `d949618` no PR #105
