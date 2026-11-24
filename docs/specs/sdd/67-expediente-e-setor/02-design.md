@@ -312,14 +312,58 @@ Dois mecanismos independentes, cada um com uma **função pura** testável sem b
     `headers()` se comporta igual. **Regra decorrente (proposta):** a regra 2 chama `headers()` **na
     primeira instrução do `audit()`, antes de qualquer `await`** (guarda só a promessa; o `await` vem
     depois), para a leitura não depender de o contexto sobreviver ao fim da resposta.
-    **Medição que falta, antes de a T2c depender disto:** em build de produção contra o Supabase local,
-    uma rota de sonda (descartável, não commitada — a mesma técnica da Server Action) faz
-    `void audit({...})` e responde na hora; lê-se `api_audit_log` por `request_id`. Critério: a linha
-    tem `fora_do_expediente` quando `admin` age fora do expediente. **Se falhar**, o mecanismo "o
-    `audit()` decide" não vale para as 125 chamadas e a spec volta à mesa (alternativas: converter em
-    `await audit()` as chamadas de mutação relevantes, ou outro canal — o `AsyncLocalStorage` já foi
-    recusado por fragilidade). **Resultado: AINDA NÃO MEDIDO** — este PR é só de texto e a medição pede
-    um build de produção; registrar aqui o comando e a saída quando for feita.
+    **Medição (2026-11-24): `headers()` devolve o método dentro de um `void audit()` depois de a
+    resposta sair — a premissa vale. O RF-10 de ponta a ponta continua por provar (ver "Limites").**
+    - **Como:** worktree descartável a partir de `feat/67-expediente-gate` (`164450a`, onde o `proxy.ts`
+      carimba `x-metodo-http`), `pnpm e2e:build` + `next start` contra o Supabase local, **Node 22.23.5**
+      (as imagens são `node:22-alpine`; `--experimental-async-context-frame` **não** estava ligado). Uma
+      rota de sonda descartável, **não commitada** (`POST`/`PATCH`, caminho público
+      `/api/v1/cron/sonda-void-audit`, só para dispensar login), faz `void audit({...})` e responde na
+      hora; o `audit()` foi instrumentado (também descartável) para ler o método de três jeitos,
+      **depois de esperar 800 ms** (a resposta já saiu): (a) `headers()` chamado na **primeira
+      instrução**, promessa lida logo em seguida; (b) a **mesma promessa** lida 800 ms depois; (c) um
+      **`headers()` novo** chamado 800 ms depois. Os três valores foram gravados em
+      `api_audit_log.metadata` e lidos por `request_id`:
+      `docker exec supabase_db_deskcomm-crm psql -U postgres -At -c "select metadata->>'modo', metadata->>'probe_cedo_sincrono', metadata->>'probe_promessa_guardada_lida_tarde', metadata->>'probe_headers_novo_chamado_tarde' from api_audit_log where request_id in (...)"`.
+    - **Resultado** (10 requisições, **10 linhas gravadas**; as 3 leituras iguais em todas):
+
+      | Caso | Resposta | Método lido (a / b / c) |
+      |---|---|---|
+      | `void` + `POST` (×5) | 90–106 ms | `POST` / `POST` / `POST` |
+      | `void` + `PATCH` (×1) | 103 ms | `PATCH` / `PATCH` / `PATCH` |
+      | `void` + `POST` com `x-metodo-http: GET` forjado (×1) | 94 ms | `POST` / `POST` / `POST` (o forjado é ignorado) |
+      | `await` + `POST` (×3, controle) | ~915 ms | `POST` / `POST` / `POST` |
+
+      A diferença de latência (≈ 95 ms contra ≈ 915 ms) é a prova de que, no modo `void`, **a resposta
+      saiu antes de o `audit()` terminar** — e mesmo assim o método foi lido, **inclusive por um
+      `headers()` chamado do zero depois**. Ou seja, a regra proposta (`headers()` na primeira
+      instrução) funciona, **e a leitura tardia também funcionou**: a regra 2 não depende do cuidado
+      de ordem para ser correta nesta versão do Node, embora o cuidado continue sendo o desenho
+      defensivo.
+    - **Limites (o que isto NÃO prova):**
+      1. **Mede a premissa, não o RF-10.** A regra 3 (cache de 30 s), a regra 4 (`rpc fn_user_role_in_org`
+         e a guarda de identidade) e a gravação de `fora_do_expediente` **não existem ainda**; o
+         critério original ("a linha tem `fora_do_expediente` quando `admin` age fora do expediente")
+         só se fecha no e2e da T2c.
+      2. **Sem sessão.** A sonda é uma rota pública, sem ator; o `audit()` não passou pelo ramo de
+         `getUser()` / `readSupportContext`, que têm latência real. O atraso fixo de 800 ms cobre o
+         pior caso de **tempo**, não o fluxo autenticado.
+      3. **Uma sessão de medição**, Node 22. **Não medido** com `--experimental-async-context-frame`
+         (padrão do Node 24, segundo a documentação do Node, não medida aqui). **Não medi** como o Next
+         guarda o contexto de `headers()` por dentro nem se ele muda com essa flag, então o resultado
+         **não** se transfere sozinho para o Node 24. Se a imagem mudar de major, repetir a sonda.
+      4. A sonda e a instrumentação **não estão no repositório**, de propósito (mesma técnica da Server
+         Action). Para reproduzir: uma rota que faz `void audit({ action, requestId, metadata })` e
+         responde com `NextResponse.json(...)`, e no início do `audit()` um
+         `const p = headers()` seguido de leituras de `(await p).get("x-metodo-http")` antes e depois de
+         um `await new Promise(r => setTimeout(r, 800))`.
+    - **Plano B** (se uma medição futura falhar — Node 24, outra versão do Next ou o e2e da T2c):
+      o mecanismo "o `audit()` decide" não vale para as 125 chamadas `void audit(`. Alternativas, em
+      ordem de custo: (i) converter em `await audit()` só as chamadas de **mutação de `admin`/`manager`**
+      (a marca só importa para elas; a lista sai do inventário da T2c); (ii) capturar o método **antes**
+      do `void`, num argumento explícito do `audit()` que as rotas relevantes repassam — o que volta ao
+      "rota por rota" já recusado, por isso só para a lista curta de (i); (iii) o `AsyncLocalStorage`
+      continua **recusado** (§2.1: depende da versão do Node e falha em silêncio).
   - **Uma só verdade para a decisão.** "Fora do expediente **e** `admin`/`manager`" **já é uma função
     pura**, escrita na T1: `expedienteBarra({ papel, config, agora }).bypassAuditado`
     (`lib/expediente/expediente.ts`, no PR do gate). O `audit()` **chama essa função**; não reimplementa
