@@ -96,7 +96,7 @@ Input (Zod `.strict()`, guard prototype-pollution como `schedule-followup.ts`):
   // context_snapshot é montado pelo runtime a partir da conversa REAL — nunca do modelo
 }
 ```
-Efeito: `INSERT agent_cases(status='awaiting_human', ...)` + event `opened` + broadcast realtime `case_pending` no canal `org:<org>:queue`. Retorno `{ok:true, case_id}` ou `{ok:false, error:{message}}` (erro-como-ensino).
+Efeito: `INSERT agent_cases(status='awaiting_human', ...)` + event `opened` + ~~broadcast realtime `case_pending` no canal `org:<org>:queue`~~ *(nunca implementado: não há emissor no código; broadcast em canal público é vedado desde o PR #100, e um canal novo nasce privado)*. Retorno `{ok:true, case_id}` ou `{ok:false, error:{message}}` (erro-como-ensino).
 
 ### 4.2 `provide_case_update`
 > **description:** "Quando um caso está esperando informação do cliente e você já colheu essa informação na conversa, use esta tool para devolver a informação ao humano responsável pelo caso. Não invente — só o que o lead realmente disse."
