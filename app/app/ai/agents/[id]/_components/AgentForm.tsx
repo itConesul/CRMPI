@@ -755,7 +755,7 @@ export function AgentForm(props: Props) {
           <Card className="space-y-3 p-4">
             <h3 className="text-sm font-medium">{t("Por qual número ele atende")}</h3>
             {props.routerMembership && (
-              <div className="flex items-start gap-2 rounded-md bg-accent-soft p-3 text-xs text-text-muted">
+              <div className="flex items-start gap-2 rounded-xl bg-accent-soft p-3 text-xs text-text-muted">
                 <Info className="mt-0.5 shrink-0" aria-hidden />
                 <p>
                   {t("Este agente é acionado pelo roteador")}{" "}

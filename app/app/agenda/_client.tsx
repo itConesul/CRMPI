@@ -6,7 +6,7 @@ import { useLocaleDeData } from "@/hooks/i18n/useLocaleDeData";
 
 import { useT } from "@/hooks/i18n/useT";
 
-import { addDays, endOfMonth, format, startOfDay, startOfMonth, startOfWeek } from "date-fns";
+import { addDays, format, startOfDay, startOfWeek } from "date-fns";
 import * as React from "react";
 
 import { AvisoDaConexaoGoogle } from "./_components/AvisoDaConexaoGoogle";
@@ -17,6 +17,7 @@ import { FiltroDePessoas } from "@/components/agenda/FiltroDePessoas";
 import { HistoricoDaAgenda } from "@/components/agenda/HistoricoDaAgenda";
 import type { Agendamento, HorarioLivre, VisaoDaAgenda } from "@/components/agenda/tipos";
 import { EmptyAgenda } from "@/components/empty";
+import { janelaDaGrade } from "@/lib/agenda/janela-da-grade";
 import { rotuloDoLocal } from "@/lib/agenda/locais";
 import { Button } from "@/components/ui/button";
 import { PainelDeMarcacao } from "@/components/agenda/PainelDeMarcacao";
@@ -199,19 +200,12 @@ export function AgendaClient({
   // hook assume dali: `useMarcarAgendamento` já invalida `["agenda"]`, então
   // marcar pela tela repinta a grade sozinho.
   // O recorte acompanha o que a grade DESENHA — mesma visão, mesma âncora.
+  // Quem calcula é `janelaDaGrade`, a MESMA fonte que `VisaoDeMes` usa para
+  // desenhar (#94): no Mês, a grade tem 42 dias e inclui os esmaecidos de outro
+  // mês, e uma busca só do mês corrente os deixava vazios.
   // Instante ISO, nunca o filtro `dia`: o cabeçalho do hook mede por que
   // (`dia=` corta em UTC e some com o compromisso das 22h no fuso de São Paulo).
-  const recorteDaGrade = React.useMemo(() => {
-    const inicio =
-      visao === "mes"
-        ? startOfMonth(ancora)
-        : visao === "semana"
-          ? startOfWeek(ancora, { weekStartsOn: 0 })
-          : startOfDay(ancora);
-    const fim =
-      visao === "mes" ? addDays(endOfMonth(ancora), 1) : addDays(inicio, visao === "semana" ? 7 : 1);
-    return { de: inicio.toISOString(), ate: fim.toISOString() };
-  }, [visao, ancora]);
+  const recorteDaGrade = React.useMemo(() => janelaDaGrade(visao, ancora), [visao, ancora]);
 
   // A janela que o SERVIDOR pintou. Sem esta comparação, navegar para outra
   // semana mostraria os compromissos DESTA por um instante — o fallback estaria
@@ -305,7 +299,7 @@ export function AgendaClient({
 
       <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
         <div className="min-w-0">
-          <h1 className="text-2xl font-semibold tracking-tight">{t("Agenda")}</h1>
+          <h1 className="font-serif text-3xl font-bold tracking-tight">{t("Agenda")}</h1>
           <p className="text-sm text-muted-foreground">
             {t("O que está marcado, com quem, e quem atende — seu e da equipe.")}
           </p>
@@ -404,7 +398,7 @@ export function AgendaClient({
           <FiltroDePessoas pessoas={pessoas} isolada={isolada} onIsolar={setIsolada} />
           <div
             data-testid="alternador-de-visao"
-            className="flex items-center gap-0.5 rounded-md border border-border bg-surface p-0.5"
+            className="flex items-center gap-0.5 rounded-xl border border-border bg-surface p-0.5"
           >
             {VISOES.map((v) => (
               <button
@@ -414,7 +408,7 @@ export function AgendaClient({
                 aria-pressed={visao === v.id}
                 onClick={() => setVisao(v.id)}
                 className={cn(
-                  "rounded-sm px-2.5 py-1 text-xs transition-colors duration-fast ease-out",
+                  "rounded-md px-2.5 py-1 text-xs transition-colors duration-fast ease-out",
                   "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500",
                   visao === v.id
                     ? "bg-accent font-semibold text-accent-fg"
@@ -540,7 +534,7 @@ export function AgendaClient({
                 // `outline-hidden`, não `outline-none`: no Tailwind 4 os dois
                 // trocaram de significado, e o `outline-none` do v4 apaga o
                 // contorno que o modo de alto contraste do sistema usa.
-                "mt-1 w-full rounded-md border bg-surface p-2 text-sm outline-hidden",
+                "mt-1 w-full rounded-xl border bg-surface p-2 text-sm outline-hidden",
                 emailConvidadoInvalido
                   ? "border-danger focus:border-danger"
                   : "border-border focus:border-border-strong",
@@ -698,7 +692,7 @@ export function AgendaClient({
               value={motivo}
               onChange={(e) => setMotivo(e.target.value)}
               rows={3}
-              className="w-full rounded-md border border-border bg-surface p-2 text-sm outline-hidden focus:border-border-strong"
+              className="w-full rounded-xl border border-border bg-surface p-2 text-sm outline-hidden focus:border-border-strong"
               placeholder={t("O paciente pediu para remarcar por telefone")}
             />
             <div className="flex justify-end gap-2">
@@ -802,7 +796,7 @@ export function AgendaClient({
           limpo. O mesmo formato do defeito que `agenda-tela-do-produto` já
           tinha pago: verde por banco sujo. */}
       {agendamentos.length === 0 ? (
-        <div className="rounded-lg border border-border bg-surface p-4">
+        <div className="rounded-2xl border border-border bg-surface p-4">
           <EmptyAgenda />
         </div>
       ) : null}

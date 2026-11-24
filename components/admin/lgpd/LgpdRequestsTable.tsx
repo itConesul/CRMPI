@@ -106,7 +106,7 @@ const RISK_LABELS: Record<AdminLgpdRiskLevel, string> = {
 export function LgpdRequestsTableSkeleton() {
   const t = useT();
   return (
-    <div className="rounded-md border">
+    <div className="rounded-xl border">
       <Table>
         <TableHeader>
           <TableRow>
@@ -140,7 +140,7 @@ export function LgpdRequestsTableSkeleton() {
 function EmptyState() {
   const t = useT();
   return (
-    <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-16 text-center">
+    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed py-16 text-center">
       <p className="text-sm font-medium text-muted-foreground">
         {t("Nenhuma solicitação encontrada")}
       </p>
@@ -172,7 +172,7 @@ export function LgpdRequestsTable({
 
   return (
     <div className="space-y-3">
-      <div className="rounded-md border">
+      <div className="rounded-xl border">
         <Table>
           <TableHeader>
             <TableRow>

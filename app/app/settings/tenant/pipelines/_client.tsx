@@ -167,7 +167,7 @@ function PipelineEditor({ pipeline }: { pipeline: PipelineRow }) {
           {t("Aparecem no dossiê do negócio. No follow-up, você escolhe em qual campo gravar a resposta.")}
         </p>
         {fields.map((f, i) => (
-          <div key={`${f.key}-${i}`} className="grid gap-2 rounded-md border border-border p-2 md:grid-cols-[1fr_1fr_8rem_auto]">
+          <div key={`${f.key}-${i}`} className="grid gap-2 rounded-xl border border-border p-2 md:grid-cols-[1fr_1fr_8rem_auto]">
             <Input
               aria-label={`${t("Chave do campo")} ${i + 1}`}
               placeholder={t("chave (endereco)")}

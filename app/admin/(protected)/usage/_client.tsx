@@ -32,7 +32,7 @@ export function UsageClient() {
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">{t("Uso & Custo")}</h1>
+          <h1 className="font-serif text-3xl font-bold tracking-tight">{t("Uso & Custo")}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {t("Consumo de mensagens, conversas e AI por tenant")}
           </p>
@@ -56,12 +56,12 @@ export function UsageClient() {
       {/* Charts */}
       {isLoading ? (
         <div className="grid gap-4 md:grid-cols-2">
-          <Skeleton className="h-56 rounded-lg" />
-          <Skeleton className="h-56 rounded-lg" />
-          <Skeleton className="h-56 rounded-lg md:col-span-2" />
+          <Skeleton className="h-56 rounded-2xl" />
+          <Skeleton className="h-56 rounded-2xl" />
+          <Skeleton className="h-56 rounded-2xl md:col-span-2" />
         </div>
       ) : isError || !usageData ? (
-        <div className="flex items-center justify-center rounded-lg border py-12 text-sm text-muted-foreground">
+        <div className="flex items-center justify-center rounded-2xl border py-12 text-sm text-muted-foreground">
           {t("Erro ao carregar dados de uso. Tente recarregar.")}
         </div>
       ) : (

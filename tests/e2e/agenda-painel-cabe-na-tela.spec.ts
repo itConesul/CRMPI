@@ -128,6 +128,22 @@ async function abrirPainelComDiaEscolhido(page: Page, nomeDoTipo: string): Promi
   // estado nenhum. Foi assim que a primeira versão desta spec ficou vermelha
   // pelo motivo errado — e teria ficado verde, com o produto igualmente
   // quebrado, no dia em que a máquina rodasse um pouco mais devagar.
+  //
+  // ⚠️ E "ESTÁVEL" NÃO É "DUAS LEITURAS IGUAIS". A transição só avança quando a
+  // página produz quadros, e ela pode ficar PARADA no começo — `width: 0` mais a
+  // borda de 1px que a coluna aberta já tem — durante centenas de milissegundos
+  // (medido no CI: 1px em 1280, 1440 e 1920, nunca em 900 e 1024; Chrome sem GPU
+  // e um overlay com `backdrop-blur` sobre a tela inteira). Duas leituras de 1px
+  // com 120ms de intervalo são "iguais" e "maiores que zero", e a espera abaixo
+  // as aceitava como a coluna aberta. Por isso espera-se a TRANSIÇÃO TERMINAR,
+  // que é o que "abriu" quer dizer: `getAnimations()` já enxerga a transição
+  // assim que o atributo muda, e `finished` resolve quando ela acaba.
+  await coluna.evaluate((el) =>
+    Promise.all(el.getAnimations().map((a) => a.finished.catch(() => undefined))).then(
+      () => undefined,
+    ),
+  );
+
   await expect(async () => {
     const a = (await coluna.boundingBox())?.width ?? 0;
     await page.waitForTimeout(120);

@@ -32,20 +32,41 @@ import "./globals.css";
 // puxa deixava de existir por um flake de DNS do runner. Mesmo efeito de antes
 // (a custom property no `<html>`, `display: swap`), só que sem rede.
 // Subconjunto `latin` (cobre PT, ES e EN); glifo fora dele cai na fonte do
-// sistema. Licença das duas: SIL OFL 1.1.
-const atkinson = localFont({
+// sistema. Licença das três: SIL OFL 1.1.
+//
+// Identidade visual (Portal Cone Sul): Inter na interface, Noto Serif nos
+// títulos, números grandes e nomes de destaque, JetBrains Mono em códigos,
+// documentos e protocolos.
+const inter = localFont({
   src: [
-    { path: "./fonts/atkinson-hyperlegible-latin-400-normal.woff2", weight: "400", style: "normal" },
-    { path: "./fonts/atkinson-hyperlegible-latin-700-normal.woff2", weight: "700", style: "normal" },
+    { path: "./fonts/inter-latin-400-normal.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/inter-latin-500-normal.woff2", weight: "500", style: "normal" },
+    { path: "./fonts/inter-latin-600-normal.woff2", weight: "600", style: "normal" },
+    { path: "./fonts/inter-latin-700-normal.woff2", weight: "700", style: "normal" },
+    { path: "./fonts/inter-latin-900-normal.woff2", weight: "900", style: "normal" },
   ],
   display: "swap",
-  variable: "--font-atkinson",
+  variable: "--font-inter",
 });
 
-const plexMono = localFont({
+const notoSerif = localFont({
   src: [
-    { path: "./fonts/ibm-plex-mono-latin-400-normal.woff2", weight: "400", style: "normal" },
-    { path: "./fonts/ibm-plex-mono-latin-500-normal.woff2", weight: "500", style: "normal" },
+    { path: "./fonts/noto-serif-latin-400-normal.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/noto-serif-latin-400-italic.woff2", weight: "400", style: "italic" },
+    { path: "./fonts/noto-serif-latin-700-normal.woff2", weight: "700", style: "normal" },
+    { path: "./fonts/noto-serif-latin-700-italic.woff2", weight: "700", style: "italic" },
+    { path: "./fonts/noto-serif-latin-900-normal.woff2", weight: "900", style: "normal" },
+    { path: "./fonts/noto-serif-latin-900-italic.woff2", weight: "900", style: "italic" },
+  ],
+  display: "swap",
+  variable: "--font-noto-serif",
+});
+
+const jetbrainsMono = localFont({
+  src: [
+    { path: "./fonts/jetbrains-mono-latin-400-normal.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/jetbrains-mono-latin-500-normal.woff2", weight: "500", style: "normal" },
+    { path: "./fonts/jetbrains-mono-latin-700-normal.woff2", weight: "700", style: "normal" },
   ],
   display: "swap",
   variable: "--font-mono",
@@ -290,7 +311,7 @@ export default function RootLayout({
       lang="pt-BR"
       data-theme="light"
       suppressHydrationWarning
-      className={`${atkinson.variable} ${plexMono.variable}`}
+      className={`${inter.variable} ${notoSerif.variable} ${jetbrainsMono.variable}`}
     >
       <head>
         {/* Primeiro de tudo: a cor da instalação, antes do CSS e do script de tema. */}

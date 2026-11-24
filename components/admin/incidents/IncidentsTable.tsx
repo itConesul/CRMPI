@@ -82,7 +82,7 @@ function relativeDate(iso: string, locale: Locale): string {
 export function IncidentsTableSkeleton() {
   const t = useT();
   return (
-    <div className="rounded-md border">
+    <div className="rounded-xl border">
       <Table>
         <TableHeader>
           <TableRow>
@@ -131,7 +131,7 @@ export function IncidentsTable({
   const t = useT();
   if (data.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center gap-3 rounded-md border py-16 text-center text-muted-foreground">
+      <div className="flex flex-col items-center justify-center gap-3 rounded-xl border py-16 text-center text-muted-foreground">
         <Warning size={36} weight="duotone" className="opacity-40" aria-hidden />
         <p className="text-sm font-medium">{t("Nenhum incidente encontrado")}</p>
         <p className="max-w-xs text-xs opacity-70">
@@ -143,7 +143,7 @@ export function IncidentsTable({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-md border">
+      <div className="rounded-xl border">
         <Table>
           <TableHeader>
             <TableRow>

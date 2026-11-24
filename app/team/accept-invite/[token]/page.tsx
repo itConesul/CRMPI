@@ -52,7 +52,7 @@ export default async function AcceptInvitePage({ params }: PageProps) {
   if (await authRateLimited("invite_accept", null, AUTH_LIMITS.invite_accept)) {
     return (
       <Shell>
-        <h1 className="text-xl font-semibold">{t("Muitas tentativas")}</h1>
+        <h1 className="font-serif text-2xl font-bold">{t("Muitas tentativas")}</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           {t("Aguarde alguns minutos e abra o link do convite de novo.")}
         </p>
@@ -65,7 +65,7 @@ export default async function AcceptInvitePage({ params }: PageProps) {
   if (!payload) {
     return (
       <Shell>
-        <h1 className="text-xl font-semibold">{t("Convite inválido ou expirado")}</h1>
+        <h1 className="font-serif text-2xl font-bold">{t("Convite inválido ou expirado")}</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           {t(
             "Este link não é válido ou já passou da janela de 24h. Peça um novo convite ao admin do tenant.",
@@ -86,7 +86,7 @@ export default async function AcceptInvitePage({ params }: PageProps) {
     const next = encodeURIComponent(`/team/accept-invite/${token}`);
     return (
       <Shell>
-        <h1 className="text-xl font-semibold">{t("Você foi convidado")}</h1>
+        <h1 className="font-serif text-2xl font-bold">{t("Você foi convidado")}</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           {t("Para aceitar o convite como")} <strong>{payload.role}</strong>,{" "}
           {t("faça login com o email")} <strong>{payload.email}</strong>.
@@ -94,7 +94,7 @@ export default async function AcceptInvitePage({ params }: PageProps) {
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <Link
             href={`/login?next=${next}`}
-            className="inline-block rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+            className="inline-block rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
           >
             {t("Fazer login")}
           </Link>
@@ -120,7 +120,7 @@ export default async function AcceptInvitePage({ params }: PageProps) {
   if (userEmail !== payload.email.trim().toLowerCase()) {
     return (
       <Shell>
-        <h1 className="text-xl font-semibold">{t("Email não corresponde")}</h1>
+        <h1 className="font-serif text-2xl font-bold">{t("Email não corresponde")}</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           {t("Você está logado como")} <strong>{user.email}</strong>,{" "}
           {t("mas o convite foi enviado para")} <strong>{payload.email}</strong>.{" "}
@@ -129,7 +129,7 @@ export default async function AcceptInvitePage({ params }: PageProps) {
         <form action="/api/auth/signout" method="post" className="mt-4">
           <button
             type="submit"
-            className="rounded-md border px-4 py-2 text-sm font-medium hover:bg-accent"
+            className="rounded-xl border px-4 py-2 text-sm font-medium hover:bg-accent"
           >
             {t("Sair")}
           </button>
@@ -140,7 +140,7 @@ export default async function AcceptInvitePage({ params }: PageProps) {
 
   return (
     <Shell>
-      <h1 className="text-xl font-semibold">{t("Aceitar convite")}</h1>
+      <h1 className="font-serif text-2xl font-bold">{t("Aceitar convite")}</h1>
       <p className="mt-2 text-sm text-muted-foreground">
         {t("Você foi convidado para entrar como")} <strong>{payload.role}</strong>.{" "}
         {t("Confirme abaixo para ativar seu acesso.")}
@@ -153,7 +153,7 @@ export default async function AcceptInvitePage({ params }: PageProps) {
 function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen items-center justify-center p-6">
-      <div className="w-full max-w-md rounded-lg border bg-card p-8 shadow-sm">{children}</div>
+      <div className="w-full max-w-md rounded-2xl border bg-card p-8 shadow-sm">{children}</div>
     </div>
   );
 }

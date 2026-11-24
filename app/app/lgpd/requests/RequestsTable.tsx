@@ -143,7 +143,7 @@ export function RequestsTable() {
       {!q.isLoading && rows.length > 0 && <SlaBanner requests={rows} />}
 
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-surface p-2">
+      <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-surface p-2">
         <Select
           value={status ?? ALL}
           onValueChange={(v) => {

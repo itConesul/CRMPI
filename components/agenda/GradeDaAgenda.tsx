@@ -11,7 +11,6 @@ import {
   format,
   isSameDay,
   isSameMonth,
-  startOfMonth,
   startOfWeek,
 } from "date-fns";
 
@@ -26,6 +25,7 @@ import {
   type HorarioPublicado,
   type MotivoDaGradeTravada,
 } from "@/lib/agenda/grade-interativa";
+import { DIAS_DA_GRADE_DO_MES, inicioDaGradeDoMes } from "@/lib/agenda/janela-da-grade";
 import { cn } from "@/lib/utils";
 import { useT } from "@/hooks/i18n/useT";
 
@@ -368,7 +368,7 @@ function BlocoDeAgendamento({
         doGoogle ? `, ${t("ocupado na agenda do Google")}` : ""
       }`}
       className={cn(
-        "absolute flex flex-col items-start overflow-hidden rounded-sm px-1.5 py-0.5 text-left",
+        "absolute flex flex-col items-start overflow-hidden rounded-md px-1.5 py-0.5 text-left",
         "border border-border/60 transition-colors duration-fast ease-out",
         doGoogle ? "cursor-default" : "cursor-pointer hover:border-border-strong",
         // `grab` só quando remarcar é possível: o cursor é a única pista de que
@@ -415,7 +415,7 @@ function BlocoDeAgendamento({
       <span
         aria-hidden
         data-testid={`faixa-${agendamento.id}`}
-        className="absolute inset-y-0 left-0 w-[3px] rounded-l-sm"
+        className="absolute inset-y-0 left-0 w-[3px] rounded-l-md"
         style={{ backgroundColor: doGoogle ? "var(--color-border-strong)" : corDaTrilha(trilha) }}
       />
       <span className="ml-1 truncate text-[11px] font-semibold leading-4 text-text">
@@ -500,7 +500,7 @@ function FantasmaDoArraste({
       data-valido={valido}
       aria-hidden
       className={cn(
-        "pointer-events-none absolute inset-x-0.5 z-20 rounded-sm border-2 border-dashed px-1.5 py-0.5",
+        "pointer-events-none absolute inset-x-0.5 z-20 rounded-md border-2 border-dashed px-1.5 py-0.5",
         valido ? "border-accent bg-accent-soft" : "border-error bg-error-bg",
       )}
       style={{
@@ -636,14 +636,17 @@ function VisaoDeMes({
 }) {
   const t = useT();
   const localeDaData = useLocaleDeData();
-  const primeiro = startOfWeek(startOfMonth(ancora), { weekStartsOn: 0 });
+  // O início e o tamanho da grade vêm de `janela-da-grade`, a MESMA fonte que
+  // `_client.tsx` usa para buscar os agendamentos (#94): desenho e busca não
+  // podem divergir, senão os dias esmaecidos aparecem vazios.
+  const primeiro = inicioDaGradeDoMes(ancora);
   // SEIS semanas sempre, mesmo quando o mês cabe em cinco.
   //
   // Um mês que ocupa 5 linhas e outro que ocupa 6 fariam a célula mudar de
   // altura ao virar o mês — a grade "pula" e quem estava olhando um dia perde
   // a referência. O custo é uma linha de dias do mês seguinte, que já nasce
   // esmaecida.
-  const semanas: Date[][] = Array.from({ length: 6 }, (_, s) =>
+  const semanas: Date[][] = Array.from({ length: DIAS_DA_GRADE_DO_MES / 7 }, (_, s) =>
     Array.from({ length: 7 }, (_, d) => addDays(primeiro, s * 7 + d)),
   );
 
@@ -698,7 +701,7 @@ function VisaoDeMes({
                     <div
                       key={c.id}
                       data-testid={`chip-mes-${c.id}`}
-                      className="flex items-center gap-1 rounded-sm px-1 py-0.5"
+                      className="flex items-center gap-1 rounded-md px-1 py-0.5"
                       style={{ background: fundoDaTrilha(trilha, 14) }}
                     >
                       <span
@@ -955,7 +958,7 @@ export function GradeDaAgenda({
       data-testid="grade-da-agenda"
       data-visao={visao}
       className={cn(
-        "flex min-h-0 flex-col overflow-hidden rounded-lg border border-border bg-surface",
+        "flex min-h-0 flex-col overflow-hidden rounded-2xl border border-border bg-surface",
         className,
       )}
     >

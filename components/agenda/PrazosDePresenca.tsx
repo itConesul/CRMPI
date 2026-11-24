@@ -42,7 +42,7 @@ export function PrazosDePresenca({ podeEditar }: { podeEditar: boolean }) {
             {t("Pedir confirmação após o fim (minutos)")}
             <input
               aria-label={t("Pedir confirmação após o fim (minutos)")}
-              className="ml-2 w-24 rounded-md border p-2"
+              className="ml-2 w-24 rounded-xl border p-2"
               type="number"
               min={1}
               max={10080}
@@ -57,7 +57,7 @@ export function PrazosDePresenca({ podeEditar }: { podeEditar: boolean }) {
             {t("Proteger de cobranças por silêncio após o fim (minutos)")}
             <input
               aria-label={t("Proteger de cobranças por silêncio após o fim (minutos)")}
-              className="ml-2 w-24 rounded-md border p-2"
+              className="ml-2 w-24 rounded-xl border p-2"
               type="number"
               min={1}
               max={10080}

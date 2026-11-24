@@ -62,7 +62,7 @@ function ParaColar({ rotulo, valor }: { rotulo: string; valor: string }) {
         {rotulo}
       </span>
       <div className="flex items-center gap-2">
-        <code className="flex-1 overflow-x-auto rounded-md bg-muted px-2 py-1.5 text-xs">{valor}</code>
+        <code className="flex-1 overflow-x-auto rounded-xl bg-muted px-2 py-1.5 text-xs">{valor}</code>
         <Button
           size="sm"
           variant="outline"
@@ -146,7 +146,7 @@ export function CanalParceiroClient() {
         </div>
 
         {conectado && (
-          <div className="rounded-md border border-border bg-muted/40 p-3 text-sm">
+          <div className="rounded-xl border border-border bg-muted/40 p-3 text-sm">
             <p className="font-medium">{estado?.display_name ?? t("Número conectado")}</p>
             <p className="text-xs text-muted-foreground">
               {estado?.phone_number ?? t("sem número informado")} · {estado?.status ?? "—"}

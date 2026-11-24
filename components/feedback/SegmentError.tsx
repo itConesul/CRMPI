@@ -39,11 +39,11 @@ export function SegmentError({ error, reset, segment }: SegmentErrorProps) {
   return (
     <main className="flex min-h-[60vh] items-center justify-center p-8">
       <Card className="w-full max-w-md p-8 text-center">
-        <h1 className="text-xl font-semibold">{t("Algo deu errado")}</h1>
+        <h1 className="font-serif text-2xl font-bold">{t("Algo deu errado")}</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           {t("Tente novamente em instantes. Se persistir, contate o suporte com o ID abaixo.")}
         </p>
-        <div className="mt-4 break-all rounded-md bg-muted px-3 py-2 font-mono text-xs">
+        <div className="mt-4 break-all rounded-xl bg-muted px-3 py-2 font-mono text-xs">
           ID: {displayId}
         </div>
         <div className="mt-4 flex justify-center gap-2">

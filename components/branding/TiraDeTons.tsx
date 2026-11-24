@@ -63,7 +63,7 @@ export function TiraDeTons({ tons, legenda }: Props) {
           `Escala de ${tons.length} tons gerada a partir da sua cor, do mais claro ao mais ` +
           `escuro. Os tons em uso estão descritos na lista abaixo.`
         }
-        className="flex overflow-hidden rounded-md border border-border"
+        className="flex overflow-hidden rounded-xl border border-border"
       >
         {tons.map((hex, i) => (
           <div
@@ -85,7 +85,7 @@ export function TiraDeTons({ tons, legenda }: Props) {
           <li key={item.rotulo} className="flex items-center gap-2 text-xs">
             <span
               aria-hidden
-              className="h-4 w-4 shrink-0 rounded-sm border border-border"
+              className="h-4 w-4 shrink-0 rounded-md border border-border"
               style={{ backgroundColor: item.hex }}
             />
             <span className="text-text">{item.rotulo}</span>

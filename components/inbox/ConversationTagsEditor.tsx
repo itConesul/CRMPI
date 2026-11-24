@@ -57,7 +57,7 @@ export function ConversationTagsEditor({ conversationId, orgId, tags }: Props) {
                 onClick={() => remove(tag)}
                 disabled={mutation.isPending}
                 aria-label={`${t("Remover tag")} ${tag}`}
-                className="rounded-sm hover:text-destructive"
+                className="rounded-md hover:text-destructive"
               >
                 <X size={10} weight="bold" aria-hidden />
               </button>

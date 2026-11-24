@@ -9,7 +9,7 @@ export function MediaUnavailable({ kind, className }: { kind: string; className?
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center gap-1 rounded-lg bg-background/40 text-muted-foreground",
+        "flex flex-col items-center justify-center gap-1 rounded-2xl bg-background/40 text-muted-foreground",
         className || "h-24 w-56",
       )}
     >
