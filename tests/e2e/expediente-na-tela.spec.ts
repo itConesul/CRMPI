@@ -6,8 +6,10 @@
  * desabilitados — e que o `manager` e quem está dentro do horário NÃO veem nada disso.
  *
  * ## O que ele NÃO prova
- * A tela de CONFIGURAÇÃO do expediente (T6) e o contador de barrados: ainda não existem. O expediente
- * é gravado por service role, como o `expediente-barra-a-acao.spec.ts` faz.
+ * A tela de CONFIGURAÇÃO do expediente (T6) ainda não existe: o expediente é gravado por service role,
+ * como o `expediente-barra-a-acao.spec.ts` faz. O contador de barrados (`barrados_hoje`, T2d) só é
+ * provado aqui no caminho `null`, porque o e2e do CI NÃO tem Redis; o número é provado no unitário da
+ * rota (`route.test.ts`) e com um Redis real, com a saída colada no PR.
  *
  * ## Relógio
  * Fuso UTC e janelas em torno do relógio do teste: "fora" = uma janela só num dia daqui a 3 dias
@@ -285,6 +287,27 @@ test.describe("expediente na tela do atendente", () => {
     expect(await contarNegados(), "nenhum authz.denied novo por ler o expediente").toBe(antes);
     // Quem nunca é barrado não vê faixa: o `viewer` lê, não age.
     await expect(page.getByTestId("faixa-de-expediente")).toHaveCount(0);
+  });
+
+  test("`barrados_hoje` com o Redis FORA (o do CI): todo papel recebe `null`, a resposta segue 200 e o resto não muda (T2d)", async ({ page }) => {
+    // O e2e do CI não sobe Redis (`UPSTASH_REDIS_REST_URL` aponta para uma porta sem ninguém). O leitor
+    // não pode derrubar a rota nem a faixa que a chama a cada minuto: o campo vem, vale `null`, e o
+    // expediente continua sendo descrito. `admin` fica de fora por ter TOTP (login não completa aqui);
+    // `manager` é o papel que, COM Redis, receberia o número, então é ele que prova o `null` por falha.
+    await gravarExpediente(expedienteFora());
+    const lidos: Record<string, unknown> = {};
+    for (const papel of ["manager", "agent", "viewer"] as const) {
+      await page.context().clearCookies();
+      await login(page, creds.users[papel]!.email);
+      const res = await page.request.get("/api/v1/settings/expediente");
+      expect(res.status(), `${papel}: a leitura do expediente responde 200`).toBe(200);
+      const { data } = (await res.json()) as { data: Record<string, unknown> };
+      expect(Object.prototype.hasOwnProperty.call(data, "barrados_hoje"), `${papel}: o campo existe`).toBe(true);
+      expect(data.barrados_hoje, `${papel}: sem Redis, \`null\``).toBeNull();
+      expect(data, `${papel}: o resto da resposta não mudou`).toMatchObject({ configurado: true, restringe: true, dentro: false });
+      lidos[papel] = data.barrados_hoje;
+    }
+    medicoes.barradosHojeSemRedis = lidos;
   });
 
   test("agent DENTRO do expediente (janela que vira o dia): nenhuma faixa, campo de resposta de sempre", async ({ page }) => {
