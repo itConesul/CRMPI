@@ -40,7 +40,12 @@ export async function PUT(req: NextRequest): Promise<Response> {
   if (supportDenied) return supportDenied;
 
   const requestId = requestIdDe(req);
-  const authz = await requireRole("viewer", { requestId, resource: "push_subscriptions" });
+  const authz = await requireRole("viewer", {
+    requestId,
+    resource: "push_subscriptions",
+    // PRD-01 (#67): inscrição de push é do navegador da própria pessoa, não é ação de atendimento.
+    expediente: { isenta: "inscrição de push do próprio navegador" },
+  });
   if (!authz.ok) return authz.response;
   const t = (texto: string) => traduzir(texto, authz.user.idioma);
   if (!vapidPronto()) {
@@ -99,7 +104,12 @@ export async function DELETE(req: NextRequest): Promise<Response> {
   if (supportDenied) return supportDenied;
 
   const requestId = requestIdDe(req);
-  const authz = await requireRole("viewer", { requestId, resource: "push_subscriptions" });
+  const authz = await requireRole("viewer", {
+    requestId,
+    resource: "push_subscriptions",
+    // PRD-01 (#67): inscrição de push é do navegador da própria pessoa, não é ação de atendimento.
+    expediente: { isenta: "inscrição de push do próprio navegador" },
+  });
   if (!authz.ok) return authz.response;
   const t = (texto: string) => traduzir(texto, authz.user.idioma);
 

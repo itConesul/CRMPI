@@ -49,6 +49,38 @@ describe("elegibilidade com origem explícita", () => {
     await loadEligibleAttendants(db, "org", now, { kind: "organization_summary" });
     expect(filters.some(([table]) => table === "channel_routing_policies")).toBe(false);
   });
+  describe("expediente da organização (RF-12 e RF-6)", () => {
+    // `now` é um domingo 12:00 em São Paulo; a janela é só de segunda, 08:00–09:00 ⇒ FORA do expediente.
+    const foraDoExpediente = {
+      organizations: {
+        settings: { business_hours: { timezone: "America/Sao_Paulo", windows: [{ dow: 1, start: "08:00", end: "09:00" }] } },
+      },
+    };
+    const equipe = {
+      user_organizations: [
+        { user_id: "ana", role: "agent" },
+        { user_id: "bia", role: "manager" },
+        { user_id: "cris", role: "admin" },
+      ],
+      attendant_availability: [
+        { user_id: "ana", capacity: 2, schedule: {} },
+        { user_id: "bia", capacity: 2, schedule: {} },
+        { user_id: "cris", capacity: 2, schedule: {} },
+      ],
+    };
+
+    it("fora do expediente só o `agent` sai da distribuição; manager e admin continuam elegíveis", async () => {
+      const { db } = fixture({ ...equipe, ...foraDoExpediente });
+      const ids = (await loadEligibleAttendants(db, "org", now, scope)).map((c) => c.userId).sort();
+      expect(ids).toEqual(["bia", "cris"]);
+    });
+
+    it("sem expediente configurado o `agent` segue elegível (comportamento de antes)", async () => {
+      const { db } = fixture({ ...equipe });
+      const ids = (await loadEligibleAttendants(db, "org", now, scope)).map((c) => c.userId).sort();
+      expect(ids).toEqual(["ana", "bia", "cris"]);
+    });
+  });
   it("canal inexistente não autoriza fallback", async () => {
     const { db } = fixture({ channel_sessions: null });
     await expect(loadEligibleAttendants(db, "org", now, scope)).rejects.toThrow("routing_channel_invalid");

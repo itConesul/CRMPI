@@ -41,7 +41,13 @@ export async function PATCH(
   const requestId = requestIdDe(req);
   const { user_id: targetUserId } = await ctx.params;
 
-  const authz = await requireRole("agent", { requestId, resource: "attendant_availability" });
+  const authz = await requireRole("agent", {
+    requestId,
+    resource: "attendant_availability",
+    // PRD-01 (#67): o atendente precisa poder marcar a PRÓPRIA disponibilidade (ficar indisponível,
+    // heartbeat) fora do expediente; barrar isto o deixaria "disponível" no roteamento sem como sair.
+    expediente: { isenta: "o atendente gerencia a própria disponibilidade" },
+  });
   if (!authz.ok) return authz.response;
   const t = (texto: string) => traduzir(texto, authz.user.idioma);
   const { user: authUser, org: activeOrg } = authz;
