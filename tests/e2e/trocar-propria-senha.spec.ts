@@ -53,6 +53,9 @@ test.beforeAll(async () => {
       legal_name: "Loja E2E Troca de Senha",
       status: "active",
       created_by: userId,
+      // Já onboardada: o que se mede aqui é a troca de senha, não o wizard. Sem
+      // isto o app manda a pessoa para /onboarding e a tela de Segurança nunca abre.
+      onboarded_at: new Date().toISOString(),
     })
     .select("id")
     .single();
