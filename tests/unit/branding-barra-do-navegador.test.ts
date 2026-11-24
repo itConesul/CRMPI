@@ -28,28 +28,22 @@ describe("cor da barra do navegador", () => {
   const bg = (tema: TemaDaRegua) =>
     tema.base.find((t) => t.chave === "--color-bg")?.hex;
 
-  it("as duas entradas saem da régua, não de literal digitado", () => {
+  it("a entrada sai da régua, não de literal digitado, e não depende do tema do sistema", () => {
     const cores = coresDaBarraDoNavegador(REGUA_DO_PRODUTO);
+    // Uma entrada só, e SEM `media`: o produto é sempre claro, então a barra do
+    // navegador também é — mesmo em quem tem o sistema operacional escuro.
     expect(cores).toEqual<CorDaBarra[]>([
-      {
-        media: "(prefers-color-scheme: light)",
-        // Sem `!`: se a régua perder o token, `toEqual` compara com `undefined`
-        // e o caso reprova — que é o desfecho certo.
-        color: bg(REGUA_DO_PRODUTO.claro) as string,
-      },
-      {
-        media: "(prefers-color-scheme: dark)",
-        color: bg(REGUA_DO_PRODUTO.escuro) as string,
-      },
+      // Sem `!`: se a régua perder o token, `toEqual` compara com `undefined`
+      // e o caso reprova — que é o desfecho certo.
+      { color: bg(REGUA_DO_PRODUTO.claro) as string },
     ]);
+    expect(JSON.stringify(cores)).not.toContain("prefers-color-scheme");
   });
 
-  it("a régua de hoje tem os dois fundos — senão o caso acima seria vazio", () => {
+  it("a régua de hoje tem o fundo claro — senão o caso acima seria vazio", () => {
     // Guarda de vacuidade: sem ela, uma régua sem `--color-bg` faria o teste
     // acima comparar `[]` com `[]` e passar como se estivesse vigiando.
     expect(bg(REGUA_DO_PRODUTO.claro)).toMatch(/^#[0-9a-f]{6}$/);
-    expect(bg(REGUA_DO_PRODUTO.escuro)).toMatch(/^#[0-9a-f]{6}$/);
-    expect(bg(REGUA_DO_PRODUTO.claro)).not.toBe(bg(REGUA_DO_PRODUTO.escuro));
   });
 
   it("tema sem `--color-bg` some da lista em vez de derrubar toda tela", () => {
@@ -58,11 +52,9 @@ describe("cor da barra do navegador", () => {
     // e é o caso acima que impede que a degradação passe despercebida.
     const semFundo: Regua = {
       ...REGUA_DO_PRODUTO,
-      escuro: { ...REGUA_DO_PRODUTO.escuro, base: [] },
+      claro: { ...REGUA_DO_PRODUTO.claro, base: [] },
     };
-    const cores = coresDaBarraDoNavegador(semFundo);
-    expect(cores).toHaveLength(1);
-    expect(cores[0]?.media).toBe("(prefers-color-scheme: light)");
+    expect(coresDaBarraDoNavegador(semFundo)).toHaveLength(0);
   });
 
   it("o layout não redigita os hexes de fundo — a quarta cópia reprova aqui", () => {
