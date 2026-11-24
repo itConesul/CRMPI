@@ -18,7 +18,8 @@ import { assertServiceBoundarySupabase } from "@/lib/atendimento/origem";
  *        pipeline dele, se o tenant tiver criado essa etapa (opt-in — ver
  *        `lib/leads/handoff-stage-move.ts`). Pipeline sem essa etapa: no-op.
  *   3. emit_event('ai.handoff_triggered') no event_log
- *   4. Realtime broadcast no channel 'org:<org>:queue' (event 'handoff_pending')
+ *   4. (sem broadcast: o canal público `org:<org>:queue` foi removido — vazava
+ *      `conversation_id` e `reason` a quem tivesse só a anon key)
  *   5. api_audit_log action='ai.handoff_triggered'
  *
  * IMPORTANTE: nunca propaga exceção pro caller. O worker chamador segue feliz.
@@ -256,24 +257,14 @@ export async function triggerHandoff(
       });
     }
 
-    // Step 4 — Realtime broadcast so the agent UI lights up immediately.
-    try {
-      const channel = admin.channel(`org:${input.organizationId}:queue`);
-      await channel.send({
-        type: "broadcast",
-        event: "handoff_pending",
-        payload: {
-          conversation_id: input.conversationId,
-          reason: input.reason,
-        },
-      });
-      await admin.removeChannel(channel);
-    } catch (err) {
-      logger.warn("[handoff-orchestrator] realtime broadcast failed", {
-        conversation_id: input.conversationId,
-        error: err instanceof Error ? err.message : String(err),
-      });
-    }
+    // Não há broadcast aqui, DE PROPÓSITO. Este passo já enviou
+    // `{ conversation_id, reason }` em `org:<org>:queue`, canal público: um
+    // cliente anônimo, só com a anon key, o escutava para qualquer organização
+    // (PR #91, T0(b)). Nenhum código do app o assinava. A UI do agente acende
+    // pelo `postgres_changes` de `conversations` (que passa pela RLS) e pelo
+    // `event_log` do passo 3. Se um dia um canal de broadcast for preciso, ele
+    // nasce privado, com política em `realtime.messages`, e a exceção entra em
+    // `tests/unit/handoff-nao-emite-em-canal-publico.test.ts`.
 
     // Step 5 — audit log (fire-and-forget; never blocks).
     const { error: auditErr } = await admin.from("api_audit_log").insert({
