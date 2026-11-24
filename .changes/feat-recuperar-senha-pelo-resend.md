@@ -10,5 +10,5 @@ padrão do Supabase, e o link só funcionava no mesmo navegador em que a pessoa 
 a recuperação: aberto no celular, ou depois de limpar os dados do navegador, ele falhava.
 O novo link funciona em qualquer navegador.
 
-Se a instalação não tem o Resend configurado, a tela de recuperação agora avisa isso em
-vez de dizer que enviou. Para quem já recebe os convites por e-mail, nada muda.
+Se a instalação não tem o Resend configurado, nada muda: o e-mail continua saindo pelo
+Supabase, como antes. Você não precisa fazer nada ao atualizar.

@@ -5,7 +5,7 @@
  *  - o link é `token_hash` (abre em qualquer navegador), nunca `code` PKCE;
  *  - o domínio do link é o público, nunca o header Origin de quem fez o POST;
  *  - conta inexistente e conta existente respondem IGUAL (sem oráculo);
- *  - sem Resend a resposta é honesta e não depende do e-mail digitado.
+ *  - sem Resend (ou com o envio falhando) o Supabase assume, como sempre foi.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -15,10 +15,14 @@ const generateLink = vi.fn();
 const sendEmail = vi.fn();
 const emailConfigurado = vi.fn();
 const audit = vi.fn(async () => undefined);
+const resetPasswordForEmail = vi.fn();
 
 vi.mock("next/headers", () => ({ headers: vi.fn() }));
 vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: () => ({ auth: { admin: { generateLink } } }),
+}));
+vi.mock("@/lib/supabase/server", () => ({
+  createClient: async () => ({ auth: { resetPasswordForEmail } }),
 }));
 vi.mock("@/lib/email/resend", () => ({
   sendEmail: (...a: unknown[]) => sendEmail(...a),
@@ -45,6 +49,8 @@ describe("requestPasswordReset", () => {
     generateLink.mockReset();
     sendEmail.mockReset();
     audit.mockClear();
+    resetPasswordForEmail.mockReset();
+    resetPasswordForEmail.mockResolvedValue({ error: null });
     emailConfigurado.mockReturnValue(true);
     sendEmail.mockResolvedValue({ ok: true, id: "e1" });
     vi.mocked(headers).mockResolvedValue({
@@ -83,16 +89,21 @@ describe("requestPasswordReset", () => {
     expect(sendEmail).not.toHaveBeenCalled();
   });
 
-  it("sem Resend configurado diz a verdade, antes de olhar a conta", async () => {
+  it("sem Resend configurado o Supabase envia e o Resend nem é tocado", async () => {
     emailConfigurado.mockReturnValue(false);
     const { requestPasswordReset } = await import("./requestPasswordReset");
     const res = await requestPasswordReset({ email: "ana@example.com" });
 
-    expect(res).toEqual({ ok: false, error: "email_not_configured" });
+    expect(res).toEqual({ ok: true });
     expect(generateLink).not.toHaveBeenCalled();
+    expect(sendEmail).not.toHaveBeenCalled();
+    expect(resetPasswordForEmail).toHaveBeenCalledTimes(1);
+    expect(resetPasswordForEmail.mock.calls[0]?.[1]).toEqual({
+      redirectTo: expect.stringMatching(/\/auth\/confirm\?type=recovery$/),
+    });
   });
 
-  it("falha do Resend vira request_failed e fica no audit sem o e-mail em claro", async () => {
+  it("falha do Resend cai no Supabase, e o motivo fica no audit sem o e-mail em claro", async () => {
     generateLink.mockResolvedValue({
       data: { properties: { hashed_token: "h1" } },
       error: null,
@@ -101,7 +112,8 @@ describe("requestPasswordReset", () => {
     const { requestPasswordReset } = await import("./requestPasswordReset");
     const res = await requestPasswordReset({ email: "ana@example.com" });
 
-    expect(res).toEqual({ ok: false, error: "request_failed" });
+    expect(res).toEqual({ ok: true });
+    expect(resetPasswordForEmail).toHaveBeenCalledTimes(1);
     const chamadas = JSON.stringify(audit.mock.calls);
     expect(chamadas).toContain("dominio_nao_verificado");
     expect(chamadas).not.toContain("ana@example.com");
