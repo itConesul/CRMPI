@@ -10,7 +10,7 @@ Tomadas pelo dono do produto em 2026-11-24 e registradas na #99 pelo Sciuba:
 | 2026-11-24 | Quem apaga contato | **Só `manager` ou `admin`.** Rota a `manager`, botão some para `agent`/`viewer`, teste de 403 | [#99, pedido da spec](https://github.com/itConesul/CRMPI/issues/99#issuecomment-7133157545) |
 | 2026-11-24 | Mensagem do 409 | Orienta **pedir a um administrador**, não "anonimize": anonimizar exige `admin` (+ MFA) | idem |
 | 2026-11-24 | Processo | A #99 ganha spec SDD própria, em PR de spec, **antes** de qualquer migration; T0 = prova do `viewer` e da sessão de suporte | idem |
-| 2026-11-24 | **P1** — classificação do fragmento | **`impacto: exige_acao`**, que pela régua (`BUMP_DO_IMPACTO`) leva a um release **major** (hoje v1.23.7, viraria **2.0.0**). Motivo: algo que existia sumiu, o direito de `agent` excluir contato. O fragmento traz "Requer atenção" avisando que `agent` e `viewer` perdem o botão e que apagar contato com conversa passa a ser recusado. O release major é decisão **já tomada** | [#99, P1 a P3](https://github.com/itConesul/CRMPI/issues/99#issuecomment-7135555771) |
+| 2026-11-24 | **P1** — classificação do fragmento | **`impacto: exige_acao`**, que pela régua (`BUMP_DO_IMPACTO`) leva a um release **major** (hoje v1.23.7, viraria **2.0.0**; **a v1.24.0 saiu depois, em 2026-11-24 19:06, e o major continua sendo `2.0.0`**). Motivo: algo que existia sumiu, o direito de `agent` excluir contato. O fragmento traz "Requer atenção" avisando que `agent` e `viewer` perdem o botão e que apagar contato com conversa passa a ser recusado. O release major é decisão **já tomada** | [#99, P1 a P3](https://github.com/itConesul/CRMPI/issues/99#issuecomment-7135555771) |
 | 2026-11-24 | **P2** — quem passa em "manager ou admin" | **Como medido na T0b** (`02-design.md` §1.3): membro `manager`/`admin` e sessão de suporte `full` (conta como `admin`) passam; suporte somente leitura e `platform admin` sem membership **não**, na rota e na tela. A tela espelha a rota e **não** soma `is_platform_admin` | idem |
 | 2026-11-24 | **P3** — a #99 | **Fica aberta e é retitulada pelo Sciuba**, para dizer o que falta (o `UPDATE` direto em `conversations`). A spec e o PR de código citam **"Ref. #99"**, **nunca** "Closes" | idem |
 | 2026-11-24 | **RF-4b** — contato com compromisso | **Confirmado.** Contato com compromisso e sem conversa continua **recusado**, como já é hoje; só a mensagem explica | [#105, confirmação](https://github.com/itConesul/CRMPI/pull/105#issuecomment-7135869227) |
@@ -40,7 +40,11 @@ Itens que **eu** achei ao responder, fora do que foi pedido:
 - O comentário do baseline (`baseline.sql:15206-15207`, "as duas únicas FKs RESTRICT do schema") repete a
   frase falsa. Proposta na T3: corrigir só o texto. **Decisão do revisor.**
 - Apagar contato **sem** conversa também leva em cascata 12 tabelas (notas, demandas, follow-ups…). Fora de
-  escopo; anotado em `01-requisitos.md` para a issue da D.
+  escopo; anotado em `01-requisitos.md` e levado para a issue da D, a **[#116](https://github.com/itConesul/CRMPI/issues/116)**
+  (aberta em 2026-11-24, T8). A segunda issue de seguimento (C / `UPDATE` direto) é a **própria #99**.
 
 ## Aprovação
-- [ ] **Aprovada por:** <nome> em <AAAA-MM-DD> — implementação liberada
+- [x] **Aprovada por:** Sciuba em 2026-11-24 — implementação liberada. `APPROVED` sobre `d949618` no PR #105
+  (mergeado em `6149baa`). Condições do revisor para o PR de código: **seguir a spec à risca**, rodar
+  **`pnpm test:db` completo** e **provar pela tela** que `agent` e `viewer` não veem o botão "Excluir contato".
+  O PR de código cita "Ref. #99", nunca "Closes".
