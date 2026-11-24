@@ -2,94 +2,52 @@
 
 import * as React from "react";
 
-export type Theme = "light" | "dark" | "system";
-export type ResolvedTheme = "light" | "dark";
+/**
+ * O PRODUTO É SEMPRE CLARO — decisão do dono, sem opção de trocar.
+ *
+ * Este provider não lê `localStorage` nem `prefers-color-scheme`: o tema é `light`
+ * e pronto. O que sobrou do mecanismo antigo existe por um único consumidor, o kit
+ * visual (`/vitrine-agenda`), que prova as cores nos dois temas: lá `setTheme` troca
+ * o tema SÓ NA MEMÓRIA daquela aba, e recarregar volta ao claro. Nenhuma tela do
+ * produto chama `setTheme`.
+ *
+ * `STORAGE_KEY` continua aqui só para APAGAR a escolha que usuários antigos deixaram
+ * no navegador — sem isso, quem tinha ficado no escuro não teria como saber por que o
+ * valor guardado deixou de valer. (O script anti-flash do `app/layout.tsx` faz o mesmo
+ * antes do primeiro paint.)
+ */
+export type Theme = "light" | "dark";
+export type ResolvedTheme = Theme;
 
 const STORAGE_KEY = "deskcomm-theme";
 
 type ThemeContextValue = {
-  /** User preference: light, dark, or system. */
   theme: Theme;
-  /** Effective theme applied to the DOM (system collapsed to light/dark). */
   resolvedTheme: ResolvedTheme;
+  /** Só na memória, e só o kit visual usa. Não persiste. */
   setTheme: (theme: Theme) => void;
-  toggle: () => void;
 };
 
 const ThemeContext = React.createContext<ThemeContextValue | null>(null);
 
-function readStoredTheme(): Theme {
-  if (typeof window === "undefined") return "system";
-  try {
-    const v = window.localStorage.getItem(STORAGE_KEY);
-    if (v === "light" || v === "dark" || v === "system") return v;
-  } catch {
-    // localStorage indisponível (modo privado, sandbox) — segue com default.
-  }
-  return "system";
-}
-
-function getSystemTheme(): ResolvedTheme {
-  if (typeof window === "undefined") return "light";
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-}
-
-function applyTheme(resolved: ResolvedTheme) {
-  if (typeof document === "undefined") return;
-  document.documentElement.setAttribute("data-theme", resolved);
-}
-
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  // Lê do storage no primeiro render do client (não causa hydration mismatch
-  // porque o inline script no layout já setou o data-theme antes do paint).
-  const [theme, setThemeState] = React.useState<Theme>(() => readStoredTheme());
-  const [systemTheme, setSystemTheme] = React.useState<ResolvedTheme>(() =>
-    getSystemTheme(),
-  );
+  const [theme, setTheme] = React.useState<Theme>("light");
 
-  // Listener pra mudanças do prefers-color-scheme.
   React.useEffect(() => {
-    const mql = window.matchMedia("(prefers-color-scheme: dark)");
-    const onChange = (e: MediaQueryListEvent) => {
-      setSystemTheme(e.matches ? "dark" : "light");
-    };
-    mql.addEventListener("change", onChange);
-    return () => mql.removeEventListener("change", onChange);
-  }, []);
-
-  const resolvedTheme: ResolvedTheme = theme === "system" ? systemTheme : theme;
-
-  // Aplica no DOM sempre que o tema efetivo muda.
-  React.useEffect(() => {
-    applyTheme(resolvedTheme);
-  }, [resolvedTheme]);
-
-  const setTheme = React.useCallback((next: Theme) => {
-    setThemeState(next);
     try {
-      window.localStorage.setItem(STORAGE_KEY, next);
+      window.localStorage.removeItem(STORAGE_KEY);
     } catch {
-      // Persistência opcional — falha silenciosamente.
+      // localStorage indisponível (modo privado, sandbox) — nada a apagar.
     }
   }, []);
 
-  const toggle = React.useCallback(() => {
-    setThemeState((current) => {
-      const currentResolved =
-        current === "system" ? getSystemTheme() : current;
-      const next: Theme = currentResolved === "dark" ? "light" : "dark";
-      try {
-        window.localStorage.setItem(STORAGE_KEY, next);
-      } catch {
-        // ignore
-      }
-      return next;
-    });
-  }, []);
+  React.useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+  }, [theme]);
 
   const value = React.useMemo<ThemeContextValue>(
-    () => ({ theme, resolvedTheme, setTheme, toggle }),
-    [theme, resolvedTheme, setTheme, toggle],
+    () => ({ theme, resolvedTheme: theme, setTheme }),
+    [theme],
   );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

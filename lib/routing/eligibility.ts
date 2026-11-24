@@ -57,20 +57,60 @@ export function localMoment(now: Date, timezone: string): { dow: number; hhmm: s
   return { dow, hhmm };
 }
 
+/** Uma janela: `dow` 0=domingo … 6=sábado, "HH:MM" de início e de fim (fim exclusivo). */
+export interface JanelaDeHorario {
+  dow: number;
+  start: string;
+  end: string;
+}
+
+/**
+ * O momento local (`dow` + "HH:MM") cai nesta janela? — a ÚNICA implementação dessa pergunta.
+ *
+ * Janela comum (`start < end`): `dow` igual e `start <= hhmm < end`.
+ *
+ * Janela que VIRA o dia (`end < start`, ex.: 22:00–06:00), só com `viradaDeDia: true`: pertence ao
+ * `dow` em que COMEÇA — vale a parte da noite nesse dia (`hhmm >= start`) e a madrugada do dia
+ * SEGUINTE (`hhmm < end`, `dow + 1` módulo 7, então sábado → domingo). `end = "00:00"` é a
+ * meia-noite: `08:00–00:00` vai até o fim do dia.
+ *
+ * Com `viradaDeDia` desligado (o padrão) uma janela com `end < start` **nunca contém nada**, que é
+ * exatamente o que esta função sempre fez: o horário por atendente e a agenda não mudam.
+ */
+export function janelaContem(
+  janela: JanelaDeHorario,
+  dow: number,
+  hhmm: string,
+  viradaDeDia = false,
+): boolean {
+  if (janela.start < janela.end) {
+    return janela.dow === dow && hhmm >= janela.start && hhmm < janela.end;
+  }
+  if (!viradaDeDia || janela.start === janela.end) return false;
+  return (
+    (janela.dow === dow && hhmm >= janela.start) ||
+    ((janela.dow + 1) % 7 === dow && hhmm < janela.end)
+  );
+}
+
 /**
  * `now` cai dentro de alguma janela do schedule?
  * `windows` vazio (default do DB `{}`) = sem restrição de horário ⇒ true (24/7);
  * janelas existem para RESTRINGIR, não para habilitar.
+ *
+ * `opts.viradaDeDia` liga o tratamento de janela que atravessa a meia-noite — só o expediente da
+ * organização o liga (ver `janelaContem`).
  */
 export function isWithinSchedule(
-  schedule: Pick<AvailabilitySchedule, "timezone" | "windows"> | null | undefined,
+  schedule: { timezone?: string | null; windows?: readonly JanelaDeHorario[] | null } | null | undefined,
   now: Date,
+  opts: { viradaDeDia?: boolean } = {},
 ): boolean {
   const windows = schedule?.windows ?? [];
   if (windows.length === 0) return true;
   const timezone = schedule?.timezone || "America/Sao_Paulo";
   const { dow, hhmm } = localMoment(now, timezone);
-  return windows.some((w) => w.dow === dow && hhmm >= w.start && hhmm < w.end);
+  return windows.some((w) => janelaContem(w, dow, hhmm, opts.viradaDeDia ?? false));
 }
 
 /** Heartbeat mais velho que o timeout ⇒ considerado offline (AT-08). */
@@ -91,13 +131,25 @@ export interface AttendantEligibilityInput {
   /** Conversas abertas atribuídas ao atendente (carga atual). */
   currentLoad: number;
   schedule?: Pick<AvailabilitySchedule, "timezone" | "windows"> | null;
+  /**
+   * Expediente da ORGANIZAÇÃO (`organizations.settings.business_hours`, PRD-01 / #67). Camada
+   * somada ao horário próprio do atendente: política da empresa ∧ disponibilidade pessoal.
+   *
+   * **Ausente (`undefined`/`null`) = sem restrição**, então nenhum chamador existente muda de
+   * comportamento até alguém configurar um expediente. Janela que vira o dia é entendida aqui.
+   */
+  expediente?: { timezone?: string | null; windows?: readonly JanelaDeHorario[] | null } | null;
 }
 
-/** disponível ∧ com folga (carga < capacidade) ∧ dentro do horário (§5). */
+/**
+ * disponível ∧ com folga (carga < capacidade) ∧ dentro do horário próprio (§5) ∧ dentro do
+ * expediente da organização (RF-12: fora dele o `agent` não entra na distribuição).
+ */
 export function isAttendantEligible(input: AttendantEligibilityInput, now: Date): boolean {
   return (
     input.isAvailable &&
     input.currentLoad < input.capacity &&
-    isWithinSchedule(input.schedule ?? null, now)
+    isWithinSchedule(input.schedule ?? null, now) &&
+    isWithinSchedule(input.expediente ?? null, now, { viradaDeDia: true })
   );
 }

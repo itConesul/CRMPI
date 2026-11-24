@@ -87,6 +87,15 @@ function classificar(nome: string, mensagem: string): NonNullable<SendResult["er
   return "send_failed";
 }
 
+/**
+ * O envio está configurado? Pergunta que NÃO depende de quem vai receber — por isso
+ * pode ser respondida ao usuário sem revelar se um e-mail tem conta (recuperação
+ * de senha: `app/actions/auth/requestPasswordReset.ts`).
+ */
+export function emailConfigurado(): boolean {
+  return getClient() !== null && fromAddress() !== null;
+}
+
 export async function sendEmail(args: SendArgs): Promise<SendResult> {
   const client = getClient();
   const from = fromAddress(args.fromName);

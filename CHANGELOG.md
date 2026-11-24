@@ -8,6 +8,63 @@ Se você roda o DeskcommCRM numa VPS, **leia a seção da versão para a qual es
 
 ## [Não lançado]
 
+## [1.24.0] — 2026-11-24
+
+### Alterado
+
+- **O fundo das mensagens da conversa ganhou um degradê cinza bem suave** Ao abrir uma conversa, a área onde ficam as mensagens agora tem um fundo em degradê, de um
+  cinza claro a um cinza um pouco mais escuro. Só o fundo muda: os balões, o cabeçalho e o
+  campo de resposta continuam como estavam.
+
+  Você não precisa fazer nada ao atualizar.
+
+- **O e-mail de "esqueci minha senha" sai com a sua marca e o link abre em qualquer aparelho** O e-mail de recuperação de senha agora é enviado pelo mesmo serviço de e-mail dos
+  convites (Resend), com o nome e as cores da sua instalação. Antes ele saía no modelo
+  padrão do Supabase, e o link só funcionava no mesmo navegador em que a pessoa tinha pedido
+  a recuperação: aberto no celular, ou depois de limpar os dados do navegador, ele falhava.
+  O novo link funciona em qualquer navegador.
+
+  Se a instalação não tem o Resend configurado, nada muda: o e-mail continua saindo pelo
+  Supabase, como antes. Você não precisa fazer nada ao atualizar.
+
+- **O sistema agora é sempre claro, sem opção de trocar o tema** O Deskcomm passou a usar só o tema claro, em todas as telas, mesmo para quem tem o
+  computador ou o celular no modo escuro. O botão que alternava entre claro, escuro e
+  automático foi retirado do menu, e o aviso de confirmação (os balões no canto da tela) e a
+  cor da barra do navegador também seguem o tema claro. Quem tinha escolhido o escuro volta
+  ao claro no próximo acesso.
+
+  Você não precisa fazer nada ao atualizar.
+
+### Corrigido
+
+- **O handoff para um humano deixa de publicar num canal aberto** Quando a IA passava uma conversa para um atendente, o sistema também enviava o
+  identificador da conversa e o motivo para um canal de tempo real que, no teste feito,
+  qualquer pessoa com a chave pública do projeto conseguiu escutar. Nenhuma tela usava esse
+  canal, então o envio só expunha o dado. Ele foi removido. A passagem para o
+  humano, a fila e as notificações funcionam como antes.
+
+  Você não precisa fazer nada ao atualizar.
+
+## [1.23.7] — 2026-11-24
+
+### Alterado
+
+- **Novo visual em todo o sistema, com a identidade da Cone Sul** O sistema ganhou uma aparência nova: fundo claro em tons de cinza-azulado, títulos
+  de página em fonte com serifa, cantos mais arredondados e botões em caixa-alta.
+
+  Só o visual mudou. Rotas, textos, menus e funções são os mesmos, e você não precisa
+  fazer nada ao atualizar. A cor da sua marca continua personalizável pela tela de
+  marca, como antes.
+
+### Corrigido
+
+- **Agenda, visão Mês, mostra os compromissos dos dias de outro mês** Na visão Mês, a grade mostra seis semanas, inclusive os dias esmaecidos do mês
+  anterior e do seguinte. Esses dias apareciam vazios mesmo quando havia
+  compromisso ou horário ocupado pelo Google neles. Agora a agenda busca tudo o
+  que a grade desenha, e os compromissos desses dias aparecem.
+
+  Você não precisa fazer nada ao atualizar. As visões Semana e Dia não mudaram.
+
 ## [1.23.6] — 2026-11-17
 
 ### Alterado
@@ -3532,7 +3589,9 @@ Primeira versão marcada do DeskcommCRM. O projeto vinha sendo desenvolvido publ
 
 - **Node 22 é obrigatório para desenvolvimento.** A suíte de invariantes instancia o cliente do Supabase, que exige o `WebSocket` global — nativo apenas a partir do Node 22. Isso não afeta quem apenas hospeda: a VPS roda a imagem pronta.
 
-[Não lançado]: https://github.com/itConesul/CRMPI/compare/v1.23.6...HEAD
+[Não lançado]: https://github.com/itConesul/CRMPI/compare/v1.24.0...HEAD
+[1.24.0]: https://github.com/itConesul/CRMPI/compare/v1.23.7...v1.24.0
+[1.23.7]: https://github.com/itConesul/CRMPI/compare/v1.23.6...v1.23.7
 [1.23.6]: https://github.com/itConesul/CRMPI/compare/v1.23.5...v1.23.6
 [1.23.5]: https://github.com/itConesul/CRMPI/compare/v1.23.4...v1.23.5
 [1.23.4]: https://github.com/itConesul/CRMPI/compare/v1.23.3...v1.23.4

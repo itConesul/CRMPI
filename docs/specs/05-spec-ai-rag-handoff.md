@@ -1087,9 +1087,11 @@ async function triggerHandoff(opts: HandoffOpts) {
     reason,
   });
 
-  // 4. Realtime broadcast para atendentes online
-  await sb.channel(`org:${opts.organization_id}:queue`)
-    .send({ type: "broadcast", event: "handoff_pending", payload: { conversation_id, reason } });
+  // 4. (REMOVIDO — PR #100) Realtime broadcast em `org:<org>:queue`. O canal era público
+  //    (sem `private: true`, sem política em `realtime.messages`) e nenhum código o assinava.
+  //    A UI do atendente acende por `postgres_changes` de `conversations` (RLS) e pelo
+  //    `event_log` do passo 3. Broadcast novo nasce privado e entra como exceção com motivo
+  //    em `tests/unit/handoff-nao-emite-em-canal-publico.test.ts`.
 }
 ```
 
