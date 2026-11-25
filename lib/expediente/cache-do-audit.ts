@@ -48,7 +48,7 @@ interface Estado {
  * depois de a rota mudar o expediente para "dentro", ainda saiu marcada como "fora". `Symbol.for` dá a
  * mesma chave a todas as cópias. Vigiado por `cache-do-audit.instancias.test.ts`.
  */
-const CHAVE_DO_ESTADO = Symbol.for("deskcomm.expediente.cache-do-audit");
+const CHAVE_DO_ESTADO = Symbol.for("expediente.cache-do-audit");
 const global = globalThis as unknown as Record<symbol, Estado | undefined>;
 const estado: Estado = (global[CHAVE_DO_ESTADO] ??= { cache: new Map(), falhas: new Map() });
 const { cache, falhas } = estado;
