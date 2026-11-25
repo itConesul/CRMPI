@@ -40,6 +40,8 @@ const NAV_ALLOWLIST: Record<string, string> = {
     "redirect para /app/connections?aba=oficial desde o PR #105 — conectar canal passou a ter um lugar só. Conexões é a porta; a aba é navegação interna dela",
   "/app/settings/templates":
     "redirect para /app/connections?aba=oficial&sub=templates — template da Meta só existe por causa do canal oficial, e vive como sub-aba dele",
+  "/app/fora-de-expediente":
+    "destino do link da faixa de expediente (FaixaDeExpediente), que aparece no shell só para o `agent` fora do horário — a porta é a faixa, no momento exato em que a pessoa precisa entender o bloqueio. Item de menu fixo seria ruído o resto do tempo; a página é informativa e nunca é barrada (PRD-01 / #67)",
   "/app/settings/atualizacao":
     "porta é o rodapé de versão (VersionFooter), que aparece justamente quando há versão nova — melhor que um card fixo. Além disso é só do dono do servidor (is_platform_admin), papel que o registro não modela",
 };

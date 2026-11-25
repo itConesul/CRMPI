@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useT } from "@/hooks/i18n/useT";
 import {
   forwardRef,
@@ -17,6 +18,7 @@ import { AudioRecorder } from "@/components/inbox/composer/AudioRecorder";
 import { ReplyReviewPanel } from "@/components/inbox/composer/ReplyReviewPanel";
 import { EmojiButton } from "@/components/inbox/composer/EmojiButton";
 import { resolveSlash, TemplateMenu } from "@/components/inbox/composer/TemplateMenu";
+import { useExpedienteBarra } from "@/hooks/expediente/useExpediente";
 import { useCreateNote } from "@/hooks/inbox/useCreateNote";
 import { useMessageTemplates, type MessageTemplate } from "@/hooks/inbox/useMessageTemplates";
 import { X } from "lucide-react";
@@ -74,6 +76,10 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
   ref,
 ) {
   const t = useT();
+  // PRD-01 (#67): fora do expediente o `agent` LÊ a conversa, mas responder e anotar são recusados pelo
+  // servidor (403 OUT_OF_WORK_HOURS). O campo trava aqui, com o motivo à vista, em vez de deixar a
+  // pessoa digitar uma mensagem que será recusada.
+  const { barrado: foraDoExpediente } = useExpedienteBarra();
   const [text, setText] = useState("");
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [contactPickerOpen, setContactPickerOpen] = useState(false);
@@ -192,6 +198,20 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
     return (
       <div className="border-t border-border bg-muted/40 px-4 py-3 text-center text-xs text-muted-foreground">
         {blockedReason}
+      </div>
+    );
+  }
+
+  if (foraDoExpediente) {
+    return (
+      <div
+        className="border-t border-border bg-muted/40 px-4 py-3 text-center text-xs text-muted-foreground"
+        data-testid="composer-barrado-por-expediente"
+      >
+        {t("Fora do expediente da empresa. Você pode ler esta conversa, mas só consegue responder ou anotar quando o expediente abrir.")}{" "}
+        <Link href="/app/fora-de-expediente" className="font-medium underline underline-offset-4">
+          {t("Saiba mais")}
+        </Link>
       </div>
     );
   }

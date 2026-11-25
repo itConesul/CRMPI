@@ -22,6 +22,8 @@ import { apiClient } from "@/lib/api/client";
 export interface EtapaDoFunil {
   id: string;
   name: string;
+  /** `#rrggbb` do cabeçalho da coluna, ou `null` (aspecto de fábrica). */
+  color?: string | null;
   is_won: boolean;
   is_lost: boolean;
   /** Quem mexeu nesta etapa por último (migration 0101). `null` antes dela. */

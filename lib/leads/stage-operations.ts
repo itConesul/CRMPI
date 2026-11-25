@@ -37,6 +37,7 @@ import {
   type PatchDeMarcacao,
   type UpdateDeMarcacao,
 } from "@/lib/leads/stage-editing";
+import { validarCorDeEtapa } from "@/lib/leads/cores-de-etapa";
 import { autoriaDaMudanca } from "@/lib/operacao/autoria";
 
 type SB = SupabaseClient;
@@ -51,7 +52,7 @@ export interface DepsDeEtapa {
 
 /** As colunas que a tela e as regras usam. `position` entra: a reordenação calcula em cima dela. */
 const COLUNAS =
-  "id, name, slug, position, is_won, is_lost, is_archived, agent_stage_hint, last_change_actor_kind, last_change_at";
+  "id, name, slug, position, color, is_won, is_lost, is_archived, agent_stage_hint, last_change_actor_kind, last_change_at";
 
 /** A etapa como sai para quem lê — inclui a autoria da última mudança de configuração. */
 export interface EtapaVisivel {
@@ -59,6 +60,8 @@ export interface EtapaVisivel {
   name: string;
   slug: string;
   position: number;
+  /** `#rrggbb` do cabeçalho da coluna, ou `null` (aspecto de fábrica). */
+  color: string | null;
   is_won: boolean;
   is_lost: boolean;
   /** `user` | `ai` | `system` — `null` nas etapas anteriores a esta coluna. */
@@ -67,6 +70,7 @@ export interface EtapaVisivel {
 }
 
 type EtapaLida = EtapaEditavel & {
+  color?: string | null;
   last_change_actor_kind: string | null;
   last_change_at: string | null;
 };
@@ -117,6 +121,7 @@ export function corpo(etapas: EtapaLida[]): { etapas: EtapaVisivel[] } {
         name: e.name,
         slug: e.slug,
         position: e.position,
+        color: e.color ?? null,
         is_won: e.is_won,
         is_lost: e.is_lost,
         last_change_actor_kind: e.last_change_actor_kind ?? null,
@@ -277,6 +282,12 @@ export interface PedidoDeEdicao {
   is_won?: boolean;
   is_lost?: boolean;
   /**
+   * A cor do cabeçalho da coluna: uma da paleta de `cores-de-etapa.ts`, ou `null`
+   * para voltar ao aspecto de fábrica. Qualquer outra é recusada com 422 — a
+   * paleta existe para o nome da coluna continuar legível sobre a cor.
+   */
+  color?: string | null;
+  /**
    * O vizinho da ESQUERDA (`null` = primeira coluna), não um número de posição:
    * quem arrasta a coluna sabe onde ela caiu, não qual fração de `position` isso
    * vira. Mandar o número duplicaria a conta que `posicaoEntre` já faz — e as
@@ -325,6 +336,18 @@ export async function atualizarEtapa(
     }
   }
 
+  // ⚠️ A COR SÓ ENTRA SE FOR DA PALETA, e entra NORMALIZADA (minúscula). O CHECK do
+  // banco aceita qualquer #rrggbb — ele é rede de segurança de formato, não a regra
+  // de legibilidade. Quem decide quais cores pintam um cabeçalho é a paleta.
+  let corNormalizada: string | null | undefined;
+  if (pedido.color !== undefined) {
+    const veredito = validarCorDeEtapa(pedido.color);
+    if (!veredito.ok) {
+      throw new ApiError(422, "unprocessable_entity", undefined, deps.requestId, veredito.erro);
+    }
+    corNormalizada = veredito.hex;
+  }
+
   const temMarcacao = pedido.is_won !== undefined || pedido.is_lost !== undefined;
   if (temMarcacao) {
     const veredito = validarMarcacao(etapas, stageId, pedido);
@@ -333,8 +356,9 @@ export async function atualizarEtapa(
     }
   }
 
-  const patchDoAlvo: PatchDeMarcacao & { name?: string; position?: number } = {};
+  const patchDoAlvo: PatchDeMarcacao & { name?: string; position?: number; color?: string | null } = {};
   if (pedido.name !== undefined) patchDoAlvo.name = pedido.name.trim();
+  if (corNormalizada !== undefined) patchDoAlvo.color = corNormalizada;
 
   if (pedido.depois_de !== undefined) {
     // Só as ativas compõem a régua: arquivada não ocupa lugar no quadro.

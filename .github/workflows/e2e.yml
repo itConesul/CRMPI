@@ -291,7 +291,7 @@ jobs:
         followup-linguagem.spec.ts followup-ramos.spec.ts
         wizard-do-funcionario.spec.ts mfa-opcional.spec.ts inbox-responder-citando.spec.ts
         agenda-tela-do-produto.spec.ts
-        notificacoes-diz-o-que-falta.spec.ts
+        notificacoes-diz-o-que-falta.spec.ts expediente-barra-a-acao.spec.ts expediente-na-tela.spec.ts
         relogio-http-cron-externo.spec.ts
         j20-elegibilidade-respondi.spec.ts j20-elegibilidade-followup.spec.ts
         j20-elegibilidade-atendimento-manual.spec.ts
@@ -598,6 +598,8 @@ jobs:
         moeda-da-organizacao.spec.ts
         zona-de-perigo-apaga-dados-de-teste.spec.ts
         central-avisos-resolver-em-lote.spec.ts
+        trocar-propria-senha.spec.ts
+        funil-cor-das-colunas.spec.ts
 
       FORA_DO_CI: >-
         vps-fresh-onboarding.spec.ts

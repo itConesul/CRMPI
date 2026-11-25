@@ -42,10 +42,68 @@ expediente da organização; rota ou tela `/app/fora-de-expediente`; erro `OUT_O
 - **Realtime (condição 6 da aprovação), comportamento esperado a medir com 2 usuários:**
   (i) um `UPDATE` em que a linha **sai** do escopo do usuário (conversa transferida para setor alheio)
   **não** gera evento para quem perdeu o acesso, então a lista dele fica obsoleta até recarregar;
-  (ii) um `DELETE` **não passa pela RLS** (o `postgres_changes` entrega a todos os assinantes da
-  organização) mas, com `REPLICA IDENTITY DEFAULT`, só leva o id. A mitigação desenhada é o refetch
+  (ii) um `DELETE` **não passa pela RLS** e, com `REPLICA IDENTITY DEFAULT`, só leva o id — **mas a
+  premissa original ("o `postgres_changes` entrega a todos os assinantes da organização") estava
+  errada para o app**: medido na T0(c), com o filtro `organization_id=eq.<org>` que o app usa o
+  `DELETE` **não chegou a ninguém**; sem filtro chegou a todos, só com o id (detalhe em "MEDIDO", abaixo).
+  A mitigação desenhada é o refetch
   que a lista já faz ao voltar o foco da janela; a T0 mede e a T8 prova com **transferência entre
   setores em dois navegadores**.
+  **MEDIDO em 2026-11-19 (T0(c) e T0(b)).** Sonda descartável, **não commitada**, contra o Supabase
+  local (`realtime:v2.147.1`, `postgres:15.19.0.007`, baseline aplicada), na organização do e2e com
+  `visibility_mode = own_and_unassigned`; 3 sessões reais (`agent` A, `agent` B criado só para a
+  sonda e removido ao fim, `manager`) assinando `postgres_changes` de `conversations` **com o filtro
+  que o app usa** (`organization_id=eq.<org>`, `hooks/inbox/useConversationsRealtime.ts`); as escritas
+  vieram por service role. **A conversa mudou de dono (`assigned_to_user_id`) no lugar de mudar de
+  setor**, porque a RLS de setor ainda não existe: o mecanismo (a RLS avaliada por assinante) é o mesmo,
+  mas **a T8 tem de provar com setores de verdade, em dois navegadores**. 3 execuções (R1 e R2 com o
+  filtro do app; R3 sem filtro).
+
+  | Caso | `agent` A (dono) | `agent` B | `manager` | Execuções |
+  |---|---|---|---|---|
+  | `INSERT` atribuída ao A | 1 evento em **2 de 3** (**0 em R1**) | 0 | 1 | R1–R3 |
+  | `UPDATE` que não muda o escopo | 1 | 0 | 1 | R1–R3 |
+  | **Transferência A→B** (a linha **sai** do escopo do A e **entra** no do B) | **nenhum evento** | `UPDATE` | `UPDATE` | R1–R3 |
+  | `SELECT` depois da transferência | **0 linhas** | 1 linha | — | R1–R3 |
+  | `UPDATE` depois, em conversa que o A já perdeu | 0 | 1 | 1 | R1–R3 |
+  | **`DELETE`, com o filtro do app** | **nenhum** | **nenhum** | **nenhum** | R1, R2 |
+  | **`DELETE`, sem filtro** | `DELETE` (só `id`) | `DELETE` (só `id`) | `DELETE` (só `id`) | R3 |
+
+  - **(i) confirmado:** quem **perde** o acesso por transferência não recebe nenhum evento, e o `SELECT`
+    dele já devolve 0 linhas — a lista dele fica com a conversa até recarregar. Quem **ganha** recebe o
+    `UPDATE`. A mitigação desenhada (refetch ao voltar o foco, `useConversationsRealtime.ts`) existe,
+    e o hook tem também uma rede de segurança que compara a contagem de conversas e o maior
+    `last_message_at`. **Não medido:** se essa rede detecta a saída de uma conversa (a contagem cai) e
+    em quanto tempo; a T8 mede pela tela.
+  - **(ii) corrigido — a premissa acima estava errada para o app.** O texto dizia que o `DELETE` "é
+    entregue a todos os assinantes da organização". **Com o filtro `organization_id=eq.<org>` que o
+    app usa, o `DELETE` não chegou a ninguém, nem ao `manager`** (R1 e R2): com `REPLICA IDENTITY
+    DEFAULT` a linha antiga só traz o `id`, e o filtro não consegue ser avaliado sobre ela. Então uma
+    conversa apagada por outra pessoa **permanece na lista até o refetch**. **Sem filtro** o `DELETE`
+    chega a **todos**, inclusive a quem nunca enxergou a conversa, **sem RLS e só com o `id`** (R3): quem
+    montar à mão uma assinatura sem filtro obtém os ids das conversas apagadas de outros setores. É
+    vazamento de **ids**, não de conteúdo, como a spec já afirmava; o que muda é que o app comum não o
+    recebe e também não recebe o próprio `DELETE`.
+  - **(b) `broadcast`: o canal `org:<org>:queue` é público e ninguém no app o assina.**
+    `lib/ai/handoff/orchestrator.ts:259` envia `handoff_pending` com `{ conversation_id, reason }`, e
+    `grep -rnE ":queue|handoff_pending" app components hooks lib` só acha **emissores**, nenhum
+    assinante. Na sonda (**R1 apenas, não repetida**), tanto o `agent` B autenticado quanto um **cliente
+    anônimo, só com a anon key e sem login**, receberam o payload (`conversation_id,reason`). Ou seja,
+    quem souber o id da organização escuta os handoffs dela, **de qualquer setor e de qualquer
+    organização**, e a anon key é pública. O conteúdo da conversa não vai no payload. **Não foi corrigido
+    nesta tarefa** (ela só mede). **Desfecho (2026-11-24):** o dono do produto decidiu pela **Opção A**,
+    remover o envio ([#67](https://github.com/itConesul/CRMPI/issues/67#issuecomment-7133170911),
+    [#100](https://github.com/itConesul/CRMPI/pull/100#issuecomment-7132824541)); o PR #100 o removeu e
+    foi mergeado (`8a2d197`), com um teste que reprova qualquer emissor de `broadcast` em `app/`, `lib/` e
+    `workers/`. A Opção B (canal privado com política em `realtime.messages`) ficou descartada por ora.
+    **A medição acima descreve o estado de 2026-11-19, antes do #100.** **Continua não medido:** os
+    `broadcast` de `useAlertsRealtime.ts` e `useTenantHealth.ts` (só assinantes; parecem de plataforma, não
+    li os payloads) — issue própria, [#103](https://github.com/itConesul/CRMPI/issues/103) — e se o
+    Realtime do ambiente de produção tem acesso público desligado (a sonda foi no local, com o padrão).
+  - **Limites da medição:** o `INSERT` do A não chegou na R1 e chegou na R2 e R3 (**perda não
+    determinística, causa não investigada**); aguardei 2,5 s por escrita; o Realtime foi o do Supabase
+    local, e o de um self-host pode ter outra versão; a sonda não está no repositório, então
+    **reproduzir exige reescrevê-la** a partir desta descrição.
 - **Desempenho da função por linha (condição 6):** `fn_can_view_conversation` roda por linha
   (um `exists` em `department_members` e um `select` em `organizations.settings`). A T4b registra o
   plano de `explain (analyze, buffers)` da listagem de conversas como `agent`, com volume (ordem de
@@ -54,6 +112,43 @@ expediente da organização; rota ou tela `/app/fora-de-expediente`; erro `OUT_O
 - Quantas rotas de `app/api/v1/` leem `conversations` com o client **admin** (que bypassa a RLS e
   portanto precisam repetir a regra de setor à mão). Comando:
   `grep -rl "conversations" app/api/v1 --include=route.ts | xargs grep -l "createAdminClient\|supabase/admin"`.
+  **MEDIDO em 2026-11-19 (T0(d)), `origin/develop` em `365a670`** — o comando acima **superestima**: só
+  confere que a palavra aparece e que o client admin é importado, não que o admin consulta a tabela.
+
+  | O que se mede | Comando | Resultado |
+  |---|---|---|
+  | `route.ts` que citam `conversations` | `grep -rl "conversations" app/api/v1 --include=route.ts \| wc -l` | **44** |
+  | …com o client admin importado (o comando acima) | o comando acima, com `\| wc -l` | **23** |
+  | …em que o **admin consulta `conversations` diretamente** | `grep -rPzl "\b(admin\|adminClient\|service\|svc\|createAdminClient\(\))\s*\.from\(\s*[\"']conversations[\"']" app/api/v1 --include=route.ts \| tr '\0' '\n'` (`-z` trata o arquivo como uma linha, para pegar o `.from(` na linha de baixo) | **7** |
+
+  **As 7 não servem um `agent`:** `admin/dashboard/kpis`, `admin/inbox/conversations`,
+  `admin/inbox/conversations/[id]`, `admin/tenants/[id]` e `admin/usage` (console de platform admin) e
+  `cron/contact-phones` e `cron/snooze-watcher` (segredo, sem sessão). **As 8 rotas de `agent`/`viewer`
+  entre as 23** (`agenda/agendamentos/[id]`, `ai/cases/[id]/reply`, `conversations/[id]/{close,media,notes,transfer}`,
+  `conversations/open-with-contact`, `metrics/attendants`) **não consultam `conversations` com o admin**
+  na medição por texto. **Lido linha a linha em 4 delas** (`close`, `media`, `notes`, `agendamentos/[id]`):
+  a leitura de visibilidade da conversa usa o client da **sessão** (`createClient()`, sob RLS) e o admin
+  só entra depois, para efeito (`rpc`, storage, evento). Com a RLS de setor ligada na T4b, essas herdam
+  a regra sem mudança. **Não lidas linha a linha:** `transfer`, `open-with-contact` (a spec já a
+  declara "não afetada", §4.3), `ai/cases/[id]/reply` e `metrics/attendants`.
+
+  **O trabalho real da T3 está fora de `route.ts`** — onde o admin chega a `conversations` por helper,
+  por parâmetro ou pelo MCP:
+  - **MCP:** `ctx.supabase` é o client **admin** (`lib/mcp/server.ts:41`). `from("conversations")` em
+    `lib/mcp/tools/handoff.ts` (linha 139) e `lib/mcp/tools/governance.ts`.
+  - **Helpers com `createAdminClient` que consultam `conversations`:** `lib/routing/worker.ts`,
+    `lib/ai/dispatcher/index.ts`, `lib/ai/handoff/orchestrator.ts`, `lib/ai/rag/ingest/conversations.ts`,
+    `lib/ai/runtime/agent.ts`, `lib/lgpd/export-collector.ts`; e os workers `workers/ai-response-worker.ts`
+    e `workers/ai-sentiment-worker.ts` (processos internos, sem pessoa em sessão).
+  - **Chamadores de `fn_can_view_conversation` que não são policy:** `fn_appointment_stamp`,
+    `fn_meet_action`, `fn_reply_action` (já na T3).
+
+  **A medição é um PISO, não o total.** O scan casa texto: acha `createAdminClient()` ligado a uma
+  variável **no mesmo arquivo** e **não acha** um client admin recebido como parâmetro com outro nome
+  (`db`, `client`) — é assim que `lib/routing/queue.ts` e o MCP o recebem. **Não medido:** (1) **quem chama
+  o MCP** (token de API ou agente de IA) e se um `agent` humano chega às ferramentas, o que decide se o MCP
+  entra no escopo de setor; (2) se cada helper acima **lista conversas para uma pessoa em sessão** ou só
+  serve processo interno. A T3 fecha esses dois pontos, helper a helper.
 
 ## 2. Decisão de design
 
@@ -100,6 +195,21 @@ Dois mecanismos independentes, cada um com uma **função pura** testável sem b
     atendente segue rejeitando a virada e `isWithinSchedule` sem a opção trata `end < start` como antes.
     **A faixa da tela (T7)** deve mostrar a janela como o admin a escreveu (`22:00–06:00`) e o
     `opens_at` do 403, para janela que vira o dia também.
+- **Fora desta entrega, registrado a pedido do review do #88 (menores 1, 3 e 4; medido em 2026-11-19):**
+  - **Sem cache da leitura do expediente.** Cada escrita de `agent` faz 1 SELECT em `organizations`
+    (`gate.ts:63`, em até 169 rotas com `requireRole`) e `loadEligibleAttendants` faz 1 por chamada
+    (`eligibles.ts:109`). `business_hours` só é gravado por `PATCH /settings/expediente`. Um cache em
+    memória não é invalidado entre processos (`app` e `worker` são separados), então só um TTL
+    funcionaria, e com ele um expediente alterado leva até o TTL para valer. **TTL e invalidação são
+    decisão de produto que esta spec não tem**; fica para issue.
+  - **A UI trava só parte das ações.** A trava está em `Composer.tsx` e `ConversationHeader.tsx`. Os
+    arquivos de UI que escrevem em lead, tag, contato ou tarefa — `CRMSidePanel`, `useBoard`,
+    `useTasks`, `PropostasDeDado` — não a têm: o `agent` fora do horário pode clicar e recebe o 403
+    `OUT_OF_WORK_HOURS` cru. **A contagem é por padrão de texto (`method: "POST"` etc.) e pode estar
+    incompleta.** O servidor barra do mesmo jeito; o que falta é a UI avisar antes do clique.
+  - **Dicionário `es`:** faltam `sáb`, `a` e `e` em `lib/i18n/dicionario.ts` (`seg` e `dom` existem), então
+    a frase do horário em espanhol sai com esses termos em português. Antes de acrescentar `a` e `e`,
+    conferir se as chaves curtas não traduzem outra string igual.
 - **Default = sem restrição** (`windows` vazio = 24/7). Uma instalação que atualiza pelo `update.sh`
   continua operando; o expediente só passa a valer quando o admin o configura (primeira impressão).
 - **Falha aberta:** config ausente, fuso inválido ou shape torto = sem expediente. Uma configuração
@@ -129,6 +239,26 @@ Dois mecanismos independentes, cada um com uma **função pura** testável sem b
   - **T0(a):** `loadAuthUser` **não** carrega `organizations.settings` (seleciona `display_name,
     locale`), então o gate faz a própria leitura (`carregarExpediente`, falha aberta, service role não
     usado: é o client do usuário, sob RLS).
+    - **Por que a RLS não esconde a linha de quem chega ao gate (medido em 2026-11-19, banco local com
+      a `baseline.sql`, JWT simulado por papel, transação desfeita com `ROLLBACK`).** O gate só roda
+      para quem `fn_user_role_in_org` devolveu `agent`, e essa função e `fn_user_org_ids` (a da policy
+      `orgs_select`) filtram as duas `revoked_at is null`. Resultado: `admin`, `manager`, `agent` e
+      `viewer` ativos leem `organizations.settings` da própria organização e **nunca** a de outra;
+      um `agent` com vínculo revogado lê `NULL` mas também leva `NULL` em `fn_user_role_in_org`, então
+      o `requireRole` o barra por papel (403 `forbidden_role`) **antes** do gate. Platform admin e
+      sessão de suporte não passam pelo gate (`!user.is_platform_admin && !user.support`). **Não
+      medido:** o `requireRole` de ponta a ponta (a sonda foi em SQL) e chamadores de
+      `loadEligibleAttendants` além do MCP (`createAdminClient()` em `lib/mcp/server.ts`) e do
+      `routing/worker.ts`, que passam o client admin.
+    - **A premissa é frágil e a spec a vigia.** O gate só enxerga a linha enquanto as duas funções
+      coincidirem. Se divergirem (uma ganha condição que a outra não tem) ou a policy `orgs_select`
+      passar a exigir papel mínimo, `maybeSingle` devolve `null` **sem erro** e o gate falha aberto
+      para todos, em silêncio. Duas travas: (1) em `carregarExpediente`, linha **ausente sem erro**
+      é logada com `logger.warn` — o chamador acabou de resolver a organização, então "ausente" não é
+      estado normal; segue falhando aberto (a regra acima não muda), só deixa de ser invisível;
+      (2) o invariante de `03-testes.md` amarra `fn_user_role_in_org` à leitura de `organizations`.
+      O comentário de `lib/expediente/carregar.ts` ("Service role e `organization_id` explícito")
+      contradiz esta spec e o código; deve passar a dizer "client do usuário, sob RLS".
   - **Isenções FIXAS (decisão do dono do produto, 2026-11-17).** Fora do expediente, o `agent` em
     sessão humana continua podendo: **ler**; **login e logout**; **trocar de organização**;
     **perfil**; **preferências**; **cadastro e verificação de MFA**; **marcar notificação como lida**;
@@ -246,6 +376,36 @@ Dois mecanismos independentes, cada um com uma **função pura** testável sem b
       `null` com o Redis fora) **só a `admin`/`manager`**; `agent` e `viewer` recebem `null`. O laço fecha
       já, o código existente é reaproveitado, e a tela da T6 só passa a consumir o que a API já dá.
       Custo: o contrato da rota ganha um campo que depende do papel.
+      **Contrato do campo (detalhe da (b); proposta do autor em 2026-11-24, não muda a escolha do dono):**
+      1. **Forma:** `data.barrados_hoje: number | null`, ao lado de `agora`, `dentro` e `opens_at` (que
+         `descreverExpediente` já devolve). Só leitura: o `GET` nunca escreve nem grava audit (a
+         auditoria do `CLAUDE.md` vale para mutação).
+      2. **Quem:** o papel vem de `authz.org.role` (já devolvido pelo `requireRole("viewer")` da rota).
+         `admin` e `manager` recebem o número; `agent` e `viewer` recebem `null` **sem nenhuma ida ao
+         Redis**. Isso importa porque a faixa do shell consulta esta rota de **todo usuário logado, a cada
+         60 s** (`hooks/expediente/useExpediente.ts`: `refetchInterval: 60_000`, `staleTime: 30_000`):
+         com o filtro por papel, o Redis só é consultado para `admin`/`manager`, uma vez por minuto por aba.
+         Sessão de suporte entra pelo papel que o `requireRole` já lhe dá (`full` → `admin`, senão `viewer`).
+      3. **"Hoje":** o dia de `agora` no fuso da organização, a mesma `chaveDoContador` que o gate usa
+         para escrever (`lib/expediente/contador.ts`).
+      4. **`0` e `null` são coisas diferentes** (e já são o que `lerBarradosDoDia` devolve): **número,
+         inclusive `0`,** quando o Redis respondeu (chave ausente = nenhuma tentativa barrada hoje);
+         **`null`** quando o Redis está ausente, malformado ou fora. A tela mostra `0` e `—`, respectivamente.
+      5. **Sem expediente configurado** (`business_hours` ausente ou inválido): **proposta:** `null`. Sem
+         configuração o gate nunca barra, então nada foi contado, mas também não há fuso da organização
+         para dizer qual é "hoje"; `null` evita inventar um dia em UTC. **Aceito pelo revisor em 2026-11-24**
+         ([review do #114](https://github.com/itConesul/CRMPI/pull/114#pullrequestreview-6045684214): "é detalhe de
+         exibição"); a T2d o confirma ao implementar, e a tela da T6 depende dele.
+      6. **Falha do Redis não derruba nem atrasa o `GET`.** A falha vira `null` (o cliente é criado com
+         `retry: false`). **MEDIDO em 2026-11-24 (T2d, `@upstash/redis` 1.38.3):** o cliente **não tem
+         timeout por padrão**. Contra um servidor TCP que aceita a conexão e não responde, com `retry: false`
+         e sem `signal`, a chamada seguia **pendente aos 8 s**; com `signal: () => AbortSignal.timeout(1500)`
+         abortou em 1519 ms. Por isso o cliente do contador é criado com esse `signal` (`PRAZO_DO_REDIS_MS`,
+         1500 ms), **em forma de função** (o cliente é um singleton: sabotado com um `AbortSignal` fixo, a
+         **segunda** leitura voltou em 1 ms, porque o sinal já tinha expirado). Com o Redis do compose
+         **pausado** (mudo) a rota respondeu 200 e `null` em 1903 ms. **Limites:** não medi o Upstash de
+         nuvem, e não investiguei os ~400 ms entre o prazo de 1500 ms e os 1903 ms. A leitura é opcional:
+         perdê-la só vira `null`.
     - **(c)** Tirar a escrita do contador do PR do gate e entregá-la **junto com** o leitor, na T6.
       Nada escrito sem leitor e nada se perde (só "hoje"); o custo é descartar código já escrito e
       testado para reescrevê-lo depois.
@@ -271,9 +431,12 @@ Dois mecanismos independentes, cada um com uma **função pura** testável sem b
      (emitida pelo `requireRole`) é excluída por nome: é a recusa, não a ação. O carimbo **chega às
      Server Actions** (`POST`, medido — ver "Server Actions" abaixo), por isso a família de sessão
      `auth.` também é excluída por nome (decidido pelo dono em 2026-11-23, ponto 6).
-  3. **O expediente da organização**, lido pelo **mesmo carregador do gate** (`carregarExpediente`),
-     com **cache por organização e TTL curto — proposta: 30 s**, em memória do processo, descartado
-     quando `PATCH /settings/expediente` roda no mesmo processo. Sem expediente configurado, ou
+  3. **O expediente da organização**, lido pela **mesma função de leitura do gate** (`carregarExpediente`),
+     **envolvida por um cache próprio do `audit()`**: por organização, TTL de 30 s, em memória do
+     processo, descartado quando `PATCH /settings/expediente` roda no mesmo processo. **O cache NÃO fica
+     dentro de `carregarExpediente`:** o gate e `loadEligibleAttendants` leem direto no banco, sem cache
+     (decisão do dono em 2026-11-24, [#110](https://github.com/itConesul/CRMPI/issues/110#issuecomment-7141507471)),
+     para que o expediente salvo valha na hora para quem barra e para quem recebe conversa. Sem expediente configurado, ou
      inválido, ou dentro do horário: não marca. Dentro do expediente o custo é só o acerto de cache.
   4. **O papel, só se já estiver fora do expediente:** `rpc("fn_user_role_in_org", { p_org })` com o
      client da sessão — a **mesma fonte** que o `requireRole` usa (`lib/auth/require-role.ts`), nunca
@@ -478,9 +641,16 @@ Dois mecanismos independentes, cada um com uma **função pura** testável sem b
   se **é o dono**, **ou** (`department_id` é nulo **ou** está entre os seus setores) **e** a regra de
   `visibility_mode` já existente a admite. As duas restrições **somam**; nenhuma substitui a outra.
 - **Realtime:** `postgres_changes` aplica a RLS de SELECT ao assinante, então a mudança de policy
-  cobre RF-9 sem código novo — **desde que não haja canal de broadcast** (NÃO VERIFICADO acima).
-  Limites conhecidos, a medir na T0 e provar na T8: a conversa que **sai** do escopo não gera evento
-  de remoção, e o `DELETE` não passa pela RLS (mas só leva o id).
+  cobre RF-9 sem código novo — **desde que não haja canal de broadcast**. **Medido em 2026-11-19 (§1,
+  T0(b)): havia um** (`org:<org>:queue`, público, sem assinante no app, com `conversation_id` e `reason`).
+  **O dono decidiu removê-lo em 2026-11-24** ([#67](https://github.com/itConesul/CRMPI/issues/67#issuecomment-7133170911))
+  e o #100 o removeu (`8a2d197`), então a condição **passa a valer com o #100 na `develop`**; antes da
+  T4b/T8, **conferir que ele está lá** (`git branch -r --contains 8a2d197`). Restam os dois `broadcast`
+  (`alerts-platform`, `tenant-health`), só assinantes, a medir na #103: pelo nome parecem de
+  plataforma, mas **ninguém leu os payloads nem achou quem emite**; não afirmo que não carreguem dado de
+  conversa.
+  Limites medidos na T0 (§1) e a provar na T8: a conversa que **sai** do escopo não gera evento
+  de remoção; o `DELETE` não passa pela RLS e só leva o id, mas **com o filtro que o app usa nem chega**.
 - **Escrita (N2, RF-14):** a mesma regra vale em `UPDATE`/`DELETE` de `conversations` e em
   `INSERT`/`UPDATE`/`DELETE` de `messages` (§4.3). A alternativa recusada na versão anterior
   ("a issue pede só leitura") deixou de valer: o dono do produto decidiu o contrário e a medição
@@ -519,7 +689,7 @@ Envelope padrão `{ error: { code, message, details? } }` com `details: { opens_
 nunca do body):
 | Método | Rota | Papel | Observação |
 |---|---|---|---|
-| `GET` | `/settings/expediente` | `agent`+ | Lê a config **e o estado avaliado pelo servidor**: `agora` (`dow`, `hhmm` e ISO no fuso da organização), `dentro` (booleano) e `opens_at`. A tela de "fora de expediente" precisa, e o e2e constrói a janela em torno desse `agora`, sem depender do relógio do runner |
+| `GET` | `/settings/expediente` | `viewer`+ (qualquer membro) | Lê a config **e o estado avaliado pelo servidor**: `agora` (`dow`, `hhmm` e ISO no fuso da organização), `dentro` (booleano) e `opens_at`. A faixa do shell chama esta rota para **todo** usuário logado, e o e2e constrói a janela em torno desse `agora`, sem depender do relógio do runner. **Era `agent`+ e estava errado:** o `viewer` e a sessão de suporte somente-leitura levavam 403 a cada carga de tela, e cada 403 grava um `authz.denied` (medido: 3 linhas em ~70 s; achado pelo `e2e-parte (3)` do CI) |
 | `PATCH` | `/settings/expediente` | `admin` | Audita `expediente.config_changed` |
 | `GET/POST` | `/departments` | leitura `agent`+, escrita `admin` | `Idempotency-Key` no POST |
 | `PATCH/DELETE` | `/departments/[id]` | `admin` | `DELETE` com conversas no setor responde **`409 department_not_empty`** com `details: { conversation_count }` (N1); sem conversas, apaga. Nunca apaga nem desvincula conversa |
@@ -910,5 +1080,5 @@ rota contorna a regra, depois a regra é ligada.
 | **Cliente escreve às 22h e ninguém é barrado nem avisado** | Fora deste PRD: o que o cliente recebe é PRD-07 (#73). Até lá a conversa fica sem dono até a abertura — a IA, se ativa, mantém a própria janela |
 | **Realtime não remover da tela** a conversa que saiu do escopo por transferência (não há evento para quem perdeu o acesso), e `DELETE` que não passa pela RLS (só leva o id) | Medir na T0 e provar na T8 com 2 navegadores (§1). Mitigação desenhada: refetch ao voltar o foco da janela, que a lista já faz |
 | **Função por linha lenta** com volume | `explain (analyze, buffers)` da listagem com ~100 mil conversas na T4b; se não bastar, policy com `exists` inline (§1) |
-| **Fuso/horário de verão** | `localMoment` usa `Intl` com o fuso IANA; teste com data de virada |
+| **Fuso/horário de verão** | `localMoment` usa `Intl` com o fuso IANA; teste com data de virada. **Limitação conhecida e medida (2026-11-19):** `proximaAbertura` soma minutos corridos, então numa semana com virada de horário de verão a abertura anunciada erra **60 min** (sonda descartável: `Europe/Madrid`, sábado 27/03/2027 20:00, janela seg 09:00 → erro 60 min; a mesma conta sem virada e em `America/Sao_Paulo` → 0 min). Só afeta **exibição** (`opens_at` do 403 e `descreverExpediente`); a decisão de barrar usa `dentroDoExpediente`, que não soma minutos. Não corrigido neste PR (review do #88, menor 2); consertar é calcular no fuso da organização e testar com fusos de horário de verão |
 | **Escopo crescer** (leads, contatos, expediente por setor) | Fora de escopo explícito: Q6 (risco aceito, #80) e Q9 (evolução prevista, §4.1) |

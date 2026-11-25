@@ -26,6 +26,7 @@ import {
 import { LEAD_STAGES, type LeadStage } from "@/lib/agent-engine/agent/lead-state";
 import { ApiError } from "@/lib/api/types";
 import { ROTULO_DO_PASSO } from "@/lib/leads/agent-mapping";
+import { CORES_DE_ETAPA, corDaPaleta } from "@/lib/leads/cores-de-etapa";
 import { Archive, CaretDown, CaretUp, Plus, Warning } from "@/lib/ui/icons";
 import { SeloDeAutoria } from "@/components/operacao/SeloDeAutoria";
 import { useT } from "@/hooks/i18n/useT";
@@ -181,7 +182,12 @@ type Arquivamento = {
 // varre o texto-fonte, então `sm:${...}` montado por interpolação NÃO gera CSS.
 // E o prefixo é o certo de qualquer jeito — no celular a linha empilha e largura
 // fixa espremeria os controles.
-const LARGURA = { ordem: "sm:w-[76px]", papel: "sm:w-56", arquivar: "sm:w-[104px]" } as const;
+const LARGURA = {
+  ordem: "sm:w-[76px]",
+  papel: "sm:w-56",
+  cor: "sm:w-44",
+  arquivar: "sm:w-[104px]",
+} as const;
 
 /**
  * O texto de cada rótulo, em UM lugar só — porque ele aparece em DOIS.
@@ -194,6 +200,7 @@ export const ROTULO = {
   nome: "Nome da coluna (clique para renomear)",
   ordem: "Ordem",
   papel: "O que acontece nesta coluna",
+  cor: "Cor do cabeçalho",
 } as const;
 
 export function StagesSection({
@@ -322,7 +329,7 @@ export function StagesSection({
         <h3 className="text-sm font-semibold">{t("Etapas deste funil")}</h3>
         <p className="max-w-3xl text-sm leading-relaxed text-text-muted">
           {t(
-            "Estas são as colunas do seu quadro, na ordem em que o cliente avança. Você pode renomear, criar, reordenar e arquivar.",
+            "Estas são as colunas do seu quadro, na ordem em que o cliente avança. Você pode renomear, colorir, criar, reordenar e arquivar.",
           )}
         </p>
         <p className="max-w-3xl text-sm leading-relaxed text-text-muted">
@@ -352,6 +359,7 @@ export function StagesSection({
         <span className="min-w-0 flex-1">{t(ROTULO.nome)}</span>
         <span className={`${LARGURA.ordem} shrink-0 text-center`}>{t(ROTULO.ordem)}</span>
         <span className={`${LARGURA.papel} shrink-0`}>{t(ROTULO.papel)}</span>
+        <span className={`${LARGURA.cor} shrink-0`}>{t(ROTULO.cor)}</span>
         <span className={`${LARGURA.arquivar} shrink-0`} />
       </div>
 
@@ -448,6 +456,17 @@ export function StagesSection({
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+
+                <div className={`w-full shrink-0 space-y-1 ${LARGURA.cor} sm:space-y-0`}>
+                  <span className="block text-xs font-medium text-text-muted sm:hidden">
+                    {t(ROTULO.cor)}
+                  </span>
+                  <CorDaEtapa
+                    etapa={etapa}
+                    desabilitado={ocupado}
+                    aoEscolher={(cor) => aplicar(etapa.id, { color: cor })}
+                  />
                 </div>
 
                 <Button
@@ -740,5 +759,88 @@ function NomeDaEtapa({
       }}
       className="min-w-0 flex-1"
     />
+  );
+}
+
+/** `Select` não aceita valor vazio: estes dois sentinelas nunca vão para a API. */
+const SEM_COR = "__sem-cor";
+const COR_ANTIGA = "__cor-antiga";
+
+function Bolinha({ hex }: { hex: string }) {
+  return (
+    <span
+      className="inline-block h-3 w-3 shrink-0 rounded-full border border-border"
+      style={{ backgroundColor: hex }}
+      aria-hidden
+    />
+  );
+}
+
+/**
+ * A cor do cabeçalho da coluna no quadro, escolhida numa LISTA FIXA.
+ *
+ * ⚠️ NÃO HÁ SELETOR DE COR LIVRE, de propósito: o nome da etapa é escrito por
+ * cima da cor, e uma cor livre entregaria texto ilegível ao primeiro amarelo
+ * claro. A lista é `CORES_DE_ETAPA`, medida em teste contra o texto do cabeçalho.
+ *
+ * ⚠️ ETAPA COM COR FORA DA LISTA (criada antes desta tela) NÃO PERDE A COR AO
+ * ABRIR. Ela aparece como «Cor atual», com a bolinha dela, e continua sendo
+ * pintada no quadro com texto legível. Só deixa de existir se a pessoa escolher
+ * outra cor ou «Sem cor».
+ */
+function CorDaEtapa({
+  etapa,
+  desabilitado,
+  aoEscolher,
+}: {
+  etapa: EtapaDoFunil;
+  desabilitado: boolean;
+  aoEscolher: (cor: string | null) => void;
+}) {
+  const t = useT();
+  const atual = etapa.color?.toLowerCase() ?? null;
+  const daPaleta = corDaPaleta(atual);
+  const valor = !atual ? SEM_COR : daPaleta ? daPaleta.hex : COR_ANTIGA;
+
+  return (
+    <Select
+      value={valor}
+      onValueChange={(v) => {
+        if (v === COR_ANTIGA) return;
+        aoEscolher(v === SEM_COR ? null : v);
+      }}
+      disabled={desabilitado}
+    >
+      <SelectTrigger
+        aria-label={`${t("Cor do cabeçalho de")} «${etapa.name}»`}
+        data-testid={`cor-${etapa.id}`}
+      >
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value={SEM_COR}>
+          <span className="flex items-center gap-2">
+            <Bolinha hex="#ffffff" />
+            {t("Sem cor")}
+          </span>
+        </SelectItem>
+        {atual && !daPaleta ? (
+          <SelectItem value={COR_ANTIGA} disabled>
+            <span className="flex items-center gap-2">
+              <Bolinha hex={atual} />
+              {t("Cor atual (fora da lista)")}
+            </span>
+          </SelectItem>
+        ) : null}
+        {CORES_DE_ETAPA.map((c) => (
+          <SelectItem key={c.id} value={c.hex} data-testid={`cor-opcao-${c.id}`}>
+            <span className="flex items-center gap-2">
+              <Bolinha hex={c.hex} />
+              {t(c.rotulo)}
+            </span>
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }

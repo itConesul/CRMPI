@@ -1,0 +1,237 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Expediente da empresa: o gate do agent",
+    "subtitle": "Fora do horário o agent consulta e o servidor recusa a ação — T9a do #67 (o gate; departamentos entram na T9b)",
+    "output": "expediente-e-setor.html",
+    "quality_profile": "standard"
+  },
+  "lanes": [
+    { "id": "humano", "label": "Pessoa e telas" },
+    { "id": "borda", "label": "Borda (proxy.ts)" },
+    { "id": "servidor", "label": "Servidor: rotas e regra" },
+    { "id": "dados", "label": "Dados" }
+  ],
+  "mainPath": ["agent", "proxy", "requirerole", "gate", "carregar", "pura", "resp403"],
+  "nodes": [
+    {
+      "id": "admin",
+      "lane": "humano",
+      "col": 0,
+      "type": "ui",
+      "label": "Admin define o expediente",
+      "sublabel": "hoje só pela API; a tela de configuração é a T6"
+    },
+    {
+      "id": "agent",
+      "lane": "humano",
+      "col": 0,
+      "type": "ui",
+      "label": "Agent age (POST, PATCH, DELETE)",
+      "sublabel": "assumir, responder, anotar, transferir, adiar, fechar"
+    },
+    {
+      "id": "proxy",
+      "lane": "borda",
+      "col": 1,
+      "type": "service",
+      "label": "proxy.ts",
+      "sublabel": "carimba x-metodo-http com set (sobrescreve o que o cliente mandar); cobre tudo menos estático"
+    },
+    {
+      "id": "patch",
+      "lane": "servidor",
+      "col": 1,
+      "type": "service",
+      "label": "PATCH /api/v1/settings/expediente",
+      "sublabel": "admin; client ADMIN com filtro explícito de organization_id; Zod valida fuso e janelas"
+    },
+    {
+      "id": "requirerole",
+      "lane": "servidor",
+      "col": 2,
+      "type": "service",
+      "label": "requireRole",
+      "sublabel": "papel por fn_user_role_in_org; o gate vem depois do rank e do MFA; platform admin e suporte pulam"
+    },
+    {
+      "id": "gate",
+      "lane": "servidor",
+      "col": 3,
+      "type": "service",
+      "label": "avaliarGateDeExpediente",
+      "sublabel": "só agent, só escrita; rota isenta declara o motivo; método ausente conta como escrita"
+    },
+    {
+      "id": "carregar",
+      "lane": "servidor",
+      "col": 4,
+      "type": "service",
+      "label": "carregarExpediente",
+      "sublabel": "client do usuário sob RLS; falha ABERTA; linha ausente sem erro registra warn"
+    },
+    {
+      "id": "pura",
+      "lane": "servidor",
+      "col": 4,
+      "type": "service",
+      "label": "expedienteBarra / dentroDoExpediente",
+      "sublabel": "função pura; fuso IANA; janela que vira o dia; calcula opens_at"
+    },
+    {
+      "id": "resp403",
+      "lane": "humano",
+      "col": 5,
+      "type": "ui",
+      "label": "403 OUT_OF_WORK_HOURS + opens_at",
+      "sublabel": "leitura segue liberada; só a ação é recusada"
+    },
+    {
+      "id": "contador",
+      "lane": "servidor",
+      "col": 5,
+      "type": "service",
+      "label": "contarBarrado",
+      "sublabel": "INCR + EXPIRE NX num pipeline; sem await; nunca lança e nunca decide"
+    },
+    {
+      "id": "orgs",
+      "lane": "dados",
+      "col": 2,
+      "type": "database",
+      "label": "organizations.settings.business_hours",
+      "sublabel": "jsonb que já existia, sem migration; ausente ou torto = sem restrição"
+    },
+    {
+      "id": "audit",
+      "lane": "dados",
+      "col": 1,
+      "type": "database",
+      "label": "api_audit_log · expediente.config_changed",
+      "sublabel": "grava o expediente anterior e o novo; a tentativa barrada NÃO grava linha"
+    },
+    {
+      "id": "redis",
+      "lane": "dados",
+      "col": 6,
+      "type": "database",
+      "label": "Redis expediente:barrados:<org>:<dia>",
+      "sublabel": "dia no fuso da organização; validade de 48 h em toda contagem"
+    },
+    {
+      "id": "leitor",
+      "lane": "servidor",
+      "col": 7,
+      "type": "service",
+      "label": "lerBarradosDoDia",
+      "sublabel": "chamado pelo GET (T2d, opção b do dono); 0 é um número, null é Redis fora; prazo de 1500 ms por ida ao Redis"
+    },
+    {
+      "id": "get",
+      "lane": "servidor",
+      "col": 3,
+      "type": "service",
+      "label": "GET /api/v1/settings/expediente",
+      "sublabel": "viewer+ (piso); devolve a config e o estado avaliado pelo servidor"
+    },
+    {
+      "id": "hook",
+      "lane": "humano",
+      "col": 3,
+      "type": "ui",
+      "label": "useExpedienteBarra",
+      "sublabel": "uma leitura para todo usuário logado"
+    },
+    {
+      "id": "faixa",
+      "lane": "humano",
+      "col": 4,
+      "type": "ui",
+      "label": "FaixaDeExpediente + /app/fora-de-expediente",
+      "sublabel": "mostra o horário da empresa e quando abre; a página tem porta em navegacao-completude"
+    },
+    {
+      "id": "locks",
+      "lane": "humano",
+      "col": 5,
+      "type": "ui",
+      "label": "Composer e ConversationHeader travados",
+      "sublabel": "ações de lead, tag, contato e tarefa NÃO travam na tela; o servidor as barra mesmo assim"
+    },
+    {
+      "id": "eligibles",
+      "lane": "servidor",
+      "col": 3,
+      "type": "service",
+      "label": "loadEligibleAttendants",
+      "sublabel": "fora do expediente só o agent sai da distribuição; admin e manager seguem elegíveis"
+    },
+    {
+      "id": "routingworker",
+      "lane": "servidor",
+      "col": 2,
+      "type": "service",
+      "label": "lib/routing/worker.ts",
+      "sublabel": "distribuição automática, client admin"
+    },
+    {
+      "id": "mcpfila",
+      "lane": "servidor",
+      "col": 2,
+      "type": "service",
+      "label": "Handoff e fila do MCP",
+      "sublabel": "lib/mcp/tools/handoff.ts e lib/routing/queue.ts, client admin do MCP"
+    }
+  ],
+  "edges": [
+    { "id": "e1", "from": "admin", "to": "patch", "label": "grava o horário e o fuso" },
+    { "id": "e2", "from": "patch", "to": "orgs", "label": "merge não destrutivo: preserva routing, branding, security" },
+    { "id": "e3", "from": "patch", "to": "audit", "label": "audit só quando gravou, com previous e new" },
+    { "id": "e4", "from": "agent", "to": "proxy", "label": "toda requisição passa pelo matcher" },
+    { "id": "e5", "from": "proxy", "to": "requirerole", "label": "x-metodo-http chega ao handler" },
+    { "id": "e6", "from": "requirerole", "to": "gate", "label": "papel já resolvido, depois do rank e do MFA" },
+    { "id": "e7", "from": "gate", "to": "carregar", "label": "uma leitura por escrita de agent" },
+    { "id": "e8", "from": "carregar", "to": "orgs", "label": "lê settings sob RLS (orgs_select)" },
+    { "id": "e9", "from": "gate", "to": "pura", "label": "decide barrar ou não" },
+    { "id": "e10", "from": "gate", "to": "resp403", "label": "barrado devolve 403 com a próxima abertura" },
+    { "id": "e11", "from": "gate", "to": "contador", "label": "tentativa barrada soma no contador, sem linha de audit" },
+    { "id": "e12", "from": "contador", "to": "redis", "label": "INCR e EXPIRE NX no mesmo pipeline" },
+    { "id": "e13", "from": "redis", "to": "leitor", "label": "leitura do total do dia, com prazo: um Redis mudo vira null, não segura a rota" },
+    { "id": "e14", "from": "orgs", "to": "get", "label": "a rota lê e avalia no relógio do servidor" },
+    { "id": "e15", "from": "get", "to": "hook", "label": "mesma função pura do gate, para cliente e servidor não divergirem" },
+    { "id": "e16", "from": "hook", "to": "faixa", "label": "faixa em toda tela do app" },
+    { "id": "e17", "from": "hook", "to": "locks", "label": "desabilita os controles com o motivo" },
+    { "id": "e18", "from": "routingworker", "to": "eligibles", "label": "candidatos à distribuição" },
+    { "id": "e19", "from": "mcpfila", "to": "eligibles", "label": "mesma elegibilidade para handoff e fila" },
+    { "id": "e20", "from": "eligibles", "to": "carregar", "label": "lido uma vez por chamada, só aplicado ao agent" },
+    { "id": "e21", "from": "get", "to": "pura", "label": "descreverExpediente chama dentroDoExpediente e proximaAbertura" },
+    { "id": "e22", "from": "resp403", "to": "agent", "label": "o agent vê o motivo e a hora em que o expediente abre" },
+    { "id": "e23", "from": "get", "to": "leitor", "label": "barrados_hoje só para admin e manager; agent e viewer recebem null sem ida ao Redis" }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "O que NÃO está ligado, e é decisão ou entrega futura, não esquecimento",
+      "items": [
+        "não existe aresta gate → audit(): o bypass auditado de admin e manager (RF-10) NÃO está neste PR; vem na T2c, com o audit() decidindo a marca (a spec do mecanismo, #87, já foi mergeada e o dono a aceitou em 2026-11-23)",
+        "não existe aresta do gate para cron/* nem webhooks/*: a mensagem do cliente recebida fora do horário entra na fila normalmente (RF-11) e o cron autentica por segredo (RNF-1); uma varredura de AST vigia isso",
+        "o aviso ao lead (lib/ai/handoff/aviso-ao-lead.ts) e a ferramenta MCP de escalação NÃO respeitam o expediente: ficam para a #73 (PRD-07), por decisão do dono do produto",
+        "não existe aresta contador → audit: a tentativa barrada é contada, não registrada, para retry e polling não inflarem o api_audit_log como as rodadas de cron vazias já inflaram",
+        "a tela ainda não mostra o número: o GET já devolve barrados_hoje a admin e manager (T2d), mas quem o desenha é a T6; até lá a API o entrega e nenhuma tela o consome"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Invariantes e limites que a forma não mostra",
+      "items": [
+        "fail-closed no gate, fail-open na leitura: toda escrita de agent é barrada fora do expediente por padrão e a rota só escapa declarando isenção com motivo; mas expediente ausente, torto ou ilegível NUNCA tranca a equipe",
+        "o gate lê organizations sob RLS e só roda para quem fn_user_role_in_org reconhece como agent ativo; um invariante de test:db amarra essa função à leitura, porque se elas divergirem o gate falharia aberto sem erro",
+        "o que se muta em request.headers ou request.cookies DEPOIS de NextResponse.next não chega ao handler, nem antes nem depois deste PR (medido); só o carimbo, montado antes, chega",
+        "a trava na tela cobre o Composer e o cabeçalho da conversa; lead, tag, etapa e tarefa devolvem o 403 cru até alguém travar a UI",
+        "o horário de verão não é tratado em proximaAbertura: a abertura anunciada pode errar 60 min na semana da virada; só afeta exibição, a decisão de barrar não soma minutos",
+        "departamentos, a regra de setor e a RLS de conversas não estão neste mapa: entram na T9b, junto de cada PR que cria a peça"
+      ]
+    }
+  ]
+}

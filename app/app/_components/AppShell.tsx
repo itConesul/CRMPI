@@ -4,6 +4,7 @@ import { Sidebar } from "@/components/shell/Sidebar";
 import { TopBar } from "@/components/shell/TopBar";
 import { ContadorNaAba } from "@/components/app/ContadorNaAba";
 import { FaixaDeAvisos } from "@/components/app/FaixaDeAvisos";
+import { FaixaDeExpediente } from "@/components/app/FaixaDeExpediente";
 import { useInboundMessageAlerts } from "@/hooks/notifications/useInboundMessageAlerts";
 import { useCentralAlerts } from "@/hooks/notifications/useCentralAlerts";
 import { useCrmAlerts } from "@/hooks/notifications/useCrmAlerts";
@@ -47,6 +48,7 @@ export function AppShell({ sidebarCollapsed, children }: AppShellProps) {
         <TopBar />
         <ContadorNaAba />
         <FaixaDeAvisos />
+        <FaixaDeExpediente />
         <main className="flex-1 overflow-auto p-6">{children}</main>
       </div>
     </div>
