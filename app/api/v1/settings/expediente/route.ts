@@ -23,6 +23,7 @@ import { ApiError } from "@/lib/api/types";
 import { fail, ok } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
 import { requireRole } from "@/lib/auth/require-role";
+import { descartarExpedienteDoCache } from "@/lib/expediente/cache-do-audit";
 import { lerBarradosDoDia } from "@/lib/expediente/contador";
 import { descreverExpediente, type ExpedienteDescrito } from "@/lib/expediente/descrever";
 import { requireSupportWrite } from "@/lib/impersonate/support";
@@ -109,6 +110,10 @@ export async function PATCH(req: NextRequest): Promise<Response> {
     .update({ settings: { ...atual, business_hours: input } })
     .eq("id", org.orgId);
   if (updErr) return fail("internal_error", updErr.message, 500, { requestId });
+
+  // O cache de 30 s do `audit()` (RF-10) é descartado AQUI, antes do audit desta própria mudança, para
+  // ele já ler o expediente novo. Vale só para este processo: outro processo espera o TTL (aceito).
+  descartarExpedienteDoCache(org.orgId);
 
   void audit({
     action: "expediente.config_changed",

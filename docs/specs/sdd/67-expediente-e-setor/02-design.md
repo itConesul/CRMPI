@@ -467,6 +467,25 @@ Dois mecanismos independentes, cada um com uma **função pura** testável sem b
      Não é alerta por mutação: o ruído fica limitado a 1 por organização/dia/processo. A prova de que
      o caminho marca continua sendo o e2e da T2c; o aviso cobre o que o e2e não vê, a falha em
      produção depois do deploy.
+  - **T2c — o que foi medido ao implementar o RF-10 (2026-11-24/25; o que NÃO foi provado está no fim).**
+    (1) **Lista de exclusão por nome** (constante única em `lib/audit/fora-do-expediente.ts`, com teste):
+    `authz.denied` e a família `auth.` (19 códigos) **não marcam** — decisão do dono.
+    `organization.switched` e `profile.updated` também ficam fora, por **decisão do dono** (2026-11-25, no PR #127; a lista nasceu da proposta do autor e o dono a aceitou). `security.mfa_desativada` e
+    `mfa.recovery_codes_regenerated` **marcam** de propósito. (2) **Rotas isentas do `agent` que
+    auditam:** só `attendants/availability` (`attendant.availability_changed`) e `notifications/push`
+    (`notification_prefs.changed`); `mark-read` não audita; `agent` nunca marca. (3) **Escritores diretos
+    em `api_audit_log` fora do `audit()`:** só `lib/ai/handoff/orchestrator.ts` (ação da IA, sem ator
+    humano), numa allowlist com motivo que só encolhe (`tests/unit/audit-so-um-escritor.test.ts`).
+    (4) **Defeito que só o e2e achou:** o cache do expediente do `audit()`, como `Map` de módulo, **não é
+    compartilhado** entre rota de API e Server Action no build de produção do Next (grafos de módulo
+    diferentes): o `PATCH /settings/expediente` descartava só a cópia da rota, e uma Server Action marcou
+    "fora" 0,7 s depois de o expediente virar "dentro". **Correção:** estado em `globalThis` por
+    `Symbol.for`. Causa raiz provada pela prova inversa (desfeita só essa correção, o mesmo e2e reprova).
+    Teste sem Next: `lib/expediente/cache-do-audit.instancias.test.ts` (`vi.resetModules`).
+    (5) O e2e muda o expediente pela **API do produto** (`PATCH /settings/expediente`, admin com TOTP),
+    nunca direto no banco, porque o cache de 30 s manteria o valor antigo. **Não provado:** Node 24 /
+    `--experimental-async-context-frame`; instância com mais de um processo (o cache é por processo,
+    TTL 30 s, e o `PATCH` só descarta o do processo que o atendeu).
   - **`void audit()` (125 chamadas): o que se sabe, o que NÃO foi medido e o que a T2c mede antes de
     depender disto (review do #87, item 2).** Fato lido no código, **não** medição: o corpo de
     `audit()` roda **de forma síncrona até o primeiro `await`**, dentro do contexto da requisição, mesmo
