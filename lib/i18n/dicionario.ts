@@ -4492,6 +4492,7 @@ export const DICIONARIO: Traducoes = {
   "Mencionar membro": { es: "Mencionar miembro" },
   "Nenhum membro encontrado": { es: "Ningún miembro encontrado" },
   "Membro sem nome": { es: "Miembro sin nombre" },
+  "Não foi possível carregar os membros.": { es: "No se pudieron cargar los miembros." },
   "Nenhum template. Crie em Configurações.": { es: "Ningún modelo. Crea uno en Configuración." },
 
   // ─── Inbox: mídia (áudio, imagem, figurinha, vídeo, documento) ───

@@ -122,6 +122,25 @@ describe("MentionMenu — renderização", () => {
   });
 });
 
+describe("MentionMenu — carregando e erro (anti-morte)", () => {
+  it("carregando: mostra 'Carregando…' e não 'Nenhum membro encontrado'", () => {
+    renderMenu({ membros: [], estado: "carregando" });
+    expect(screen.getByText("Carregando…")).toBeTruthy();
+    expect(screen.queryByText("Nenhum membro encontrado")).toBeNull();
+  });
+
+  it("erro: mostra o aviso e nenhum option", () => {
+    renderMenu({ membros: [], estado: "erro" });
+    expect(screen.getByText("Não foi possível carregar os membros.")).toBeTruthy();
+    expect(screen.queryAllByRole("option")).toHaveLength(0);
+  });
+
+  it("sem `estado` o comportamento é o de sempre", () => {
+    renderMenu({ membros: [], estado: undefined });
+    expect(screen.getByText("Nenhum membro encontrado")).toBeTruthy();
+  });
+});
+
 describe("MentionMenu — mouse", () => {
   it("clicar em um item chama onPick com o membro", () => {
     const { onPick } = renderMenu();

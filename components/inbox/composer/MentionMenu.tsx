@@ -121,9 +121,14 @@ interface Props {
   ativo: number;
   onAtivo: (indice: number) => void;
   onPick: (m: MembroMencionavel) => void;
+  /**
+   * Por que a lista pode estar vazia sem que "ninguém" case: a busca ainda corre ou falhou.
+   * Sem isto o menu diria "Nenhum membro encontrado" enquanto carrega, o que é mentira.
+   */
+  estado?: "carregando" | "erro";
 }
 
-export function MentionMenu({ open, consulta, membros, ativo, onAtivo, onPick }: Props) {
+export function MentionMenu({ open, consulta, membros, ativo, onAtivo, onPick, estado }: Props) {
   const t = useT();
   if (!open) return null;
   const semNome = t("Membro sem nome");
@@ -137,7 +142,13 @@ export function MentionMenu({ open, consulta, membros, ativo, onAtivo, onPick }:
       aria-label={t("Mencionar membro")}
     >
       {filtrados.length === 0 ? (
-        <div className="px-3 py-2 text-xs text-muted-foreground">{t("Nenhum membro encontrado")}</div>
+        <div className="px-3 py-2 text-xs text-muted-foreground">
+          {estado === "carregando"
+            ? t("Carregando…")
+            : estado === "erro"
+              ? t("Não foi possível carregar os membros.")
+              : t("Nenhum membro encontrado")}
+        </div>
       ) : (
         filtrados.map((m, i) => (
           <div
