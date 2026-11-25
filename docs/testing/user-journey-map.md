@@ -1994,3 +1994,42 @@ deploy de um cliente). Spec: `tests/e2e/expediente-tela-de-configuracao.spec.ts`
 é provado no unitário da rota, #121); a seção **Departamentos** (T4a → T5 → T6); a tela em espanhol
 pelo browser (o guarda de i18n cobre as chaves, mas ninguém abriu a tela em `es`); tela do **viewer**
 e do **agent** (a página exige `manager`; ambos caem em `/403`, comportamento que já existia).
+
+## J23 — Mencionar um colega numa nota interna, escolhendo-o numa lista `[P1]` (2026-11-25)
+
+**Por que importa:** a nota interna é onde o time passa o caso adiante, e a menção é o que faz o colega
+saber. Até a #69 quem escrevia a nota tinha de adivinhar como o servidor casa o nome — e errar **não
+avisava ninguém, em silêncio**. Medido para a spec: `@João D'Ávila` é cortado no apóstrofo e o João nunca
+é avisado; `@Ana` avisa toda "Ana" da organização, por primeiro nome.
+
+**Onde:** Inbox › conversa › aba "Nota interna" › digitar `@`.
+
+Prova pela tela, num build de produção local contra o Supabase local (sem Redis, como o primeiro deploy de
+um cliente), com **quatro atendentes `agent` simulados em contextos de navegador separados**: Ana Silva (a
+autora), Beto, Beto Santos (colide com o Beto por primeiro nome) e João D'Ávila (apóstrofo). Spec:
+`tests/e2e/nota-mencao.spec.ts`; evidência em `.superpowers/evidence/nota-mencao/`.
+
+| # | Caso | Resultado |
+|---|---|---|
+| J23.1 | Em **nota**, `@` abre a lista e a autora **não** aparece; em **mensagem**, `@` é só texto e a lista nunca abre | **PASS** — local |
+| J23.2 | `@be` lista Beto e Beto Santos. Escolher "Beto" por **clique** insere `@<user_id>` (o nome sozinho atingiria também o Beto Santos); escolher "João D'Ávila" por **teclado** também insere o id (o apóstrofo cortaria o nome). **Enter com a lista aberta seleciona e não salva a nota** | **PASS** — local |
+| J23.3 | Salvar a nota faz **1** `POST …/notes` (201) e **nenhum** `POST /api/v1/messages`: nada vai ao cliente | **PASS** — local |
+| J23.4 | O servidor emite `user.mentioned` **só** para Beto e João; o Beto Santos não recebe (conferido no `event_log`) | **PASS** — local |
+| J23.5 | A lista fica dentro da janela e acima do campo, sem rolagem lateral, a 1440 px **e a 390 px** (`getBoundingClientRect`) | **PASS** — local |
+| J23.6 | O mencionado recebe o aviso **ao vivo**, sem recarregar, e o clique nele abre a conversa | **BLOQUEADO** — `test.fixme`. Ver abaixo |
+
+**J23.6 — o achado:** `conversation_notes` **não está** na publicação `supabase_realtime`: nem no
+`baseline.sql` nem em nenhuma migration (`select tablename from pg_publication_tables where
+pubname='supabase_realtime'` não a lista num banco montado só com o baseline). O aviso in-app de menção
+(`useCrmAlerts`) e a nota aparecendo ao vivo na conversa (`useConversationNotes`) dependem de Realtime
+nessa tabela, então **não funcionam em nenhuma instalação**, e isso é anterior à #69. A página do Beto,
+logado e com a conversa aberta, ficou 30 s sem toast, e o servidor tinha emitido o evento. Consertar é
+mudança de schema (migration + apêndice do baseline + MANIFEST), que a spec #69 proíbe nesta issue
+(`02-design.md` §4): a decisão é do dono do produto. Quando a tabela for publicada, trocar `test.fixme`
+por `test` em `nota-mencao.spec.ts`.
+
+**Não provado:** a **bandeja do sistema operacional** (o Playwright não a alcança; o spec substitui só a
+classe `Notification` e dispararia o `onclick` real do produto); a acessibilidade com **leitor de tela**
+(só por papéis/ARIA nos testes unitários); a tela em **espanhol** pelo browser (o guarda de i18n cobre as
+chaves). **Visível na evidência:** a nota salva mostra o `@<user_id>` cru no `NoteCard` — é o custo da Q1
+(o id é o único token inequívoco), e destacar a menção no cartão ficou fora de escopo (Q4).
