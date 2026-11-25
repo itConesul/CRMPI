@@ -16,6 +16,7 @@ import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { ApiError } from "@/lib/api/types";
+import { CORES_DE_ETAPA } from "@/lib/leads/cores-de-etapa";
 import type { EstadoDoMapeamento, EtapaDoFunil } from "@/hooks/pipelines/useAgentMapping";
 
 vi.mock("@/lib/api/client", () => ({
@@ -190,7 +191,7 @@ describe("StagesSection — a linha se explica sozinha", () => {
 
     // Desktop: o cabeçalho de colunas.
     const cabecalho = within(screen.getByTestId("etapas-cabecalho"));
-    for (const texto of [ROTULO.nome, ROTULO.ordem, ROTULO.papel]) {
+    for (const texto of [ROTULO.nome, ROTULO.ordem, ROTULO.papel, ROTULO.cor]) {
       expect(cabecalho.getByText(texto)).toBeInTheDocument();
     }
 
@@ -202,6 +203,7 @@ describe("StagesSection — a linha se explica sozinha", () => {
     expect(linha.getByText(ROTULO.nome)).toBeInTheDocument();
     expect(linha.getByText(ROTULO.ordem)).toBeInTheDocument();
     expect(linha.getByText(ROTULO.papel)).toBeInTheDocument();
+    expect(linha.getByText(ROTULO.cor)).toBeInTheDocument();
 
     // E o seletor mostra o rótulo que só faz sentido debaixo deles.
     expect(screen.getByTestId("papel-e3")).toHaveTextContent("Aqui o cliente fecha");
@@ -274,6 +276,82 @@ describe("StagesSection — renomear, criar e reordenar", () => {
     expect(screen.getByTestId("subir-e1")).toBeDisabled();
     expect(screen.getByTestId("descer-e4")).toBeDisabled();
     expect(screen.getByTestId("descer-e1")).toBeEnabled();
+  });
+});
+
+describe("StagesSection — a cor do cabeçalho", () => {
+  it("oferece «Sem cor» e TODAS as cores da paleta, nada além disso", async () => {
+    const user = userEvent.setup();
+    montar();
+    await screen.findByTestId("nome-e1");
+
+    const opcoes = await opcoesNaTela(user, "cor-e1");
+    expect(opcoes).toEqual(["Sem cor", ...CORES_DE_ETAPA.map((c) => c.rotulo)]);
+  });
+
+  it("etapa sem cor mostra «Sem cor»; etapa com cor da paleta mostra o NOME da cor", async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({
+      data: estado({}, [
+        { id: "e1", name: "Novo", is_won: false, is_lost: false, color: null },
+        { id: "e2", name: "Proposta", is_won: false, is_lost: false, color: "#1d4ed8" },
+      ]),
+    });
+    montar();
+    await screen.findByTestId("nome-e1");
+
+    expect(screen.getByTestId("cor-e1")).toHaveTextContent("Sem cor");
+    expect(screen.getByTestId("cor-e2")).toHaveTextContent("Azul");
+  });
+
+  it("escolher uma cor manda SÓ a cor, com o hex da paleta", async () => {
+    const user = userEvent.setup();
+    vi.mocked(apiClient.patch).mockResolvedValue({ data: { etapas: [] } });
+    montar();
+    await screen.findByTestId("nome-e1");
+
+    await user.click(screen.getByTestId("cor-e1"));
+    await user.click(await screen.findByRole("option", { name: "Roxo" }));
+
+    await waitFor(() => expect(apiClient.patch).toHaveBeenCalledTimes(1));
+    expect(vi.mocked(apiClient.patch).mock.calls[0]).toEqual([
+      `/api/v1/pipelines/${PIPE}/stages/e1`,
+      { color: "#7e22ce" },
+    ]);
+  });
+
+  it("«Sem cor» numa etapa colorida manda color null", async () => {
+    const user = userEvent.setup();
+    vi.mocked(apiClient.patch).mockResolvedValue({ data: { etapas: [] } });
+    vi.mocked(apiClient.get).mockResolvedValue({
+      data: estado({}, [{ id: "e1", name: "Novo", is_won: false, is_lost: false, color: "#b91c1c" }]),
+    });
+    montar();
+    await screen.findByTestId("nome-e1");
+
+    await user.click(screen.getByTestId("cor-e1"));
+    await user.click(await screen.findByRole("option", { name: "Sem cor" }));
+
+    await waitFor(() => expect(apiClient.patch).toHaveBeenCalledTimes(1));
+    expect(vi.mocked(apiClient.patch).mock.calls[0]![1]).toEqual({ color: null });
+  });
+
+  /**
+   * Etapa criada antes desta tela pode ter uma cor qualquer. Abrir a tela não
+   * pode apagá-la em silêncio: ela aparece, não é selecionável e não gera pedido.
+   */
+  it("cor FORA da paleta aparece como «Cor atual», sem poder ser escolhida e sem pedido", async () => {
+    const user = userEvent.setup();
+    vi.mocked(apiClient.get).mockResolvedValue({
+      data: estado({}, [{ id: "e1", name: "Novo", is_won: false, is_lost: false, color: "#fde68a" }]),
+    });
+    montar();
+    await screen.findByTestId("nome-e1");
+
+    expect(screen.getByTestId("cor-e1")).toHaveTextContent("Cor atual (fora da lista)");
+    await user.click(screen.getByTestId("cor-e1"));
+    const atual = await screen.findByRole("option", { name: "Cor atual (fora da lista)" });
+    expect(atual).toHaveAttribute("aria-disabled", "true");
+    expect(apiClient.patch).not.toHaveBeenCalled();
   });
 });
 

@@ -188,6 +188,100 @@ describe("PATCH /api/v1/pipelines/[id]/stages/[stageId]", () => {
     expect(body.data.etapas.find((e) => e.id === "e2")?.name).toBe("Orçamento");
   });
 
+  // ── cor do cabeçalho ────────────────────────────────────────────────────────
+
+  it("colorir com uma cor da paleta → um update só, e a cor volta na resposta", async () => {
+    authOk();
+    const db = makeDb({ stages: funil() });
+    const { PATCH } = await import("./route");
+    const res = await PATCH(reqPatch({ color: "#1d4ed8" }), ctx());
+
+    expect(res.status).toBe(200);
+    expect(db.escritas).toHaveLength(1);
+    expect(db.escritas[0]?.patch).toEqual(comAutoria({ color: "#1d4ed8" }));
+    expect(db.escritas[0]?.filtros).toContainEqual(["organization_id", ORG_ID]);
+    expect(db.escritas[0]?.filtros).toContainEqual(["pipeline_id", PIPE]);
+
+    const body = (await res.json()) as { data: { etapas: Array<{ id: string; color: string | null }> } };
+    expect(body.data.etapas.find((e) => e.id === "e2")?.color).toBe("#1d4ed8");
+  });
+
+  it("a cor é gravada em MINÚSCULA, qualquer que seja a caixa do pedido", async () => {
+    authOk();
+    const db = makeDb({ stages: funil() });
+    const { PATCH } = await import("./route");
+    await PATCH(reqPatch({ color: "#1D4ED8" }), ctx());
+
+    expect(db.escritas[0]?.patch).toEqual(comAutoria({ color: "#1d4ed8" }));
+  });
+
+  it("color null → tira a cor (o cabeçalho volta ao aspecto de fábrica)", async () => {
+    authOk();
+    const db = makeDb({ stages: funil().map((e) => (e.id === "e2" ? { ...e, color: "#1d4ed8" } : e)) });
+    const { PATCH } = await import("./route");
+    const res = await PATCH(reqPatch({ color: null }), ctx());
+
+    expect(res.status).toBe(200);
+    expect(db.escritas[0]?.patch).toEqual(comAutoria({ color: null }));
+  });
+
+  /**
+   * ⭐ O CHECK do banco aceita qualquer #rrggbb — ele é formato, não legibilidade.
+   * Sem esta recusa, um amarelo-claro chegaria ao cabeçalho com o nome ilegível
+   * por cima. A paleta é a regra, e ela mora em `atualizarEtapa`.
+   */
+  it("cor com formato válido mas FORA da paleta → 422 com frase de tela, e nenhuma escrita", async () => {
+    authOk();
+    const db = makeDb({ stages: funil() });
+    const { PATCH } = await import("./route");
+    const res = await PATCH(reqPatch({ color: "#fde68a" }), ctx());
+
+    expect(res.status).toBe(422);
+    const body = (await res.json()) as { error: { message: string } };
+    expect(body.error.message).toMatch(/cores da lista/);
+    expect(body.error.message).not.toMatch(/crm_stages|constraint/i);
+    expect(db.escritas).toEqual([]);
+    expect(audit).not.toHaveBeenCalled();
+  });
+
+  it("cor que nem é hex → 422 do formato, e nenhuma escrita", async () => {
+    authOk();
+    const db = makeDb({ stages: funil() });
+    const { PATCH } = await import("./route");
+
+    for (const lixo of ["azul", "#12", "url(javascript:alert(1))", 7]) {
+      const res = await PATCH(reqPatch({ color: lixo }), ctx());
+      expect(res.status, String(lixo)).toBe(422);
+    }
+    expect(db.escritas).toEqual([]);
+  });
+
+  it("colorir e renomear juntos → um único update", async () => {
+    authOk();
+    const db = makeDb({ stages: funil() });
+    const { PATCH } = await import("./route");
+    const res = await PATCH(reqPatch({ name: "Orçamento", color: "#b91c1c" }), ctx());
+
+    expect(res.status).toBe(200);
+    expect(db.escritas).toHaveLength(1);
+    expect(db.escritas[0]?.patch).toEqual(comAutoria({ name: "Orçamento", color: "#b91c1c" }));
+  });
+
+  it("colorir audita pipeline.stage_updated com a cor pedida", async () => {
+    authOk();
+    makeDb({ stages: funil() });
+    const { PATCH } = await import("./route");
+    await PATCH(reqPatch({ color: "#15803d" }), ctx());
+
+    expect(vi.mocked(audit)).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: "pipeline.stage_updated",
+        resourceId: "e2",
+        metadata: expect.objectContaining({ pedido: { color: "#15803d" } }),
+      }),
+    );
+  });
+
   it("nome já usado por outra etapa → 422 com a mensagem da regra, e nenhuma escrita", async () => {
     authOk();
     const db = makeDb({ stages: funil() });
