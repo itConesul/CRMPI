@@ -40,6 +40,7 @@ fonte só (`lib/onboarding/passos.ts`) — eram três listas que discordavam. Ga
 | J1.9 | Done: "Ir para o Inbox" | seta `onboarded_at`, cai no `/app/inbox` |
 | J1.10 | Gate MFA pós-onboarding | blocker aparece; enrolar TOTP + ver/salvar recovery codes funciona de ponta a ponta |
 | J1.11 | Abandonar no meio e voltar (fecha browser no step 3) | retoma exatamente no step pendente |
+| J1.13 | **[P1]** Colorir e renomear as colunas do funil (Configurações › Etapas do funil) — `funil-cor-das-colunas.spec.ts` | manager/admin escolhem a cor do cabeçalho numa lista fixa; o quadro pinta o cabeçalho e o texto passa de 4,5:1 (medido no navegador); «Sem cor» volta ao aspecto de fábrica; `agent` não entra na tela nem na API; cor fora da paleta é recusada (issue #124) |
 | J1.12 | **[P0]** Trocar a PRÓPRIA senha, já logado, SEM Resend (Configurações › Segurança) — `trocar-propria-senha.spec.ts` | senha atual errada é recusada sem revelar mais que o erro; a certa troca, o aparelho em uso segue logado e os outros saem; `auth.password_changed` auditado sem senha nos metadados; a antiga falha no login e a nova entra (issue #106) |
 | J1.12 | Tentar `/app/inbox` antes de concluir | redirect pro onboarding, sem loop |
 | J1.13 | Reabrir `/onboarding` depois de concluído | redirect pro app (wizard não reabre) |

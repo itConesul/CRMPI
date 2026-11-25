@@ -258,6 +258,9 @@ describe("GET /api/v1/pipelines/[id]/agent-mapping", () => {
     expect(body.data.etapas[0]).toEqual({
       id: "e1",
       name: "Novo",
+      // A cor do cabeçalho viaja junto: é por esta leitura que a tela de etapas
+      // sabe qual cor mostrar no seletor. `null` = aspecto de fábrica.
+      color: null,
       is_won: false,
       is_lost: false,
       last_change_actor_kind: null,
@@ -269,6 +272,17 @@ describe("GET /api/v1/pipelines/[id]/agent-mapping", () => {
     );
     // O hint da arquivada não vaza para o mapa.
     expect(body.data.mapeamento.qualifying).toBeNull();
+  });
+
+  it("devolve a cor do cabeçalho de cada etapa — sem ela o seletor da tela mostraria «Sem cor» sobre coluna pintada", async () => {
+    authOk();
+    makeDb({ stages: funil().map((e) => (e.id === "e2" ? { ...e, color: "#1d4ed8" } : e)) });
+    const { GET } = await import("./route");
+    const res = await GET(reqGet(), ctx);
+
+    const body = (await res.json()) as { data: { etapas: Array<{ id: string; color: string | null }> } };
+    expect(body.data.etapas.find((e) => e.id === "e2")?.color).toBe("#1d4ed8");
+    expect(body.data.etapas.find((e) => e.id === "e1")?.color).toBeNull();
   });
 });
 
