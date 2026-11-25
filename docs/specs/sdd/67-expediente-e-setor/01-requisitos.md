@@ -25,7 +25,7 @@ departamentos e do expediente definidos aqui.
 | RF-13 | Um setor **com conversas não pode ser apagado**: a API responde `409 department_not_empty` com a contagem, e o admin reatribui as conversas explicitamente antes. Apagar um setor nunca devolve conversas a "sem setor" em silêncio (N1) | Decisão do dono do produto (2026-11-17) |
 | RF-14 | A regra de setor vale **também na escrita**: `agent` não faz `UPDATE`/`DELETE` em conversa nem `INSERT`/`UPDATE`/`DELETE` em `messages` de uma conversa que não enxerga, e não muda o `department_id` de uma conversa (N2) | Decisão do dono do produto (2026-11-17) |
 | RF-15 | **`agent` não passa conversa para outro departamento**: só `manager` ou `admin` transferem entre departamentos, e só eles atribuem a uma pessoa de **fora** do setor da conversa (o dono da conversa sempre a vê, Q5) | Decisão B do dono, 2026-11-25 |
-| RF-16 | **`viewer` vê só os departamentos dele**, e não todos (a proposta de 2026-11-17 dava ao `viewer` visão total). `admin` e `manager` continuam vendo tudo (RF-8). **Em aberto: o que o `viewer` vê de conversa SEM setor (Q10)** | Decisão C do dono, 2026-11-25 |
+| RF-16 | **`viewer` vê só os departamentos dele**, e não todos (a proposta de 2026-11-17 dava ao `viewer` visão total). `admin` e `manager` continuam vendo tudo (RF-8). **A conversa SEM setor é visível a todo `viewer`, como ao `agent` (Q10)** | Decisão C do dono, 2026-11-25 |
 | RF-17 | **A ficha e a linha do tempo do contato escondem o conteúdo de conversa de outro departamento**, e isso vem **antes** de o isolamento por setor ser ligado para clientes. Revê o risco aceito da Q6 (#80) | Decisão D do dono, 2026-11-25 |
 | RNF-1 | Nenhuma isenção do gate é opcional: `admin`/`manager`, platform admin e impersonação de suporte nunca são barrados, e ficam **fora do gate** (por escrito e com teste de varredura) token Bearer, MCP, agente de IA, `webhooks/*`, `cron/*` e a ingestão de mensagens. Isenções fixas do `agent`: leitura, login/logout, troca de organização, perfil, preferências, MFA, marcar notificação como lida, presença e `attendants/availability`. CRM interno (leads, contatos, tarefas, agenda) é barrado por padrão e liberado rota a rota, com o critério "dispara mensagem ao cliente?" | "Melhorias propostas" 4 |
 | RNF-2 | Isolamento entre organizações continua intacto; a mudança de RLS passa no teste de 2 organizações e ganha um caso por setor | "Melhorias propostas" 5 |
@@ -87,7 +87,8 @@ divergir). Nenhuma está mais em aberto; N1 a N4 são decisões novas do mesmo d
    organização agora**.)* A evolução prevista é `departments.business_hours jsonb` nullable, com
    fallback para o expediente da organização — aditiva, sem backfill, não quebra o `update.sh`. Fica
    registrada em `02-design.md` §4.1 e **não** é implementada por esta spec.
-10. **Q10 — O `viewer` e a conversa SEM setor** *(⏳ **em aberto**, levantada em 2026-11-25)*: a decisão C
-    diz que o `viewer` vê só os departamentos dele, mas não diz se a conversa **sem setor** lhe é visível
-    (para o `agent` é, RF-7). Precisa de resposta do dono **antes da T4b**, que reescreve o ramo do `viewer`
-    em `fn_can_view_conversation`. Não decidi por conta própria.
+10. **Q10 — O `viewer` e a conversa SEM setor** *(✅ respondida em 2026-11-25 — instrução de Cauan em 2026-11-25, **não** uma decisão do dono registrada pelo Sciuba: **a confirmar**)*:
+    **todo `viewer` vê a conversa sem setor**, como o `agent` (RF-7). A decisão C diz que o `viewer` vê só os
+    departamentos dele, e não dizia nada sobre a conversa sem setor. Regra para a T4b: o `viewer` vê a conversa
+    se `department_id` é nulo **ou** está entre os departamentos dele; o `visibility_mode` continua valendo só
+    para o `agent`. **Se o dono decidir diferente, muda só o ramo do `viewer`** em `fn_can_view_conversation`.

@@ -657,7 +657,7 @@ Dois mecanismos independentes, cada um com uma **função pura** testável sem b
   como erro no `install` (`ON_ERROR_STOP=1`) em vez de vazar. O `update.sh` (sem `ON_ERROR_STOP`)
   reaplica o baseline de cima para baixo, então o estado final é o do apêndice novo.
 - Regra proposta (ver §4.3): `manager`/`admin` e platform admin veem tudo; **o `viewer` vê só os seus
-  departamentos (decisão C, 2026-11-25; a conversa sem setor é a Q10, em aberto)**; `agent` vê a conversa
+  departamentos (decisão C, 2026-11-25)**, e a conversa **sem setor** ele vê, como o `agent` (Q10); `agent` vê a conversa
   se **é o dono**, **ou** (`department_id` é nulo **ou** está entre os seus setores) **e** a regra de
   `visibility_mode` já existente a admite. As duas restrições **somam**; nenhuma substitui a outra.
 - **Realtime:** `postgres_changes` aplica a RLS de SELECT ao assinante, então a mudança de policy
@@ -686,7 +686,7 @@ mensagem chegou. Registrado por Sciuba na [#67](https://github.com/itConesul/CRM
 |---|---|---|---|
 | **A** | Quem vincula pessoas a departamentos: `admin` **e `manager`**. Criar, renomear e apagar departamento segue só do `admin` | RF-2. RLS de `department_members` escrita `manager`+ (**feito na T4a**, migration 0240); rota `PUT /departments/[id]/members` `manager`+ (T5) | T4a, T5 |
 | **B** | `agent` não passa conversa para outro departamento; só `manager`/`admin`. Vale também para atribuir a uma pessoa de fora do setor (o dono da conversa sempre a vê, Q5) | RF-15 (novo). `conversations/[id]/transfer` e a atribuição; a trava no banco é decisão da T4b | T5, T4b |
-| **C** | `viewer` vê só os departamentos dele; `admin` e `manager` veem tudo | RF-16 (novo); a regra de §2.2 e a função de §4.3 mudam. **Q10 em aberto:** o `viewer` e a conversa sem setor | T4b |
+| **C** | `viewer` vê só os departamentos dele; `admin` e `manager` veem tudo | RF-16 (novo); a regra de §2.2 e a função de §4.3 mudam. **Q10 (instrução de Cauan, a confirmar pelo dono): todo `viewer` vê a conversa sem setor** | T4b |
 | **D** | A ficha e a linha do tempo do contato escondem conteúdo de conversa de outro departamento, **antes** de o isolamento ser ligado para clientes | RF-17 (novo). Revê o risco aceito da Q6 e **amplia a T3** (`crm_lead_activities`, Customer 360, #80) | T3, T4b |
 
 **Consequências já decididas:** número de WhatsApp por departamento é a [#135](https://github.com/itConesul/CRMPI/issues/135),
@@ -850,8 +850,8 @@ create index if not exists idx_conversations_department
 
 > **Superada em um ponto (decisão C, 2026-11-25).** A função abaixo é a PROPOSTA de 2026-11-17 e dá ao
 > `viewer` visão total (`in ('viewer','manager','admin') then true`). O `viewer` passa a ver só os seus
-> departamentos; a T4b reescreve esse ramo, **depois da resposta à Q10** (o que o `viewer` vê de conversa
-> sem setor).
+> departamentos; a T4b reescreve esse ramo: o `viewer` vê a conversa se `department_id` é nulo **ou** está entre os
+> seus departamentos (Q10: a conversa sem setor é visível a todo `viewer`; **a confirmar pelo dono**).
 ```sql
 create or replace function public.fn_can_view_conversation(
   p_org uuid, p_assigned_to_user_id uuid, p_department_id uuid
