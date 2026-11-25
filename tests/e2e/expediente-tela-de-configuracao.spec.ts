@@ -196,8 +196,10 @@ test.describe("tela de configuração do expediente", () => {
   });
 
   test("expediente gravado ilegível se conserta pela tela, que deixa Salvar (revisão do #132, ponto 3)", async ({ page }) => {
-    // Algo gravado que NÃO é um expediente válido: a leitura o trata como "sem expediente".
-    await gravarSettings({ ...settingsOriginal, business_hours: { isto: "nao e um expediente" } });
+    // Algo gravado que NÃO é um expediente válido: a leitura o trata como "sem expediente". Tem de
+    // REPROVAR o schema: uma chave desconhecida só é descartada (o Zod preenche os padrões) e o valor
+    // continua válido — o caso real é o fuso que não existe, como o de um clone antigo.
+    await gravarSettings({ ...settingsOriginal, business_hours: { timezone: "Nao/Existe", windows: [] } });
     await loginComoAdmin(page, creds);
     await page.goto(TELA);
     await expect(page.getByTestId("secao-expediente")).toBeVisible({ timeout: 30_000 });
