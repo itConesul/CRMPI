@@ -21,7 +21,7 @@
       "col": 0,
       "type": "ui",
       "label": "Admin define o expediente",
-      "sublabel": "hoje só pela API; a tela de configuração é a T6"
+      "sublabel": "pela seção Expediente de Configurações › Atendimento (T6) ou pela API"
     },
     {
       "id": "agent",
@@ -198,6 +198,14 @@
       "type": "service",
       "label": "Handoff e fila do MCP",
       "sublabel": "lib/mcp/tools/handoff.ts e lib/routing/queue.ts, client admin do MCP"
+    },
+    {
+      "id": "telaconfig",
+      "lane": "humano",
+      "col": 6,
+      "type": "ui",
+      "label": "Seção Expediente em Configurações › Atendimento",
+      "sublabel": "o admin monta janelas por dia e o fuso, salva, e vê se está dentro ou fora e quantas ações foram barradas hoje; o manager só lê (T6)"
     }
   ],
   "edges": [
@@ -229,7 +237,10 @@
     { "id": "e20", "from": "eligibles", "to": "carregar", "label": "lido uma vez por chamada, só aplicado ao agent" },
     { "id": "e21", "from": "get", "to": "pura", "label": "descreverExpediente chama dentroDoExpediente e proximaAbertura" },
     { "id": "e22", "from": "resp403", "to": "agent", "label": "o agent vê o motivo e a hora em que o expediente abre" },
-    { "id": "e23", "from": "get", "to": "leitor", "label": "barrados_hoje só para admin e manager; agent e viewer recebem null sem ida ao Redis" }
+    { "id": "e23", "from": "get", "to": "leitor", "label": "barrados_hoje só para admin e manager; agent e viewer recebem null sem ida ao Redis" },
+    { "id": "e50", "from": "admin", "to": "telaconfig", "label": "abre a seção e monta o horário na tela, sem tocar na API" },
+    { "id": "e51", "from": "telaconfig", "to": "patch", "label": "salva: PATCH /settings/expediente, só admin; a tela recusa fuso inexistente e início = fim antes de enviar" },
+    { "id": "e52", "from": "hook", "to": "telaconfig", "label": "o estado agora (dentro ou fora, quando abre) e barrados_hoje vêm do servidor, pela mesma leitura da faixa" }
   ],
   "cards": [
     {
