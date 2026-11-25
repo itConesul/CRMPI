@@ -393,13 +393,19 @@ Dois mecanismos independentes, cada um com uma **função pura** testável sem b
          **`null`** quando o Redis está ausente, malformado ou fora. A tela mostra `0` e `—`, respectivamente.
       5. **Sem expediente configurado** (`business_hours` ausente ou inválido): **proposta:** `null`. Sem
          configuração o gate nunca barra, então nada foi contado, mas também não há fuso da organização
-         para dizer qual é "hoje"; `null` evita inventar um dia em UTC. **A confirmar** (é detalhe de
-         contrato, não de produto, mas a tela da T6 depende dele).
+         para dizer qual é "hoje"; `null` evita inventar um dia em UTC. **Aceito pelo revisor em 2026-11-24**
+         ([review do #114](https://github.com/itConesul/CRMPI/pull/114#pullrequestreview-6045684214): "é detalhe de
+         exibição"); a T2d o confirma ao implementar, e a tela da T6 depende dele.
       6. **Falha do Redis não derruba nem atrasa o `GET`.** A falha vira `null` (o cliente é criado com
-         `retry: false`). **NÃO VERIFICADO:** se o cliente `@upstash/redis` tem timeout próprio; sem ele,
-         um Redis que aceita a conexão e não responde seguraria a resposta que a faixa pede a cada minuto.
-         A T2d mede isso antes de declarar o item fechado e, se faltar, limita a leitura com um prazo
-         curto (a leitura é opcional: perdê-la só vira `null`).
+         `retry: false`). **MEDIDO em 2026-11-24 (T2d, `@upstash/redis` 1.38.3):** o cliente **não tem
+         timeout por padrão**. Contra um servidor TCP que aceita a conexão e não responde, com `retry: false`
+         e sem `signal`, a chamada seguia **pendente aos 8 s**; com `signal: () => AbortSignal.timeout(1500)`
+         abortou em 1519 ms. Por isso o cliente do contador é criado com esse `signal` (`PRAZO_DO_REDIS_MS`,
+         1500 ms), **em forma de função** (o cliente é um singleton: sabotado com um `AbortSignal` fixo, a
+         **segunda** leitura voltou em 1 ms, porque o sinal já tinha expirado). Com o Redis do compose
+         **pausado** (mudo) a rota respondeu 200 e `null` em 1903 ms. **Limites:** não medi o Upstash de
+         nuvem, e não investiguei os ~400 ms entre o prazo de 1500 ms e os 1903 ms. A leitura é opcional:
+         perdê-la só vira `null`.
     - **(c)** Tirar a escrita do contador do PR do gate e entregá-la **junto com** o leitor, na T6.
       Nada escrito sem leitor e nada se perde (só "hoje"); o custo é descartar código já escrito e
       testado para reescrevê-lo depois.
@@ -425,9 +431,12 @@ Dois mecanismos independentes, cada um com uma **função pura** testável sem b
      (emitida pelo `requireRole`) é excluída por nome: é a recusa, não a ação. O carimbo **chega às
      Server Actions** (`POST`, medido — ver "Server Actions" abaixo), por isso a família de sessão
      `auth.` também é excluída por nome (decidido pelo dono em 2026-11-23, ponto 6).
-  3. **O expediente da organização**, lido pelo **mesmo carregador do gate** (`carregarExpediente`),
-     com **cache por organização e TTL curto — proposta: 30 s**, em memória do processo, descartado
-     quando `PATCH /settings/expediente` roda no mesmo processo. Sem expediente configurado, ou
+  3. **O expediente da organização**, lido pela **mesma função de leitura do gate** (`carregarExpediente`),
+     **envolvida por um cache próprio do `audit()`**: por organização, TTL de 30 s, em memória do
+     processo, descartado quando `PATCH /settings/expediente` roda no mesmo processo. **O cache NÃO fica
+     dentro de `carregarExpediente`:** o gate e `loadEligibleAttendants` leem direto no banco, sem cache
+     (decisão do dono em 2026-11-24, [#110](https://github.com/itConesul/CRMPI/issues/110#issuecomment-7141507471)),
+     para que o expediente salvo valha na hora para quem barra e para quem recebe conversa. Sem expediente configurado, ou
      inválido, ou dentro do horário: não marca. Dentro do expediente o custo é só o acerto de cache.
   4. **O papel, só se já estiver fora do expediente:** `rpc("fn_user_role_in_org", { p_org })` com o
      client da sessão — a **mesma fonte** que o `requireRole` usa (`lib/auth/require-role.ts`), nunca

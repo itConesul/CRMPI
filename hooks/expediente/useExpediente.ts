@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { useActiveOrg } from "@/hooks/auth/AuthProvider";
 import { apiClient } from "@/lib/api/client";
-import type { ExpedienteDescrito } from "@/lib/expediente/descrever";
+import type { ExpedienteDaApi } from "@/lib/expediente/descrever";
 
 /**
  * O expediente da organização e o estado avaliado pelo SERVIDOR agora (PRD-01 / #67).
@@ -16,7 +16,7 @@ export function useExpediente() {
   return useQuery({
     queryKey: ["expediente"],
     queryFn: async () => {
-      const res = await apiClient.get<{ data: ExpedienteDescrito }>("/api/v1/settings/expediente");
+      const res = await apiClient.get<{ data: ExpedienteDaApi }>("/api/v1/settings/expediente");
       return res.data;
     },
     staleTime: 30_000,

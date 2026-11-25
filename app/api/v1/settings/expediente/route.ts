@@ -2,7 +2,8 @@
  * GET   /api/v1/settings/expediente — lê o expediente da organização E o estado avaliado pelo
  *       servidor (`agora`, `dentro`, `opens_at`). `viewer`+ (qualquer membro): a faixa do shell chama
  *       esta rota para todo usuário logado, e o e2e constrói a janela em torno do `agora` do SERVIDOR,
- *       sem depender do relógio do runner.
+ *       sem depender do relógio do runner. Devolve também `barrados_hoje` (RNF-5, opção (b) do dono,
+ *       T2d): quantas tentativas o gate barrou hoje, **só para `admin` e `manager`**.
  * PATCH /api/v1/settings/expediente — grava `organizations.settings.business_hours` (`admin`).
  *
  * PRD-01 (#67). O expediente mora no jsonb que já existe (`settings.business_hours`, Q2 aprovada):
@@ -23,7 +24,8 @@ import { fail, ok } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
 import { requireRole } from "@/lib/auth/require-role";
 import { descartarExpedienteDoCache } from "@/lib/expediente/cache-do-audit";
-import { descreverExpediente } from "@/lib/expediente/descrever";
+import { lerBarradosDoDia } from "@/lib/expediente/contador";
+import { descreverExpediente, type ExpedienteDescrito } from "@/lib/expediente/descrever";
 import { requireSupportWrite } from "@/lib/impersonate/support";
 import { expedienteConfigSchema, validateRequest } from "@/lib/schemas";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -50,7 +52,25 @@ export async function GET(req: NextRequest): Promise<Response> {
   if (error) return fail("internal_error", error.message, 500, { requestId });
 
   const settings = (data?.settings as Record<string, unknown> | null) ?? {};
-  return ok(descreverExpediente(settings.business_hours, new Date()), { requestId });
+  const descrito = descreverExpediente(settings.business_hours, new Date());
+  return ok({ ...descrito, barrados_hoje: await barradosHoje(authz.org.role, authz.org.orgId, descrito) }, {
+    requestId,
+  });
+}
+
+/**
+ * `barrados_hoje` (RNF-5, opção (b), contrato em `02-design.md` §2.1). Número, inclusive `0`, quando
+ * o Redis respondeu; `null` em todo o resto, e `null` NUNCA custa uma ida ao Redis:
+ *  - `agent` e `viewer` recebem `null` sem consulta — a faixa chama esta rota de todo usuário logado a
+ *    cada 60 s, e o número só serve a quem gerencia o expediente;
+ *  - sem expediente válido não há fuso da organização para dizer qual é "hoje" (aceito pelo revisor no
+ *    #114), então também `null`, sem consulta.
+ * Falha do Redis é `null` (a leitura tem prazo: `PRAZO_DO_REDIS_MS`), nunca erro da rota.
+ */
+async function barradosHoje(role: string, orgId: string, descrito: ExpedienteDescrito): Promise<number | null> {
+  if (role !== "admin" && role !== "manager") return null;
+  if (!descrito.business_hours) return null;
+  return lerBarradosDoDia(orgId, descrito.business_hours.timezone);
 }
 
 export async function PATCH(req: NextRequest): Promise<Response> {

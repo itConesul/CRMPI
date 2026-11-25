@@ -29,3 +29,11 @@ export function descreverExpediente(bruto: unknown, agora: Date) {
 }
 
 export type ExpedienteDescrito = ReturnType<typeof descreverExpediente>;
+
+/**
+ * O que `GET /api/v1/settings/expediente` devolve: o expediente descrito mais `barrados_hoje`
+ * (RNF-5). Número, inclusive `0`, só para `admin`/`manager` com o Redis respondendo; `null` para
+ * `agent`/`viewer`, para quem não tem expediente válido e quando o Redis está ausente ou fora. A tela
+ * mostra `0` e `—`, respectivamente.
+ */
+export type ExpedienteDaApi = ExpedienteDescrito & { barrados_hoje: number | null };

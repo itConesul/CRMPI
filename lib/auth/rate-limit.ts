@@ -143,6 +143,11 @@ export const AUTH_LIMITS = {
   // usado UMA vez na vida de uma conta — 3 por hora por identidade já é
   // folga para quem errou o nome duas vezes.
   org_recovery: { ip: 5, id: 3, windowSec: 3600 },
+  // Trocar a própria senha pede a senha ATUAL, então o formulário é um oráculo
+  // de senha para quem tem só a sessão. O teto é por CONTA (id = id do usuário),
+  // conta toda tentativa e usa balde próprio — separado do `login`, para que
+  // errar a senha atual aqui nunca tranque a entrada da conta.
+  troca_de_senha: { ip: 30, id: 5, windowSec: 900 },
 } satisfies Record<string, AuthRateLimits>;
 
 export const __LOGIN_IP_DEFAULT_PARA_TESTE = LOGIN_IP_DEFAULT;
