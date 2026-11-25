@@ -300,8 +300,10 @@ sessão** (REST e telas), e continua verdadeiro para ela:
 
 > *Corrigido em 2026-11-25.* O texto anterior dizia "O agente externo lê via MCP org-scoped e sujeito
 > à RLS … o agente não vê além do escopo". Isso descrevia a intenção, não o código
-> (`lib/mcp/server.ts:41`). Se o dono decidir restringir o MCP por atendente ou por setor, é
-> funcionalidade nova, com spec própria (PRD-01 / #67, T3, `02-design.md` §1, achado F1).
+> (`lib/mcp/server.ts:41`). **Decisão do dono (2026-11-25, #67):** o token passa a
+> ter departamento, e o acesso à empresa inteira só por escolha explícita de `admin` ou `manager`. Isso ainda
+> **não existe no código** e precisa de spec própria (PRD-01 / #67, T3, `02-design.md` §1, achado F1): até lá,
+> vale o que está descrito acima.
 
 - **Conversas:** policy `conversations_select` usa `fn_can_view_conversation(org, assigned_to_user_id)`
   (`0035:25-57`). Para `agent`: `'all'` = tudo da org; `'own_and_unassigned'` = suas +
