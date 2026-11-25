@@ -219,7 +219,7 @@ expediente da organização; rota ou tela `/app/fora-de-expediente`; erro `OUT_O
   | Policies que dependem de `fn_can_view_conversation` | `pg_depend` ⨝ `pg_policy` onde `refobjid` é a função | **2:** `conversations_select` e `tenant_isolation_ai_reply_drafts_all` |
   | Funções cujo **corpo** a cita | `select proname from pg_proc where prosrc ilike '%fn_can_view_conversation%'` | **3**, todas `plpgsql`: `fn_appointment_stamp`, `fn_meet_action`, `fn_reply_action` |
   | O mesmo para `fn_can_view_lead` | as duas consultas acima, com a outra função | **6 policies** (`crm_leads` ×4, `crm_lead_activities_select`, `crm_lead_links_select`) e **0 funções** |
-  | Relações (tabelas e views) com coluna `conversation_id` | `information_schema.columns` | **14** |
+  | Relações (tabelas e views) com coluna `conversation_id` | `information_schema.columns` | **14: 13 tabelas e 1 view** (`calendar_google_reconcilable_appointments`, só `service_role`, sem leitura por usuário) |
   | Policies **restritivas** de leitura em `public` | `pg_policy` onde `not polpermissive` e `polcmd in ('r','*')` | **1**, em `idempotency_keys` (nenhuma nas tabelas abaixo) |
 
   - **F3 — FECHADO.** Os dependentes são 2 policies e 3 funções, e **nos cinco o setor é a coluna da própria
@@ -227,8 +227,8 @@ expediente da organização; rota ou tela `/app/fora-de-expediente`; erro `OUT_O
     `conversations c` da policy de `ai_reply_drafts`, o `from public.conversations …` de
     `fn_appointment_stamp` e de `fn_meet_action` (que passam `organization_id, assigned_to_user_id` da
     mesma linha) e o `from conversations c join ai_reply_drafts r` de `fn_reply_action`. Para a T4b basta
-    passar `department_id` junto; **não há consulta nova nem fonte externa de setor**. A lista da spec (3
-    funções) estava **incompleta**: faltava a policy de `ai_reply_drafts`.
+    passar `department_id` junto; **não há consulta nova nem fonte externa de setor**. Isto **confere com os 5
+    chamadores que a spec já listava** (a linha dos chamadores, no começo do §1, e o apêndice da T4b).
   - **F5 — O amparo do `drop function` não cobre as três funções.** A T4b conta com "`drop function` falha se
     ainda houver dependente, então um chamador esquecido aparece como erro no `install`". **Medido** (sonda
     descartável, no mesmo Postgres 15): com uma **policy** dependente o `drop function` falha (`cannot drop
@@ -236,22 +236,26 @@ expediente da organização; rota ou tela `/app/fora-de-expediente`; erro `OUT_O
     silêncio**, a função continua existindo e quebra ao ser chamada (`function public.zz_alvo(unknown,
     unknown) does not exist`). Logo, depois de a T4b trocar a assinatura, as 3 funções continuariam instaladas
     e falhariam **em runtime**, na primeira vez que uma pessoa em sessão marcasse um compromisso numa
-    conversa, executasse a ação do Meet ou a do rascunho de resposta. **Proposta para a T4b (a decidir no review
-    dela):** recriar as 3 funções (`create or replace`) na mesma migration **e** um invariante que rode a
-    segunda consulta da tabela e reprove se algum corpo ainda chamar a assinatura antiga: o amparo tem de ser
-    um **teste**, não o `drop`.
+    conversa, executasse a ação do Meet ou a do rascunho de resposta. **Consequência para a T4b:** o
+    `drop function` **não é amparo** para as funções. O amparo é o **invariante da Condição 2** (`03-testes.md`),
+    que tem de olhar `pg_proc.prosrc` e reconhecer a chamada de **2 argumentos** (a segunda consulta da
+    tabela, só pelo nome, ficaria sempre vermelha depois da T4b, porque as funções recriadas ainda citam o
+    nome), junto do caso de isolamento por chamador, que é o que de fato exerce o corpo. As 3 funções são
+    recriadas (`create or replace`) na mesma migration.
   - **F6 — O alcance da decisão D, medido (a decisão D diz "ficha e linha do tempo do contato"; o catálogo
-    mostra um problema maior).** O que exige para ser **lida** cada uma das 14 relações com `conversation_id` e
+    mostra um problema maior).** O que exige para ser **lida** cada uma das 13 tabelas com `conversation_id` e
     mais `agent_case_events`, `agent_inbox_items`, `demandas`, `lead_notes`, `contacts`, `ai_chunks` e as do lead
     (lido em `pg_policy`; **não executei uma leitura como usuário**):
     1. **Herdam a visibilidade da conversa** (subconsulta a `conversations`, sob RLS): `messages`,
-       `conversation_assignment_events` e `ai_reply_drafts`. A T4b os cobre sem mudança.
+       `conversation_assignment_events` e `ai_reply_drafts`. A T4b os cobre **para leitura**, sem mudança; a
+       **escrita** é o RF-14 (hoje `messages_insert/update/delete` e `cae_insert` são só de organização,
+       medido no baseline).
     2. **Só organização** — `organization_id in (select fn_user_org_ids())`, sem olhar a conversa: `conversation_notes`
        (corpo da nota interna), `agent_inbox_items` e `agent_case_events` (corpo), `lead_notes` (corpo),
        `contact_field_proposals` (dado dito pelo cliente na conversa), `lead_checkpoints`, `followup_enrollments`,
        `agent_cases`, `demandas`, `demanda_conversas`, `calendar_appointments` (leitura; a escrita exige `agent`),
        `ai_agent_runs`, `ai_invocations` e `ai_router_decisions` (o conteúdo destas três **não foi conferido**).
-       São **14 tabelas**; **10** têm `conversation_id`, e `agent_case_events`, `agent_inbox_items`, `demandas` e
+       São **14 tabelas** (as 13 acima menos as 3 que herdam, mais 4 sem a coluna); **10** têm `conversation_id`, e `agent_case_events`, `agent_inbox_items`, `demandas` e
        `lead_notes` entram por terem texto ou serem da conversa, **sem coluna que as ligue a ela** (o vínculo destas
        quatro com uma conversa **não foi medido**).
        Pela policy, **qualquer membro ativo da organização, `viewer` inclusive, lê estas linhas direto pelo
@@ -781,8 +785,9 @@ Dois mecanismos independentes, cada um com uma **função pura** testável sem b
   porque `create or replace` não troca a lista de argumentos. **Todos** os chamadores da assinatura
   antiga (5, §1) migram para a nova na mesma migration e a antiga é **removida** — deixá-la viva
   faria qualquer policy, função ou RPC esquecida ignorar o setor em silêncio (condição 2 da
-  aprovação). Como `drop function` falha se ainda houver dependente, um chamador esquecido aparece
-  como erro no `install` (`ON_ERROR_STOP=1`) em vez de vazar. O `update.sh` (sem `ON_ERROR_STOP`)
+  aprovação). O `drop function` falha se ainda houver uma **policy** dependente (aparece como erro no `install`,
+  `ON_ERROR_STOP=1`), mas **não** acusa uma função `plpgsql` que ainda chame a assinatura antiga
+  (medido, §1 achado F5): essas quem pega é o invariante da Condição 2, olhando `pg_proc.prosrc`. O `update.sh` (sem `ON_ERROR_STOP`)
   reaplica o baseline de cima para baixo, então o estado final é o do apêndice novo.
 - Regra proposta (ver §4.3): `viewer/manager/admin` e platform admin veem tudo; `agent` vê a conversa
   se **é o dono**, **ou** (`department_id` é nulo **ou** está entre os seus setores) **e** a regra de
@@ -989,11 +994,14 @@ As **duas origens** de `EXECUTE` são revogadas (A: `anon` direto; B: `PUBLIC`),
    `tenant_isolation_ai_reply_drafts_all` e `fn_reply_action`. Onde a função só tem
    `organization_id`/`assigned_to_user_id` à mão, ela passa a ler `department_id` da própria
    conversa (T3 decide chamador a chamador);
-2. `drop function if exists public.fn_can_view_conversation(uuid, uuid);` ao fim do apêndice. Se algum
-   dependente ficou para trás o `drop` falha no `install` (`ON_ERROR_STOP=1`) e o problema aparece
-   antes de chegar a um self-hoster;
+2. `drop function if exists public.fn_can_view_conversation(uuid, uuid);` ao fim do apêndice. Se uma
+   **policy** ficou para trás o `drop` falha no `install` (`ON_ERROR_STOP=1`) e o problema aparece
+   antes de chegar a um self-hoster. Uma função `plpgsql` esquecida **não** é acusada (§1, achado F5): é o
+   item 3 que a pega;
 3. um **teste de invariante por consulta ao catálogo** garante que nenhuma policy, função nem trigger
-   referencia a assinatura antiga, e que cada chamador respeita o setor (um caso por chamador):
+   referencia a assinatura antiga (**`pg_depend` para as policies e `pg_proc.prosrc` para as funções
+   `plpgsql`, que não registram dependência, reconhecendo a chamada de 2 argumentos**: uma consulta só pelo
+   nome ficaria sempre vermelha, porque as funções recriadas ainda citam o nome; F5), e que cada chamador respeita o setor (um caso por chamador):
    `tests/invariants/fn-can-view-conversation-chamadores.test.ts`.
 
 **`update.sh` e o `drop function` (cuidado do review, 2026-11-17).** O `baseline.sql` é um dump seguido
