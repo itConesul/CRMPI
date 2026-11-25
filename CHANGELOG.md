@@ -8,6 +8,63 @@ Se você roda o DeskcommCRM numa VPS, **leia a seção da versão para a qual es
 
 ## [Não lançado]
 
+## [1.25.0] — 2026-11-25
+
+### Adicionado
+
+- **A API do expediente informa quantas tentativas foram barradas hoje** A consulta do expediente (`GET /api/v1/settings/expediente`) passa a devolver
+  `barrados_hoje`: quantas ações de atendentes o expediente barrou hoje. Só
+  administrador e gerente recebem o número; os demais recebem `null`. Se o Redis
+  não responder, o número vem `null` e o resto da resposta segue normal; a
+  consulta ao Redis tem prazo de 1,5 s, então um Redis travado não segura a tela.
+
+  Por enquanto nenhuma tela mostra esse número (isso vem com a tela de
+  configuração do expediente), então você não vê diferença ao atualizar e não
+  precisa fazer nada.
+
+- **Expediente da empresa: fora do horário o atendente só consulta, e o servidor recusa as ações** Primeira parte do expediente da empresa (#67). O administrador define o horário em que a equipe
+  atende, e fora dele o atendente continua **vendo** as conversas e o histórico, mas não age:
+  assumir, responder, anotar, transferir, adiar e fechar são recusados pelo servidor (`403
+  OUT_OF_WORK_HOURS`), e a tela mostra uma faixa com o horário da empresa e quando ele abre, trava o
+  campo de resposta e os botões de ação, e abre uma página explicando. `admin` e `manager` nunca são
+  barrados. A distribuição automática de conversas também passa a respeitar o horário. O aviso que a
+  IA dá ao cliente fora do horário não muda nesta entrega: fica para o PRD-07 (#73).
+
+  Por enquanto o horário é definido pela API (`PATCH /api/v1/settings/expediente`, só `admin`); a tela
+  de configuração chega numa próxima entrega. O expediente aceita janela que vira o dia (22:00–06:00).
+
+  Nenhuma instalação muda de comportamento até alguém definir um expediente. Sem expediente — ou com
+  um valor inválido — ninguém é barrado.
+
+- **Quem gerencia o funil escolhe a cor do cabeçalho de cada coluna** Em Configurações › Etapas do funil, cada coluna ganhou um seletor de cor. A coluna escolhida
+  aparece no quadro com o cabeçalho pintado, e o nome dela continua legível sobre qualquer
+  uma das cores da lista. Quem é manager ou admin pode escolher a cor; «Sem cor» devolve a
+  coluna ao aspecto de antes. Renomear, criar, reordenar e arquivar colunas continua como era.
+
+  - As cores vêm de uma lista fixa de dez, escolhida para o texto do cabeçalho nunca ficar
+    ilegível. Não há seletor de cor livre.
+  - Colunas que já tinham uma cor de antes continuam pintadas, com texto legível, e não perdem
+    a cor ao abrir a tela.
+  - Colunas sem cor ficam exatamente como estavam. Nada muda para quem não usa o seletor.
+
+  Você não precisa fazer nada ao atualizar.
+
+- **Quem já está logado pode trocar a própria senha, em Configurações › Segurança** Em Configurações › Segurança há agora uma seção "Senha": a pessoa informa a senha atual,
+  escolhe a nova e confirma. Antes, a única forma de trocar a senha era o link de "esqueci
+  minha senha" enviado por e-mail, e uma instalação sem o Resend configurado não tinha como
+  enviá-lo. A troca pela tela não depende de e-mail nenhum.
+
+  - A senha atual é conferida antes de aceitar a nova, e tentativas erradas em sequência são
+    limitadas por conta.
+  - Ao concluir, os outros aparelhos em que a pessoa estava conectada são desconectados; o
+    aparelho em uso continua logado.
+  - Quem tem a verificação em duas etapas ligada precisa ter informado o código ao entrar. Se
+    a sessão não passou por ele, a tela pede que a pessoa entre de novo.
+  - Cada troca fica registrada no histórico de auditoria. Se o Resend estiver configurado, a
+    pessoa também recebe um aviso por e-mail, com o caminho para quem não fez a troca.
+
+  Nada muda para quem não usa a tela. Você não precisa fazer nada ao atualizar.
+
 ## [1.24.0] — 2026-11-24
 
 ### Alterado
@@ -3589,7 +3646,8 @@ Primeira versão marcada do DeskcommCRM. O projeto vinha sendo desenvolvido publ
 
 - **Node 22 é obrigatório para desenvolvimento.** A suíte de invariantes instancia o cliente do Supabase, que exige o `WebSocket` global — nativo apenas a partir do Node 22. Isso não afeta quem apenas hospeda: a VPS roda a imagem pronta.
 
-[Não lançado]: https://github.com/itConesul/CRMPI/compare/v1.24.0...HEAD
+[Não lançado]: https://github.com/itConesul/CRMPI/compare/v1.25.0...HEAD
+[1.25.0]: https://github.com/itConesul/CRMPI/compare/v1.24.0...v1.25.0
 [1.24.0]: https://github.com/itConesul/CRMPI/compare/v1.23.7...v1.24.0
 [1.23.7]: https://github.com/itConesul/CRMPI/compare/v1.23.6...v1.23.7
 [1.23.6]: https://github.com/itConesul/CRMPI/compare/v1.23.5...v1.23.6
