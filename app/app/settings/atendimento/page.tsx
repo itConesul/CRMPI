@@ -20,11 +20,14 @@ import { redirect } from "next/navigation";
 
 import { requireAuth, resolveActiveOrg } from "@/lib/auth/server";
 import { DEFAULT_VISIBILITY_MODE, ROLE_RANK, type VisibilityMode } from "@/lib/auth/types";
+import { FUSO_PADRAO_DO_EDITOR, podeEditarOExpediente } from "@/lib/expediente/editor";
+import { lerExpediente } from "@/lib/expediente/expediente";
 import { routingConfigSchema } from "@/lib/schemas";
 import { createClient } from "@/lib/supabase/server";
 import { loadChannelRoutingSettings } from "@/lib/routing/channel-policies";
 import { ChannelRoutingForm } from "./_channels-form";
 import { AtendimentoForm } from "./_form";
+import { ExpedienteSecao } from "./_expediente";
 import { traduzir } from "@/lib/i18n/dicionario";
 
 export const dynamic = "force-dynamic";
@@ -47,11 +50,24 @@ export default async function AtendimentoSettingsPage() {
   const settings = ((data?.settings as Record<string, unknown> | null) ?? {}) as {
     routing?: unknown;
     visibility_mode?: VisibilityMode;
+    business_hours?: unknown;
   };
   // `.catch(...)`: config antiga ou corrompida no jsonb não pode derrubar a
   // tela que serve justamente para consertá-la.
   const routing = routingConfigSchema.catch(routingConfigSchema.parse({})).parse(settings.routing ?? {});
   const idioma = user.idioma;
+  // Expediente (PRD-01 / #67, T6). `lerExpediente` devolve `null` para "não configurado" e para
+  // "gravado torto"; nos dois casos a tela parte do vazio, e a seção diz qual dos dois é (`invalido`).
+  const expediente = lerExpediente(settings.business_hours) ?? { timezone: FUSO_PADRAO_DO_EDITOR, windows: [] };
+  // Só o admin NA ORGANIZAÇÃO grava: a rota é `requireRole("admin")` sem `allowPlatformAdmin`, e a tela
+  // espelha a rota (platform admin que é manager lê, e não vê o botão — senão levaria 403).
+  const podeEditarExpediente = podeEditarOExpediente(activeOrg.role);
+  // Algo gravado que não é um expediente válido: a leitura o trata como "sem expediente", e a seção
+  // precisa deixar o admin consertá-lo (o Salvar fica ligado). Mesma regra de `descreverExpediente`.
+  const ilegivel =
+    settings.business_hours !== undefined &&
+    settings.business_hours !== null &&
+    lerExpediente(settings.business_hours) === null;
   const channels = await loadChannelRoutingSettings(supabase, activeOrg.orgId);
 
   return (
@@ -71,6 +87,9 @@ export default async function AtendimentoSettingsPage() {
       <AtendimentoForm
         initial={{ ...routing, visibility_mode: settings.visibility_mode ?? DEFAULT_VISIBILITY_MODE }}
       />
+      {/* O expediente vem ANTES dos responsáveis por número: a lista de canais cresce com a instalação, e
+          uma configuração que fica depois dela some para quem não rola até o fim. */}
+      <ExpedienteSecao initial={expediente} podeEditar={podeEditarExpediente} gravadoIlegivel={ilegivel} />
       <ChannelRoutingForm initial={channels} />
     </div>
   );
