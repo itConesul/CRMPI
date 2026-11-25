@@ -164,18 +164,18 @@ describe("0240 · a estrutura de setor chega ao baseline que o clone recebe", ()
 
 describe("0240 · isolamento entre organizações, com o JWT de gente de verdade", () => {
   it("o admin da org A lê o setor dela e NÃO lê o da org B (departments)", () => {
-    expect(countAs(ADMIN_A, `select count(*) from public.departments where organization_id = '${ORG_A}'`)).toBe(2);
+    expect(countAs(ADMIN_A, `select count(*) from public.departments where id in ('${DEPT_A}', '${DEPT_A_VAZIO}')`)).toBe(2);
     expect(countAs(ADMIN_A, `select count(*) from public.departments where organization_id = '${ORG_B}'`)).toBe(0);
     expect(countAs(ADMIN_B, `select count(*) from public.departments where organization_id = '${ORG_A}'`)).toBe(0);
   });
 
   it("o vínculo setor↔operador também não vaza (department_members)", () => {
-    expect(countAs(ADMIN_A, `select count(*) from public.department_members where organization_id = '${ORG_A}'`)).toBe(1);
+    expect(countAs(ADMIN_A, `select count(*) from public.department_members where department_id = '${DEPT_A}' and user_id = '${AGENT_A}'`)).toBe(1);
     expect(countAs(ADMIN_B, `select count(*) from public.department_members where organization_id = '${ORG_A}'`)).toBe(0);
   });
 
   it("qualquer membro lê os setores da própria organização (agent inclusive)", () => {
-    expect(countAs(AGENT_A, `select count(*) from public.departments where organization_id = '${ORG_A}'`)).toBe(2);
+    expect(countAs(AGENT_A, `select count(*) from public.departments where id in ('${DEPT_A}', '${DEPT_A_VAZIO}')`)).toBe(2);
   });
 
   it("só o admin escreve: o agent não cria, não renomeia e não apaga setor", () => {

@@ -57,6 +57,11 @@ alter table public.conversations add column if not exists department_id uuid;
 
 -- NOT VALID: `conversations` é a tabela com tráfego ao vivo, e um `add constraint
 -- foreign key` comum varre a tabela inteira com um lock que bloqueia escrita.
+-- ATENÇÃO ao alcance do ganho: ele vale quando cada comando é uma transação própria, que é o caso
+-- do `install.sh` e do `update.sh` (`psql -f`, sem `-1`). Se um runner envolver a migration inteira
+-- numa transação (Supabase CLI), os locks do `add column` e do `add constraint` ficam até o commit e
+-- a varredura do VALIDATE os segura. A coluna é nova e toda nula, então a varredura é curta, mas
+-- nesse caminho NÃO é "sem bloqueio".
 do $$ begin
   if not exists (select 1 from pg_constraint
                   where conname = 'conversations_department_fk'
@@ -68,8 +73,8 @@ do $$ begin
   end if;
 end $$;
 
--- VALIDATE depois, com lock que não bloqueia leitura nem escrita. Só roda se ainda
--- não foi validada: re-aplicar pelo update.sh é um no-op.
+-- VALIDATE depois, num comando separado: fora de uma transação única ele usa um lock que não bloqueia
+-- leitura nem escrita. Só roda se ainda não foi validada: re-aplicar pelo update.sh é um no-op.
 do $$ begin
   if exists (select 1 from pg_constraint
               where conname = 'conversations_department_fk'

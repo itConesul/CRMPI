@@ -3398,8 +3398,8 @@ export type Database = {
           channel: string
           channel_session_id: string
           contact_id: string
-          department_id: string | null
           created_at: string
+          department_id: string | null
           current_demanda_id: string | null
           group_chat_id: string | null
           id: string
@@ -3442,8 +3442,8 @@ export type Database = {
           channel?: string
           channel_session_id: string
           contact_id: string
-          department_id?: string | null
           created_at?: string
+          department_id?: string | null
           current_demanda_id?: string | null
           group_chat_id?: string | null
           id?: string
@@ -3486,8 +3486,8 @@ export type Database = {
           channel?: string
           channel_session_id?: string
           contact_id?: string
-          department_id?: string | null
           created_at?: string
+          department_id?: string | null
           current_demanda_id?: string | null
           group_chat_id?: string | null
           id?: string
