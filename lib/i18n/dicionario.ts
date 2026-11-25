@@ -4489,6 +4489,9 @@ export const DICIONARIO: Traducoes = {
   "Sugerir resposta": { es: "Sugerir respuesta" },
   Emoji: { es: "Emoji" },
   "Templates de script": { es: "Plantillas de guion" },
+  "Mencionar membro": { es: "Mencionar miembro" },
+  "Nenhum membro encontrado": { es: "Ningún miembro encontrado" },
+  "Membro sem nome": { es: "Miembro sin nombre" },
   "Nenhum template. Crie em Configurações.": { es: "Ningún modelo. Crea uno en Configuración." },
 
   // ─── Inbox: mídia (áudio, imagem, figurinha, vídeo, documento) ───

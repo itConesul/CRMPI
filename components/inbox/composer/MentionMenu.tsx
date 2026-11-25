@@ -1,9 +1,13 @@
+"use client";
 /**
  * Autocomplete de `@usuário` nas notas internas (spec #69, `docs/specs/sdd/69-autocomplete-mencao/`).
  *
- * Este arquivo reúne o gatilho puro e a troca do trecho (T2). O componente `MentionMenu`
- * (lista, teclado, i18n) entra na T3.
+ * Gatilho puro e troca do trecho (T2); filtro, teclado e a lista `MentionMenu` (T3).
+ * O foco fica no `<textarea>` do Composer, que lê as teclas e chama `teclaNoMenu`; o
+ * menu em si só mostra a lista e reage ao mouse. A integração é a T4.
  */
+import { useT } from "@/hooks/i18n/useT";
+import { rotuloDoMembro, type MembroMencionavel } from "@/lib/notifications/mentions";
 
 /** Onde o `@` em edição está e o que já foi digitado depois dele. */
 export interface MencaoEmEdicao {
@@ -53,4 +57,106 @@ export function inserirMencao(
     texto: texto.slice(0, trecho.inicio) + inserido + texto.slice(trecho.fim),
     cursor: trecho.inicio + inserido.length,
   };
+}
+
+/**
+ * Membros cujo RÓTULO contém `consulta`, sem diferenciar maiúsculas e sem ignorar acentos
+ * (Q3: igual ao `TemplateMenu`). Filtrar pelo rótulo faz o membro sem nome ser achado por
+ * "sem nome" ou por um pedaço do id (RF-7). `semNome` é o texto já traduzido.
+ */
+export function filtrarMembros(
+  membros: MembroMencionavel[],
+  consulta: string,
+  semNome?: string,
+): MembroMencionavel[] {
+  const q = consulta.toLowerCase();
+  return membros.filter((m) => rotuloDoMembro(m, semNome).toLowerCase().includes(q));
+}
+
+/** O que o Composer deve fazer com uma tecla enquanto a lista está aberta. */
+export type AcaoDoTeclado =
+  | { tipo: "mover"; ativo: number }
+  | { tipo: "selecionar"; indice: number }
+  | { tipo: "fechar" }
+  /** A tecla é do menu mas não faz nada (Enter sem resultado): `preventDefault` e mais nada. */
+  | { tipo: "consumir" }
+  /** A tecla segue para o `<textarea>` como de costume. */
+  | { tipo: "ignorar" };
+
+/**
+ * Teclado do menu (RNF-1). `total` é o número de itens JÁ filtrados; `ativo` pode estar
+ * fora da faixa se a lista encolheu, e vale como o último item.
+ *
+ *   ↑/↓     movem o item ativo, dando a volta
+ *   Enter   seleciona — e NUNCA envia a nota; sem resultado é consumido (não envia nem insere)
+ *   Esc     fecha, sem apagar o texto
+ */
+export function teclaNoMenu(key: string, ativo: number, total: number): AcaoDoTeclado {
+  const atual = total > 0 ? Math.min(Math.max(ativo, 0), total - 1) : 0;
+  switch (key) {
+    case "ArrowDown":
+      return total > 0 ? { tipo: "mover", ativo: (atual + 1) % total } : { tipo: "ignorar" };
+    case "ArrowUp":
+      return total > 0 ? { tipo: "mover", ativo: (atual - 1 + total) % total } : { tipo: "ignorar" };
+    case "Enter":
+      return total > 0 ? { tipo: "selecionar", indice: atual } : { tipo: "consumir" };
+    case "Escape":
+      return { tipo: "fechar" };
+    default:
+      return { tipo: "ignorar" };
+  }
+}
+
+/** `id` do listbox e de cada opção, para o `aria-activedescendant` do textarea (T4). */
+export const ID_DA_LISTA_DE_MENCAO = "mencao-lista";
+export const idDaOpcaoDeMencao = (userId: string) => `mencao-opcao-${userId}`;
+
+interface Props {
+  open: boolean;
+  /** O que foi digitado depois do `@`. */
+  consulta: string;
+  /** Todos os membros mencionáveis; o filtro é daqui. */
+  membros: MembroMencionavel[];
+  /** Índice do item ativo, na lista JÁ filtrada. */
+  ativo: number;
+  onAtivo: (indice: number) => void;
+  onPick: (m: MembroMencionavel) => void;
+}
+
+export function MentionMenu({ open, consulta, membros, ativo, onAtivo, onPick }: Props) {
+  const t = useT();
+  if (!open) return null;
+  const semNome = t("Membro sem nome");
+  const filtrados = filtrarMembros(membros, consulta, semNome);
+
+  return (
+    <div
+      id={ID_DA_LISTA_DE_MENCAO}
+      className="absolute bottom-14 left-3 z-20 max-h-64 w-72 overflow-y-auto rounded-2xl border border-border bg-popover p-1 shadow-lg"
+      role="listbox"
+      aria-label={t("Mencionar membro")}
+    >
+      {filtrados.length === 0 ? (
+        <div className="px-3 py-2 text-xs text-muted-foreground">{t("Nenhum membro encontrado")}</div>
+      ) : (
+        filtrados.map((m, i) => (
+          <div
+            key={m.user_id}
+            id={idDaOpcaoDeMencao(m.user_id)}
+            role="option"
+            aria-selected={i === ativo}
+            className={
+              "cursor-pointer rounded-xl px-3 py-2 text-sm " + (i === ativo ? "bg-muted" : "hover:bg-muted")
+            }
+            // Sem isto o clique tira o foco do textarea e a seleção perde o cursor.
+            onMouseDown={(e) => e.preventDefault()}
+            onMouseEnter={() => onAtivo(i)}
+            onClick={() => onPick(m)}
+          >
+            {rotuloDoMembro(m, semNome)}
+          </div>
+        ))
+      )}
+    </div>
+  );
 }
