@@ -3398,6 +3398,7 @@ export type Database = {
           channel: string
           channel_session_id: string
           contact_id: string
+          department_id: string | null
           created_at: string
           current_demanda_id: string | null
           group_chat_id: string | null
@@ -3441,6 +3442,7 @@ export type Database = {
           channel?: string
           channel_session_id: string
           contact_id: string
+          department_id?: string | null
           created_at?: string
           current_demanda_id?: string | null
           group_chat_id?: string | null
@@ -3484,6 +3486,7 @@ export type Database = {
           channel?: string
           channel_session_id?: string
           contact_id?: string
+          department_id?: string | null
           created_at?: string
           current_demanda_id?: string | null
           group_chat_id?: string | null
@@ -3515,6 +3518,12 @@ export type Database = {
           usable_for_rag_marked_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "conversations_department_fk"
+            columns: ["department_id", "organization_id"]
+            referencedRelation: "departments"
+            referencedColumns: ["id", "organization_id"]
+          },
           {
             foreignKeyName: "conversations_active_ai_agent_id_fkey"
             columns: ["active_ai_agent_id"]
@@ -4350,6 +4359,77 @@ export type Database = {
             columns: ["version_id"]
             isOneToOne: false
             referencedRelation: "disclosure_template_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      department_members: {
+        Row: {
+          created_at: string
+          department_id: string
+          organization_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          department_id: string
+          organization_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          department_id?: string
+          organization_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "department_members_department_id_organization_id_fkey"
+            columns: ["department_id", "organization_id"]
+            referencedRelation: "departments"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "department_members_organization_id_fkey"
+            columns: ["organization_id"]
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "department_members_organization_id_user_id_fkey"
+            columns: ["organization_id", "user_id"]
+            referencedRelation: "user_organizations"
+            referencedColumns: ["organization_id", "user_id"]
+          },
+        ]
+      }
+      departments: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          organization_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          organization_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          organization_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "departments_organization_id_fkey"
+            columns: ["organization_id"]
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]

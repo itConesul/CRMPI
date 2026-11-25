@@ -3,7 +3,7 @@
   "diagram_type": "architecture",
   "meta": {
     "title": "Expediente da empresa: o gate do agent",
-    "subtitle": "Fora do horário o agent consulta e o servidor recusa a ação — T9a do #67 (o gate; departamentos entram na T9b)",
+    "subtitle": "Fora do horário o agent consulta e o servidor recusa a ação — T9a do #67 (o gate; departamentos: a estrutura entrou na T4a, a regra vem na T4b)",
     "output": "expediente-e-setor.html",
     "quality_profile": "standard"
   },
@@ -182,6 +182,38 @@
       "type": "service",
       "label": "Handoff e fila do MCP",
       "sublabel": "lib/mcp/tools/handoff.ts e lib/routing/queue.ts, client admin do MCP"
+    },
+    {
+      "id": "departamentos",
+      "lane": "dados",
+      "col": 8,
+      "type": "database",
+      "label": "departments",
+      "sublabel": "T4a (migration 0240): setor por organização; nome único sem caixa; RLS por comando, escrita só admin; ainda sem rota nem tela (T5, T6)"
+    },
+    {
+      "id": "vinculos",
+      "lane": "dados",
+      "col": 9,
+      "type": "database",
+      "label": "department_members",
+      "sublabel": "T4a: operador ↔ setor; o setor e o operador têm de ser da MESMA organização (FK composta)"
+    },
+    {
+      "id": "membros",
+      "lane": "dados",
+      "col": 10,
+      "type": "database",
+      "label": "user_organizations",
+      "sublabel": "já existia: quem é membro de qual organização; alvo da FK do vínculo"
+    },
+    {
+      "id": "convsetor",
+      "lane": "dados",
+      "col": 11,
+      "type": "database",
+      "label": "conversations.department_id",
+      "sublabel": "T4a: nulo = sem setor; nenhuma conversa existente muda; NENHUMA policy lê esta coluna ainda (T4b, depois da T3)"
     }
   ],
   "edges": [
@@ -207,13 +239,17 @@
     { "id": "e20", "from": "eligibles", "to": "carregar", "label": "lido uma vez por chamada, só aplicado ao agent" },
     { "id": "e21", "from": "get", "to": "pura", "label": "descreverExpediente chama dentroDoExpediente e proximaAbertura" },
     { "id": "e22", "from": "resp403", "to": "agent", "label": "o agent vê o motivo e a hora em que o expediente abre" },
-    { "id": "e23", "from": "get", "to": "leitor", "label": "barrados_hoje só para admin e manager; agent e viewer recebem null sem ida ao Redis" }
+    { "id": "e23", "from": "get", "to": "leitor", "label": "barrados_hoje só para admin e manager; agent e viewer recebem null sem ida ao Redis" },
+    { "id": "e40", "from": "vinculos", "to": "departamentos", "label": "FK composta: o setor é da mesma organização do vínculo; apagar o setor leva só os vínculos" },
+    { "id": "e41", "from": "convsetor", "to": "departamentos", "label": "FK composta NO ACTION: apagar setor com conversas falha (23503); nunca apaga nem desvincula conversa" },
+    { "id": "e42", "from": "membros", "to": "vinculos", "label": "FK composta: o operador tem de ser MEMBRO da organização do setor, e não só existir em auth.users" }
   ],
   "cards": [
     {
       "dot": "rose",
       "title": "O que NÃO está ligado, e é decisão ou entrega futura, não esquecimento",
       "items": [
+        "departments e department_members não têm consumidor ainda, de propósito: a T4a entrega só a estrutura. As rotas /departments* e a tela vêm na T5 e na T6; quem lê conversations.department_id para decidir visibilidade é a T4b, só depois da T3. Até lá a coluna é nula em toda conversa e nenhuma policy a lê",
         "não existe aresta gate → audit(): o bypass auditado de admin e manager (RF-10) NÃO está neste PR; vem na T2c, com o audit() decidindo a marca (a spec do mecanismo, #87, já foi mergeada e o dono a aceitou em 2026-11-23)",
         "não existe aresta do gate para cron/* nem webhooks/*: a mensagem do cliente recebida fora do horário entra na fila normalmente (RF-11) e o cron autentica por segredo (RNF-1); uma varredura de AST vigia isso",
         "o aviso ao lead (lib/ai/handoff/aviso-ao-lead.ts) e a ferramenta MCP de escalação NÃO respeitam o expediente: ficam para a #73 (PRD-07), por decisão do dono do produto",
