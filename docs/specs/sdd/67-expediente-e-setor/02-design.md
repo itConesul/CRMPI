@@ -207,8 +207,76 @@ expediente da organização; rota ou tela `/app/fora-de-expediente`; erro `OUT_O
     segue sendo item da T3.
   - **F4 — Fora do que esta medição alcança:** SQL dentro de funções `fn_*` e `rpc`; o join embutido
     `conversations!inner` em `lib/routing/eligibles.ts:87`; as assinaturas Realtime (sob RLS, sessão); a
-    tabela `messages`, que herda a visibilidade da conversa; e **leads e contatos**, que ficam de fora por
-    decisão da Q6 (a #80).
+    tabela `messages`, que herda a visibilidade da conversa; e **leads e contatos**, que ficavam de fora
+    pela Q6 (a #80) e **entram pela decisão D de 2026-11-25** (ver F6, abaixo).
+  **T3 — continuação, MEDIDA em 2026-11-25 (`origin/develop` em `a94d41d`).** Fecha o **F3**, acrescenta o
+  **F5** e mede o alcance da **decisão D** (2026-11-25). O método é o **catálogo de um banco recém-instalado
+  do `baseline.sql`** (Postgres 15 descartável, só leitura): `pg_depend`, `pg_policy`, `pg_proc.prosrc` e
+  `information_schema`. As consultas que sustentam os números:
+
+  | O que se mede | Consulta | Resultado |
+  |---|---|---|
+  | Policies que dependem de `fn_can_view_conversation` | `pg_depend` ⨝ `pg_policy` onde `refobjid` é a função | **2:** `conversations_select` e `tenant_isolation_ai_reply_drafts_all` |
+  | Funções cujo **corpo** a cita | `select proname from pg_proc where prosrc ilike '%fn_can_view_conversation%'` | **3**, todas `plpgsql`: `fn_appointment_stamp`, `fn_meet_action`, `fn_reply_action` |
+  | O mesmo para `fn_can_view_lead` | as duas consultas acima, com a outra função | **6 policies** (`crm_leads` ×4, `crm_lead_activities_select`, `crm_lead_links_select`) e **0 funções** |
+  | Relações (tabelas e views) com coluna `conversation_id` | `information_schema.columns` | **14** |
+  | Policies **restritivas** de leitura em `public` | `pg_policy` onde `not polpermissive` e `polcmd in ('r','*')` | **1**, em `idempotency_keys` (nenhuma nas tabelas abaixo) |
+
+  - **F3 — FECHADO.** Os dependentes são 2 policies e 3 funções, e **nos cinco o setor é a coluna da própria
+    conversa, que eles já leem na mesma consulta**: `conversations_select` (a linha), a subconsulta
+    `conversations c` da policy de `ai_reply_drafts`, o `from public.conversations …` de
+    `fn_appointment_stamp` e de `fn_meet_action` (que passam `organization_id, assigned_to_user_id` da
+    mesma linha) e o `from conversations c join ai_reply_drafts r` de `fn_reply_action`. Para a T4b basta
+    passar `department_id` junto; **não há consulta nova nem fonte externa de setor**. A lista da spec (3
+    funções) estava **incompleta**: faltava a policy de `ai_reply_drafts`.
+  - **F5 — O amparo do `drop function` não cobre as três funções.** A T4b conta com "`drop function` falha se
+    ainda houver dependente, então um chamador esquecido aparece como erro no `install`". **Medido** (sonda
+    descartável, no mesmo Postgres 15): com uma **policy** dependente o `drop function` falha (`cannot drop
+    function … because other objects depend on it`); com só uma função **`plpgsql`** dependente ele **passa em
+    silêncio**, a função continua existindo e quebra ao ser chamada (`function public.zz_alvo(unknown,
+    unknown) does not exist`). Logo, depois de a T4b trocar a assinatura, as 3 funções continuariam instaladas
+    e falhariam **em runtime**, na primeira vez que uma pessoa em sessão marcasse um compromisso numa
+    conversa, executasse a ação do Meet ou a do rascunho de resposta. **Proposta para a T4b (a decidir no review
+    dela):** recriar as 3 funções (`create or replace`) na mesma migration **e** um invariante que rode a
+    segunda consulta da tabela e reprove se algum corpo ainda chamar a assinatura antiga: o amparo tem de ser
+    um **teste**, não o `drop`.
+  - **F6 — O alcance da decisão D, medido (a decisão D diz "ficha e linha do tempo do contato"; o catálogo
+    mostra um problema maior).** O que exige para ser **lida** cada uma das 14 relações com `conversation_id` e
+    mais `agent_case_events`, `agent_inbox_items`, `demandas`, `lead_notes`, `contacts`, `ai_chunks` e as do lead
+    (lido em `pg_policy`; **não executei uma leitura como usuário**):
+    1. **Herdam a visibilidade da conversa** (subconsulta a `conversations`, sob RLS): `messages`,
+       `conversation_assignment_events` e `ai_reply_drafts`. A T4b os cobre sem mudança.
+    2. **Só organização** — `organization_id in (select fn_user_org_ids())`, sem olhar a conversa: `conversation_notes`
+       (corpo da nota interna), `agent_inbox_items` e `agent_case_events` (corpo), `lead_notes` (corpo),
+       `contact_field_proposals` (dado dito pelo cliente na conversa), `lead_checkpoints`, `followup_enrollments`,
+       `agent_cases`, `demandas`, `demanda_conversas`, `calendar_appointments` (leitura; a escrita exige `agent`),
+       `ai_agent_runs`, `ai_invocations` e `ai_router_decisions` (o conteúdo destas três **não foi conferido**).
+       São **14 tabelas**; **10** têm `conversation_id`, e `agent_case_events`, `agent_inbox_items`, `demandas` e
+       `lead_notes` entram por terem texto ou serem da conversa, **sem coluna que as ligue a ela** (o vínculo destas
+       quatro com uma conversa **não foi medido**).
+       Pela policy, **qualquer membro ativo da organização, `viewer` inclusive, lê estas linhas direto pelo
+       PostgREST, hoje, sem enxergar a conversa que as originou**. Isso **não depende de setor**: vale com o
+       `visibility_mode` de hoje. A regra do dono ("equipes distintas não veem as conversas umas das outras")
+       alcança estas tabelas, e a decisão D não as nomeia: **o dono precisa dizer se entram.**
+    3. **Lead e contato.** A visibilidade do lead é por **dono do lead** (`fn_can_view_lead(org, owner_user_id)`,
+       em `crm_leads`, `crm_lead_activities` e `crm_lead_links`), **não por conversa nem por setor**; `contacts`
+       é só organização. A ficha e a linha do tempo leem com o client de **sessão** (`contacts/[id]/timeline`,
+       `contacts/[id]/crm-summary`, `leads/[id]/timeline`), então uma policy nova as alcança sem mudar a rota.
+       O que a linha do tempo carrega **de conversa** (lido no código): `ai_turn` (`payload.added_commitments` e
+       `added_objections`, o que a IA extraiu da conversa), `handoff_triggered`/`handoff_resolved` e
+       `conversation_claimed`/`transferred`/`released`/`ai_paused` (só o `reason`). `evidence` guarda só ids, e
+       `reason` é "sem PII" por contrato. **Não conferi** o `payload` dos demais tipos do vocabulário.
+    4. **Questão de desenho em aberto, que a T3 não resolve sozinha:** `crm_lead_activities` **não tem
+       `conversation_id` nem `department_id`** (não está entre as 14 tabelas acima), então a RLS **não tem como
+       saber de qual conversa ou departamento uma atividade veio**. Opções, **sem escolha minha**: (a) gravar o
+       `department_id` (ou o `conversation_id`) na atividade ao emiti-la e filtrar na policy, com backfill dos
+       tipos já gravados; (b) esconder **categorias inteiras de tipo** (`ai_turn`, `note`, …) de quem não é do
+       departamento, sem olhar a conversa; (c) derivar por `source_id` quando `source_module` aponta uma
+       conversa (**não medi** se todo emissor grava isso). Cada uma muda o que o dono quis ver, e a escolha vem
+       **antes** de a T3 aplicar a regra.
+    5. **Não medido:** `ai_chunks` (o RAG): a policy é só organização e `lib/ai/rag/ingest/conversations.ts` ingere
+       conversas, mas o chunk não tem `conversation_id` (só `knowledge_source_id`) e **não conferi se ele guarda
+       texto de conversa**; as notificações push (#120 e #123); e o Realtime destas tabelas.
 
 ## 2. Decisão de design
 
