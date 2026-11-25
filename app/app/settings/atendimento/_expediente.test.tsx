@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { ExpedienteDaApi } from "@/lib/expediente/descrever";
+import type { ExpedienteConfig } from "@/lib/schemas/routing";
 
 import { ExpedienteSecao } from "./_expediente";
 
@@ -21,8 +22,8 @@ vi.mock("@/hooks/expediente/useExpediente", () => ({ useExpediente: () => estado
 
 const fetcher = vi.fn();
 
-const vazio = { timezone: "America/Sao_Paulo", windows: [] };
-const comercial = {
+const vazio: ExpedienteConfig = { timezone: "America/Sao_Paulo", windows: [] };
+const comercial: ExpedienteConfig = {
   timezone: "Etc/UTC",
   windows: [1, 2, 3, 4, 5].map((dow) => ({ dow, start: "08:00", end: "18:00" })),
 };
@@ -41,7 +42,7 @@ function api(parcial: Partial<ExpedienteDaApi> = {}): ExpedienteDaApi {
   };
 }
 
-function montar(props: { initial?: typeof vazio; podeEditar?: boolean } = {}) {
+function montar(props: { initial?: ExpedienteConfig; podeEditar?: boolean } = {}) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={queryClient}>
