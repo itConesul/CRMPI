@@ -20,11 +20,14 @@ import { redirect } from "next/navigation";
 
 import { requireAuth, resolveActiveOrg } from "@/lib/auth/server";
 import { DEFAULT_VISIBILITY_MODE, ROLE_RANK, type VisibilityMode } from "@/lib/auth/types";
+import { FUSO_PADRAO_DO_EDITOR } from "@/lib/expediente/editor";
+import { lerExpediente } from "@/lib/expediente/expediente";
 import { routingConfigSchema } from "@/lib/schemas";
 import { createClient } from "@/lib/supabase/server";
 import { loadChannelRoutingSettings } from "@/lib/routing/channel-policies";
 import { ChannelRoutingForm } from "./_channels-form";
 import { AtendimentoForm } from "./_form";
+import { ExpedienteSecao } from "./_expediente";
 import { traduzir } from "@/lib/i18n/dicionario";
 
 export const dynamic = "force-dynamic";
@@ -47,11 +50,19 @@ export default async function AtendimentoSettingsPage() {
   const settings = ((data?.settings as Record<string, unknown> | null) ?? {}) as {
     routing?: unknown;
     visibility_mode?: VisibilityMode;
+    business_hours?: unknown;
   };
   // `.catch(...)`: config antiga ou corrompida no jsonb não pode derrubar a
   // tela que serve justamente para consertá-la.
   const routing = routingConfigSchema.catch(routingConfigSchema.parse({})).parse(settings.routing ?? {});
   const idioma = user.idioma;
+  // Expediente (PRD-01 / #67, T6). `lerExpediente` devolve `null` para "não configurado" e para
+  // "gravado torto"; nos dois casos a tela parte do vazio, e a seção diz qual dos dois é (`invalido`).
+  const expediente = lerExpediente(settings.business_hours) ?? { timezone: FUSO_PADRAO_DO_EDITOR, windows: [] };
+  // Só o admin grava (`PATCH /settings/expediente` é `requireRole("admin")`). Platform admin sem sessão
+  // de suporte passa pelo mesmo gate da página; a sessão de suporte, não: ela lê, e não escreve.
+  const podeEditarExpediente =
+    ROLE_RANK[activeOrg.role] >= ROLE_RANK.admin || (user.is_platform_admin && !user.support);
   const channels = await loadChannelRoutingSettings(supabase, activeOrg.orgId);
 
   return (
@@ -71,6 +82,9 @@ export default async function AtendimentoSettingsPage() {
       <AtendimentoForm
         initial={{ ...routing, visibility_mode: settings.visibility_mode ?? DEFAULT_VISIBILITY_MODE }}
       />
+      {/* O expediente vem ANTES dos responsáveis por número: a lista de canais cresce com a instalação, e
+          uma configuração que fica depois dela some para quem não rola até o fim. */}
+      <ExpedienteSecao initial={expediente} podeEditar={podeEditarExpediente} />
       <ChannelRoutingForm initial={channels} />
     </div>
   );
