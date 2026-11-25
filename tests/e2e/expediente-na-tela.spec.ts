@@ -6,8 +6,9 @@
  * desabilitados — e que o `manager` e quem está dentro do horário NÃO veem nada disso.
  *
  * ## O que ele NÃO prova
- * A tela de CONFIGURAÇÃO do expediente (T6) ainda não existe: o expediente é gravado por service role,
- * como o `expediente-barra-a-acao.spec.ts` faz. O contador de barrados (`barrados_hoje`, T2d) só é
+ * A tela de CONFIGURAÇÃO do expediente (T6) é provada em `expediente-tela-de-configuracao.spec.ts`; aqui o
+ * expediente é gravado por service role para montar o cenário do atendente, como o
+ * `expediente-barra-a-acao.spec.ts` faz. O contador de barrados (`barrados_hoje`, T2d) só é
  * provado aqui no caminho `null`, porque o e2e do CI NÃO tem Redis; o número é provado no unitário da
  * rota (`route.test.ts`) e com um Redis real, com a saída colada no PR.
  *

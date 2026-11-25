@@ -1962,3 +1962,35 @@ Produto `7f1d0f3e`, integrado à main `ca895850`: as dez specs de organizações
 Evidência local preservada em `.superpowers/evidence/comunidade-360/final-qa-targeted-r4/` e log `.superpowers/sdd/comunidade-360/final-qa-targeted-r4.log`. A rodada inclui atualização concorrente da interface sem perder formulário, sugestão obsoleta sem confirmação antiga de sucesso e encerramento de suporte com retorno ao contexto original.
 
 Validação integral do mesmo produto: 733 arquivos unitários / 7.911 casos aprovados + 1 falha esperada; 184 arquivos de banco / 1.466 casos aprovados + 1 falha esperada e 1 ignorado, com INSTALL e UPDATE; tipos, lint (0 erros, 344 avisos) e build aprovados. `lint:channels`, validadores shell e conferência de release também passaram. Os checks remotos continuam sendo condição do merge pelo revisor da PR #613.
+
+---
+
+## J22 — O admin define o horário de atendimento da empresa `[P0]` (2026-11-25)
+
+**Por que P0:** o expediente (#67) é a regra que faz o atendente consultar mas não agir fora do
+horário. Até a T6 ele só podia ser gravado **pela API**: o gate, a faixa e a distribuição existiam,
+e nenhuma tela os ligava. Num produto self-host, quem instala nunca configurava, e a regra ficava
+dormente para sempre.
+
+**Onde:** Configurações › Atendimento › "Expediente da empresa" (logo depois da distribuição; a primeira
+versão ficou depois dos cartões de canais e foi subida por causa da evidência: ~2000 px de rolagem).
+
+Prova pela tela, num build de produção local contra o Supabase local (sem Redis, como o primeiro
+deploy de um cliente). Spec: `tests/e2e/expediente-tela-de-configuracao.spec.ts`; evidência em
+`.superpowers/evidence/expediente-tela-de-configuracao/`.
+
+| # | Caso | Resultado |
+|---|---|---|
+| J22.1 | Sem expediente, a tela diz que **ninguém é barrado** e não mostra contador | **PASS** — local |
+| J22.2 | O admin escolhe o fuso, abre um dia, salva: o PATCH do produto devolve 200 e o `settings.business_hours` do banco é exatamente o que a tela montou, **sem apagar** o resto das configurações | **PASS** — local |
+| J22.3 | Recarregar traz o que ficou gravado; a tela mostra "fora do expediente" e **quando abre** | **PASS** — local |
+| J22.4 | O contador mostra **"—"** (e não "0") quando o Redis não responde | **PASS** — local, sem Redis |
+| J22.5 | Noutra sessão, o **atendente** passa a ver a faixa "fora do expediente" com a janela | **PASS** — local |
+| J22.6 | O **manager** lê o horário e não tem botão de salvar, atalhos nem campos editáveis | **PASS** — local |
+| J22.7 | Fuso inexistente (com acento) e `início = fim` são recusados **na tela**, sem nenhum PATCH; a virada de dia (22:00–06:00) é aceita | **PASS** — local |
+| J22.8 | No celular (390 px) nenhum campo ou botão da seção passa da borda; menor controle com 44 px | **PASS** — local |
+
+**Não provado:** o **número** do contador com Redis real (o e2e do CI e o local não têm Redis; o número
+é provado no unitário da rota, #121); a seção **Departamentos** (T4a → T5 → T6); a tela em espanhol
+pelo browser (o guarda de i18n cobre as chaves, mas ninguém abriu a tela em `es`); tela do **viewer**
+e do **agent** (a página exige `manager`; ambos caem em `/403`, comportamento que já existia).

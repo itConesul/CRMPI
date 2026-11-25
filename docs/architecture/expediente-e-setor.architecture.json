@@ -21,7 +21,7 @@
       "col": 0,
       "type": "ui",
       "label": "Admin define o expediente",
-      "sublabel": "hoje só pela API; a tela de configuração é a T6"
+      "sublabel": "pela seção Expediente de Configurações › Atendimento (T6) ou pela API"
     },
     {
       "id": "agent",
@@ -230,6 +230,14 @@
       "type": "database",
       "label": "conversations.department_id",
       "sublabel": "T4a: nulo = sem setor; nenhuma conversa existente muda; NENHUMA policy lê esta coluna ainda (T4b, depois da T3)"
+    },
+    {
+      "id": "telaconfig",
+      "lane": "humano",
+      "col": 6,
+      "type": "ui",
+      "label": "Seção Expediente em Configurações › Atendimento",
+      "sublabel": "o admin monta janelas por dia e o fuso, salva, e vê se está dentro ou fora e quantas ações foram barradas hoje; o manager só lê (T6)"
     }
   ],
   "edges": [
@@ -264,7 +272,10 @@
     { "id": "e23", "from": "get", "to": "leitor", "label": "barrados_hoje só para admin e manager; agent e viewer recebem null sem ida ao Redis" },
     { "id": "e40", "from": "vinculos", "to": "departamentos", "label": "FK composta: o setor é da mesma organização do vínculo; apagar o setor leva só os vínculos" },
     { "id": "e41", "from": "convsetor", "to": "departamentos", "label": "FK composta NO ACTION: apagar setor com conversas falha (23503); nunca apaga nem desvincula conversa" },
-    { "id": "e42", "from": "membros", "to": "vinculos", "label": "FK composta: o operador tem de ser MEMBRO da organização do setor, e não só existir em auth.users" }
+    { "id": "e42", "from": "membros", "to": "vinculos", "label": "FK composta: o operador tem de ser MEMBRO da organização do setor, e não só existir em auth.users" },
+    { "id": "e50", "from": "admin", "to": "telaconfig", "label": "abre a seção e monta o horário na tela, sem tocar na API" },
+    { "id": "e51", "from": "telaconfig", "to": "patch", "label": "salva: PATCH /settings/expediente, só admin; a tela recusa fuso inexistente e início = fim antes de enviar" },
+    { "id": "e52", "from": "hook", "to": "telaconfig", "label": "o estado agora (dentro ou fora, quando abre) e barrados_hoje vêm do servidor, pela mesma leitura da faixa" }
   ],
   "cards": [
     {
