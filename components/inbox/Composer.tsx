@@ -69,6 +69,12 @@ interface Props {
   contactName?: string | null;
   /** Contato da conversa — excluído do seletor de cartão compartilhado. */
   currentContactId?: string | null;
+  /**
+   * Quem escreve. A lista de `@` não o oferece (#69, Q2): auto-menção nunca avisa ninguém, no servidor
+   * nem no aviso in-app. Vem de fora porque `useAuth` lança fora do provider e o Composer é montado
+   * sem ele em vários testes; sem o valor, a lista é inteira.
+   */
+  autorId?: string | null;
 }
 
 export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
@@ -79,6 +85,7 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
     janelaFechada,
     contactName,
     currentContactId,
+    autorId,
     respondendo,
     onCancelarResposta,
   },
@@ -109,11 +116,14 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
   const [mencaoDispensada, setMencaoDispensada] = useState(false);
   const membros = useAssignableMembers(mode === "note");
   const membrosDaLista: MembroMencionavel[] = membros.data ?? [];
+  // A lista oferece todos menos o autor (Q2). O TOKEN, porém, é conferido contra todos: ele não pode
+  // depender de quem está escrevendo.
+  const membrosOferecidos = autorId ? membrosDaLista.filter((m) => m.user_id !== autorId) : membrosDaLista;
   const estadoDaLista = membros.isLoading ? "carregando" : membros.isError ? "erro" : undefined;
   const mencao = mode === "note" ? resolverMencao(text, cursor) : null;
   const mencaoAberta = !!mencao?.aberto && !mencaoDispensada;
   const membrosFiltrados = mencaoAberta
-    ? filtrarMembros(membrosDaLista, mencao.consulta, t("Membro sem nome"))
+    ? filtrarMembros(membrosOferecidos, mencao.consulta, t("Membro sem nome"))
     : [];
 
   useImperativeHandle(ref, () => ({
@@ -304,7 +314,7 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
           <MentionMenu
             open={mencaoAberta}
             consulta={mencao?.consulta ?? ""}
-            membros={membrosDaLista}
+            membros={membrosOferecidos}
             ativo={mencaoAtivo}
             onAtivo={setMencaoAtivo}
             onPick={escolherMembro}

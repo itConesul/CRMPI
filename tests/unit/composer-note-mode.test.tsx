@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import type { ComponentProps } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const sendMock = vi.fn();
@@ -38,11 +39,11 @@ vi.mock("@/hooks/inbox/useAssignableMembers", () => ({
 
 import { Composer } from "@/components/inbox/Composer";
 
-function renderComposer() {
+function renderComposer(props: Partial<ComponentProps<typeof Composer>> = {}) {
   const qc = new QueryClient();
   return render(
     <QueryClientProvider client={qc}>
-      <Composer conversationId="conv-1" />
+      <Composer conversationId="conv-1" {...props} />
     </QueryClientProvider>,
   );
 }
@@ -112,8 +113,8 @@ const MEMBROS = [
   { user_id: "c1000000-0000-4000-8000-000000000003", role: "manager", full_name: "Mariana Lima" },
 ];
 
-function abrirNota(valor: string) {
-  renderComposer();
+function abrirNota(valor: string, props: Partial<ComponentProps<typeof Composer>> = {}) {
+  renderComposer(props);
   fireEvent.click(screen.getByRole("button", { name: /nota interna/i }));
   const campo = screen.getByPlaceholderText(/nota interna/i) as HTMLTextAreaElement;
   fireEvent.change(campo, { target: { value: valor } });
@@ -154,6 +155,43 @@ describe("Composer + autocomplete de @ (#69, T4)", () => {
         expect.anything(),
       );
       expect(createNoteMock).not.toHaveBeenCalled();
+    });
+
+    // Q2 (decidida em 2026-11-19): a lista não oferece o próprio autor. O servidor e o aviso in-app
+    // já ignoram auto-menção, então oferecê-lo seria oferecer uma menção que nunca avisa ninguém.
+    it("não oferece o próprio autor da nota (Q2)", () => {
+      abrirNota("@", { autorId: MEMBROS[0]!.user_id });
+      expect(screen.getAllByRole("option").map((o) => o.textContent)).toEqual(["Beto Souza", "Mariana Lima"]);
+    });
+
+    it("digitar o nome do autor não o traz de volta (Q2)", () => {
+      // "silva" só casa o autor (Mariana Lima também contém "ana", então "ana" não serviria).
+      abrirNota("@silva", { autorId: MEMBROS[0]!.user_id });
+      expect(screen.queryByRole("option", { name: "Ana Silva" })).not.toBeInTheDocument();
+      expect(screen.getByText("Nenhum membro encontrado")).toBeInTheDocument();
+    });
+
+    it("sem autorId a lista é inteira (nenhuma exclusão silenciosa)", () => {
+      abrirNota("@");
+      expect(screen.getAllByRole("option")).toHaveLength(3);
+    });
+
+    it("o token continua sendo calculado contra TODOS os membros, autor incluído", () => {
+      // A autora ("Ana Silva") some da lista. Escolher "Ana" gera "@Ana", que por primeiro nome também
+      // atingiria a autora. A spec manda conferir o token contra a lista INTEIRA de team/assignable
+      // (`02-design.md` §2 item 4), então cai para o user_id: o token não depende de quem escreve.
+      // É conservador (o servidor ignora auto-menção), mas é o que a spec define.
+      membrosAtual = {
+        ...membrosAtual,
+        data: [
+          { user_id: "f1000000-0000-4000-8000-000000000008", role: "agent", full_name: "Ana" },
+          { user_id: "a1000000-0000-4000-8000-000000000001", role: "agent", full_name: "Ana Silva" },
+        ],
+      };
+      const campo = abrirNota("@", { autorId: "a1000000-0000-4000-8000-000000000001" });
+      expect(screen.getAllByRole("option").map((o) => o.textContent)).toEqual(["Ana"]);
+      fireEvent.click(screen.getByRole("option", { name: "Ana" }));
+      expect(campo.value).toBe("@f1000000-0000-4000-8000-000000000008 ");
     });
 
     it("não abre dentro de um e-mail", () => {
