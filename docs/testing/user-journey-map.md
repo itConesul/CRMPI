@@ -2016,17 +2016,24 @@ autora), Beto, Beto Santos (colide com o Beto por primeiro nome) e João D'Ávil
 | J23.3 | Salvar a nota faz **1** `POST …/notes` (201) e **nenhum** `POST /api/v1/messages`: nada vai ao cliente | **PASS** — local |
 | J23.4 | O servidor emite `user.mentioned` **só** para Beto e João; o Beto Santos não recebe (conferido no `event_log`) | **PASS** — local |
 | J23.5 | A lista fica dentro da janela e acima do campo, sem rolagem lateral, a 1440 px **e a 390 px** (`getBoundingClientRect`) | **PASS** — local |
-| J23.6 | O mencionado recebe o aviso **ao vivo**, sem recarregar, e o clique nele abre a conversa | **BLOQUEADO** — `test.fixme`. Ver abaixo |
+| J23.6 | O mencionado recebe o aviso **ao vivo**, sem recarregar, e o clique nele abre a conversa | **BLOQUEADO** — `test.fixme`, issue #137. **CA-2 e RF-6 da #69 não atendidos** enquanto ela existir. Ver abaixo |
 
-**J23.6 — o achado:** `conversation_notes` **não está** na publicação `supabase_realtime`: nem no
-`baseline.sql` nem em nenhuma migration (`select tablename from pg_publication_tables where
-pubname='supabase_realtime'` não a lista num banco montado só com o baseline). O aviso in-app de menção
-(`useCrmAlerts`) e a nota aparecendo ao vivo na conversa (`useConversationNotes`) dependem de Realtime
-nessa tabela, então **não funcionam em nenhuma instalação**, e isso é anterior à #69. A página do Beto,
-logado e com a conversa aberta, ficou 30 s sem toast, e o servidor tinha emitido o evento. Consertar é
-mudança de schema (migration + apêndice do baseline + MANIFEST), que a spec #69 proíbe nesta issue
-(`02-design.md` §4): a decisão é do dono do produto. Quando a tabela for publicada, trocar `test.fixme`
-por `test` em `nota-mencao.spec.ts`.
+**J23.6 — dívida conhecida (#137):** `conversation_notes` **não está** na publicação `supabase_realtime`:
+nem no `baseline.sql` nem em nenhuma migration (`select tablename from pg_publication_tables where
+pubname='supabase_realtime'` não a lista num banco montado só com o baseline). A tabela já constava em
+`DIVIDA_CONHECIDA` de `tests/unit/realtime-assinatura-tem-publicacao.test.ts`; o e2e da #69 só a expôs, ao
+exigir o CA-2. O aviso in-app de menção (`useCrmAlerts`) e a nota aparecendo ao vivo na conversa
+(`useConversationNotes`) dependem de Realtime nessa tabela, então **não funcionam em nenhuma instalação**, e
+isso é anterior à #69. A página do Beto, logado e com a conversa aberta, ficou 30 s sem toast, e o servidor
+tinha emitido o evento.
+
+Consertar é mudança de schema (migration + apêndice do baseline + MANIFEST), que a spec #69 proíbe nesta
+issue (`02-design.md` §4). Medido num experimento local em 2026-11-25: publicar a tabela faz este caso
+passar, e tirá-la da publicação o faz falhar de novo. **Publicar sozinho não basta e vaza:** a política de
+leitura das notas só exige ser membro da organização, e a `FOR ALL` de escrita também concede SELECT, então
+um agente que não vê a conversa passaria a receber o texto da nota por Realtime. A #137 propõe apertar a
+leitura, separar a `FOR ALL` e só então publicar. Quando ela for resolvida, trocar `test.fixme` por `test`
+em `nota-mencao.spec.ts`.
 
 **Não provado:** a **bandeja do sistema operacional** (o Playwright não a alcança; o spec substitui só a
 classe `Notification` e dispararia o `onclick` real do produto); a acessibilidade com **leitor de tela**

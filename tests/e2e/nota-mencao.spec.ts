@@ -235,7 +235,9 @@ test("A escolhe pessoas na lista de @: o servidor avisa só quem foi escolhido, 
 });
 
 /**
- * BLOQUEADO — achado por este spec em 2026-11-25, ANTES de qualquer código da #69 poder resolvê-lo.
+ * BLOQUEADO — dívida conhecida, issue #137. Enquanto ela existir, o CA-2 e o RF-6 da spec #69 NÃO estão
+ * atendidos. A tabela já constava em `DIVIDA_CONHECIDA` de `tests/unit/realtime-assinatura-tem-publicacao.test.ts`;
+ * este spec só a expôs, ao exigir o CA-2.
  *
  * O aviso in-app de menção (`useCrmAlerts.onNote`) e a nota aparecendo ao vivo (`useConversationNotes`)
  * assinam `postgres_changes` em `conversation_notes`, e essa tabela NÃO está na publicação
@@ -246,8 +248,14 @@ test("A escolhe pessoas na lista de @: o servidor avisa só quem foi escolhido, 
  *
  * Consequência: o CA-2 da spec #69 ("o mencionado recebe o aviso em tempo real, e o clique abre a
  * conversa") não vale hoje em nenhuma instalação. Consertar é mudança de schema (migration + apêndice do
- * baseline + MANIFEST), e a spec proíbe isso nesta issue (`02-design.md` §4, RNF/CA-8): a decisão é do
- * dono do produto. Quando a tabela for publicada, trocar `test.fixme` por `test` — o corpo já está pronto.
+ * baseline + MANIFEST), e a spec proíbe isso nesta issue (`02-design.md` §4, RNF/CA-8).
+ *
+ * A #137 detalha o conserto (opção B): apertar a política de leitura, separar a política `FOR ALL` (que
+ * inclui SELECT) e só então publicar. Publicar sozinho faria o corpo das notas chegar por Realtime a quem
+ * não vê a conversa. Medido num experimento local em 2026-11-25: publicar a tabela faz este teste passar, e
+ * tirá-la da publicação o faz falhar de novo.
+ *
+ * Quando a #137 for resolvida, trocar `test.fixme` por `test` — o corpo já está pronto.
  */
 test.fixme("o mencionado recebe o aviso em tempo real e o clique abre a conversa (CA-2)", async ({ browser }, info) => {
   test.setTimeout(240_000);
