@@ -112,6 +112,22 @@
       "sublabel": "grava o expediente anterior e o novo; a tentativa barrada NÃO grava linha"
     },
     {
+      "id": "marca",
+      "lane": "servidor",
+      "col": 6,
+      "type": "service",
+      "label": "audit(): marca fora_do_expediente",
+      "sublabel": "T2c, RF-10: ator humano + método de escrita + fora do horário + admin/manager; suporte e platform admin marcam; falha só perde o campo"
+    },
+    {
+      "id": "cacheaudit",
+      "lane": "dados",
+      "col": 5,
+      "type": "database",
+      "label": "cache do expediente do audit()",
+      "sublabel": "30 s por organização, UM por processo (globalThis); só do audit(), o gate e a distribuição leem direto (#110)"
+    },
+    {
       "id": "redis",
       "lane": "dados",
       "col": 6,
@@ -185,6 +201,12 @@
     }
   ],
   "edges": [
+    { "id": "e24", "from": "proxy", "to": "marca", "label": "o método carimbado, lido na PRIMEIRA instrução do audit() (também nas 125 chamadas void audit)" },
+    { "id": "e25", "from": "marca", "to": "cacheaudit", "label": "o expediente por organização, TTL de 30 s" },
+    { "id": "e26", "from": "cacheaudit", "to": "carregar", "label": "no miss, a mesma função de leitura do gate; o carregador não ganha cache" },
+    { "id": "e27", "from": "pura", "to": "marca", "label": "expedienteBarra decide foraDoExpediente e bypassAuditado; o audit() não recalcula" },
+    { "id": "e28", "from": "marca", "to": "audit", "label": "metadata.fora_do_expediente na linha da mutação; não nasce linha nova" },
+    { "id": "e29", "from": "patch", "to": "cacheaudit", "label": "descarta a entrada da organização (vale para rotas e Server Actions do mesmo processo)" },
     { "id": "e1", "from": "admin", "to": "patch", "label": "grava o horário e o fuso" },
     { "id": "e2", "from": "patch", "to": "orgs", "label": "merge não destrutivo: preserva routing, branding, security" },
     { "id": "e3", "from": "patch", "to": "audit", "label": "audit só quando gravou, com previous e new" },
@@ -214,7 +236,7 @@
       "dot": "rose",
       "title": "O que NÃO está ligado, e é decisão ou entrega futura, não esquecimento",
       "items": [
-        "não existe aresta gate → audit(): o bypass auditado de admin e manager (RF-10) NÃO está neste PR; vem na T2c, com o audit() decidindo a marca (a spec do mecanismo, #87, já foi mergeada e o dono a aceitou em 2026-11-23)",
+        "não existe aresta gate → audit(), de propósito: a marca do RF-10 (admin e manager fora do expediente) é decidida DENTRO do audit() (T2c), na linha da mutação, e não por quem barra; a tentativa barrada não grava linha",
         "não existe aresta do gate para cron/* nem webhooks/*: a mensagem do cliente recebida fora do horário entra na fila normalmente (RF-11) e o cron autentica por segredo (RNF-1); uma varredura de AST vigia isso",
         "o aviso ao lead (lib/ai/handoff/aviso-ao-lead.ts) e a ferramenta MCP de escalação NÃO respeitam o expediente: ficam para a #73 (PRD-07), por decisão do dono do produto",
         "não existe aresta contador → audit: a tentativa barrada é contada, não registrada, para retry e polling não inflarem o api_audit_log como as rodadas de cron vazias já inflaram",
@@ -226,6 +248,8 @@
       "title": "Invariantes e limites que a forma não mostra",
       "items": [
         "fail-closed no gate, fail-open na leitura: toda escrita de agent é barrada fora do expediente por padrão e a rota só escapa declarando isenção com motivo; mas expediente ausente, torto ou ilegível NUNCA tranca a equipe",
+        "o cache do expediente do audit() é UM por processo, guardado em globalThis: rotas de API e Server Actions ficam em grafos de módulos diferentes no Next, e com um Map no módulo o PATCH descartava só o cache da rota (medido no e2e: a Server Action 0,7 s depois ainda marcava 'fora')",
+        "a marca vale por processo: outro processo (worker, outra instância) só enxerga a mudança de expediente depois dos 30 s; o dono aceitou esse atraso só para a MARCA, não para o gate",
         "o gate lê organizations sob RLS e só roda para quem fn_user_role_in_org reconhece como agent ativo; um invariante de test:db amarra essa função à leitura, porque se elas divergirem o gate falharia aberto sem erro",
         "o que se muta em request.headers ou request.cookies DEPOIS de NextResponse.next não chega ao handler, nem antes nem depois deste PR (medido); só o carimbo, montado antes, chega",
         "a trava na tela cobre o Composer e o cabeçalho da conversa; lead, tag, etapa e tarefa devolvem o 403 cru até alguém travar a UI",
