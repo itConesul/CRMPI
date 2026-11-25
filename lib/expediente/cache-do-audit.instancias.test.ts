@@ -23,7 +23,8 @@ const carregar = vi.fn();
 vi.mock("./carregar", () => ({ carregarExpediente: (...a: unknown[]) => carregar(...a) }));
 vi.mock("@/lib/logger", () => ({ logger: { warn: vi.fn(), info: vi.fn(), error: vi.fn() } }));
 
-type Modulo = typeof import("./cache-do-audit");
+import type * as ModuloDoCache from "./cache-do-audit";
+type Modulo = typeof ModuloDoCache;
 
 /** Uma "cópia" do módulo, como a que cada grafo do Next carrega. */
 async function carregarCopia(): Promise<Modulo> {
