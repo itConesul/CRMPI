@@ -9,11 +9,15 @@
  *            bypassed_rls, metadata, created_at
  */
 import { createHash } from "node:crypto";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { env } from "@/lib/env";
+import { registrarFalhaDaMarca } from "@/lib/expediente/cache-do-audit";
+import { lerMetodoDaRequisicao } from "@/lib/expediente/gate";
 import type { AuditAction } from "./actions";
+import { deveMarcarForaDoExpediente } from "./fora-do-expediente";
 
 export function isServiceRoleConfigured(): boolean {
   const key = env.SUPABASE_SERVICE_ROLE_KEY.trim();
@@ -49,6 +53,10 @@ interface AuditEntry {
 }
 
 export async function audit(entry: AuditEntry): Promise<void> {
+  // RF-10 (PRD-01 / #67, T2c): o método HTTP carimbado pelo `proxy.ts`, lido na PRIMEIRA instrução, antes
+  // de qualquer `await`. `lerMetodoDaRequisicao` chama `headers()` na hora e nunca rejeita. É assim que a
+  // leitura não depende de o contexto da requisição sobreviver ao fim da resposta (as `void audit()`).
+  const metodoDaRequisicao = lerMetodoDaRequisicao();
   try {
     // Prefer service-role admin (bypasses RLS, works for unauthenticated audit
     // events like login_failed). Fall back to user-scoped client when service
@@ -56,6 +64,9 @@ export async function audit(entry: AuditEntry): Promise<void> {
     // null qual so authenticated users can insert their own audit rows.
     const client = isServiceRoleConfigured() ? createAdminClient() : await createClient();
     let supportMetadata: Record<string, unknown> = {};
+    // A sessão (cookie) e se ela É o ator: só então a `rpc` de papel do RF-10 lê o papel DE QUEM AGIU.
+    let dbDaSessao: SupabaseClient | null = null;
+    let sessaoEhOAtor = false;
     try {
       if (entry.actorUserId && entry.actorAuthSessionId && entry.organizationId && !entry.actorApiTokenId) {
         // Callback SameSite=Strict não traz cookie. O state já autenticou ator/sessão;
@@ -70,7 +81,9 @@ export async function audit(entry: AuditEntry): Promise<void> {
         };
       } else if (entry.actorUserId && !entry.actorApiTokenId) {
         const db = await createClient();
+        dbDaSessao = db;
         const { data: { user } } = await db.auth.getUser();
+        sessaoEhOAtor = user?.id === entry.actorUserId;
         if (user?.id === entry.actorUserId) {
           const { readSupportContext } = await import("@/lib/impersonate/support");
           const support = await readSupportContext(db);
@@ -81,6 +94,26 @@ export async function audit(entry: AuditEntry): Promise<void> {
         }
       }
     } catch { /* Audit principal segue, inclusive sem request (workers). */ }
+
+    // RF-10: a marca `fora_do_expediente`. A decisão é DESTA função, nunca de quem a chama: se a rota
+    // (ou o worker) mandar a chave em `metadata`, ela é descartada, para a marca não ser forjável.
+    const metadataDoChamador: Record<string, unknown> = { ...entry.metadata };
+    delete metadataDoChamador.fora_do_expediente;
+    let marca: Record<string, unknown> = {};
+    try {
+      const marcar = await deveMarcarForaDoExpediente(entry, {
+        metodo: metodoDaRequisicao,
+        supportSessionId: typeof supportMetadata.support_session_id === "string" ? supportMetadata.support_session_id : null,
+        sessaoEhOAtor,
+        db: dbDaSessao,
+        agora: new Date(),
+      });
+      if (marcar) marca = { fora_do_expediente: true };
+    } catch (err) {
+      // Falha SÓ perde o campo: a linha é gravada sem ele e a mutação não sente nada.
+      if (entry.organizationId) registrarFalhaDaMarca(entry.organizationId, err);
+    }
+
     const { error } = await client.from("api_audit_log").insert({
       action: entry.action,
       actor_user_id: entry.actorUserId ?? null,
@@ -88,7 +121,7 @@ export async function audit(entry: AuditEntry): Promise<void> {
       organization_id: entry.organizationId ?? null,
       resource_type: entry.resourceType ?? null,
       resource_id: entry.resourceId ?? null,
-      metadata: { ...entry.metadata, ...supportMetadata },
+      metadata: { ...metadataDoChamador, ...supportMetadata, ...marca },
       request_id: entry.requestId ?? null,
       actor_ip: entry.ip ?? null,
       actor_user_agent: entry.userAgent ?? null,
