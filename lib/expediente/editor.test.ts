@@ -7,6 +7,7 @@ import {
   mesmoExpediente,
   novaJanelaNoDia,
   ordenar,
+  podeEditarOExpediente,
   podeSalvar,
   problemaDaJanela,
   semanaComercial,
@@ -109,5 +110,14 @@ describe("mesmoExpediente liga o botão Salvar só quando algo mudou", () => {
     expect(mesmoExpediente(base, { ...base, windows: [w(1, "08:00", "13:00")] })).toBe(false);
     expect(mesmoExpediente(base, { ...base, windows: [w(2, "08:00", "12:00")] })).toBe(false);
     expect(mesmoExpediente(base, { ...base, timezone: "America/Sao_Paulo" })).toBe(false);
+  });
+});
+
+describe("quem vê o botão de salvar espelha a rota (revisão do #132, ponto 4)", () => {
+  it("só o admin na organização; manager, agent e viewer leem", () => {
+    expect(podeEditarOExpediente("admin")).toBe(true);
+    for (const papel of ["manager", "ai_operator", "agent", "viewer"]) expect(podeEditarOExpediente(papel)).toBe(false);
+    expect(podeEditarOExpediente(null)).toBe(false);
+    expect(podeEditarOExpediente("papel-que-nao-existe")).toBe(false);
   });
 });

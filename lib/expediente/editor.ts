@@ -9,6 +9,7 @@
  * O servidor continua sendo quem valida de verdade (`expedienteConfigSchema`): o que a tela recusa
  * é um subconjunto do que ele recusa, só para o erro aparecer ao lado do campo.
  */
+import { roleAtLeast } from "@/lib/auth/types";
 import type { ExpedienteConfig, ExpedienteWindow } from "@/lib/schemas/routing";
 
 /** O fuso que a tela sugere numa organização sem expediente (o mesmo de `descreverExpediente`). */
@@ -92,4 +93,16 @@ export function podeSalvar(rascunho: ExpedienteConfig): boolean {
 export function mesmoExpediente(a: ExpedienteConfig, b: ExpedienteConfig): boolean {
   return JSON.stringify({ timezone: a.timezone, windows: ordenar(a.windows) }) ===
     JSON.stringify({ timezone: b.timezone, windows: ordenar(b.windows) });
+}
+
+/**
+ * Quem vê o botão de salvar. Espelha a ROTA, e não a página: `PATCH /settings/expediente` é
+ * `requireRole("admin")` sem `allowPlatformAdmin`, então o platform admin que é `manager` (ou `viewer`)
+ * na organização leva 403 — mostrar o botão a ele seria oferecer uma ação que a rota recusa (revisão do
+ * #132, ponto 4; o mesmo critério da #99: a tela espelha a rota). Só importa o papel NA organização; a
+ * sessão de suporte `full` já chega aqui como `admin`.
+ */
+export function podeEditarOExpediente(papel: string | null | undefined): boolean {
+  // O MESMO critério de `requireRole("admin")`: posto (rank) no papel da organização, não igualdade de texto.
+  return roleAtLeast(papel, "admin");
 }

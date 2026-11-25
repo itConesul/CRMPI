@@ -42,11 +42,15 @@ function api(parcial: Partial<ExpedienteDaApi> = {}): ExpedienteDaApi {
   };
 }
 
-function montar(props: { initial?: ExpedienteConfig; podeEditar?: boolean } = {}) {
+function montar(props: { initial?: ExpedienteConfig; podeEditar?: boolean; gravadoIlegivel?: boolean } = {}) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={queryClient}>
-      <ExpedienteSecao initial={props.initial ?? vazio} podeEditar={props.podeEditar ?? true} />
+      <ExpedienteSecao
+        initial={props.initial ?? vazio}
+        podeEditar={props.podeEditar ?? true}
+        gravadoIlegivel={props.gravadoIlegivel ?? false}
+      />
     </QueryClientProvider>,
   );
 }
@@ -214,6 +218,76 @@ describe("o estado que vem do servidor", () => {
     montar({ initial: comercial });
     expect(screen.getByTestId("expediente-estado-indisponivel")).toBeVisible();
     expect(screen.getByTestId("expediente-inicio-1-0")).toBeEnabled();
+  });
+});
+
+describe("editar um dia com dois turnos (revisão do #132, ponto 2)", () => {
+  const doisTurnos: ExpedienteConfig = {
+    timezone: "Etc/UTC",
+    windows: [
+      { dow: 1, start: "08:00", end: "12:00" },
+      { dow: 1, start: "13:00", end: "18:00" },
+    ],
+  };
+
+  it("mudar o início do primeiro turno para depois do segundo NÃO troca o campo sob o cursor", () => {
+    montar({ initial: doisTurnos });
+    fireEvent.change(screen.getByTestId("expediente-inicio-1-0"), { target: { value: "14:00" } });
+    // O campo em que se digitou continua sendo o primeiro, e continua mostrando o que foi digitado.
+    expect(screen.getByTestId("expediente-inicio-1-0")).toHaveValue("14:00");
+    expect(screen.getByTestId("expediente-inicio-1-1")).toHaveValue("13:00");
+    // O que se digita em seguida altera o MESMO turno, e não o vizinho.
+    fireEvent.change(screen.getByTestId("expediente-fim-1-0"), { target: { value: "15:00" } });
+    expect(screen.getByTestId("expediente-fim-1-0")).toHaveValue("15:00");
+    expect(screen.getByTestId("expediente-fim-1-1")).toHaveValue("18:00");
+  });
+
+  it("a ordem só é arrumada ao salvar: o que vai ao servidor sai ordenado pelo começo", async () => {
+    montar({ initial: doisTurnos });
+    fireEvent.change(screen.getByTestId("expediente-inicio-1-0"), { target: { value: "14:00" } });
+    fireEvent.change(screen.getByTestId("expediente-fim-1-0"), { target: { value: "15:00" } });
+    fireEvent.click(screen.getByTestId("expediente-salvar"));
+    await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(1));
+    expect(corpoEnviado().windows).toEqual([
+      { dow: 1, start: "13:00", end: "18:00" },
+      { dow: 1, start: "14:00", end: "15:00" },
+    ]);
+  });
+
+  it("remover o primeiro turno não muda o valor do segundo", () => {
+    montar({ initial: doisTurnos });
+    fireEvent.click(screen.getByTestId("expediente-remover-1-0"));
+    expect(screen.getByTestId("expediente-inicio-1-0")).toHaveValue("13:00");
+    expect(screen.queryByTestId("expediente-inicio-1-1")).not.toBeInTheDocument();
+  });
+});
+
+describe("expediente gravado ilegível se conserta pela tela (revisão do #132, ponto 3)", () => {
+  it("o Salvar fica LIGADO mesmo sem mexer em nada, porque o aviso manda salvar de novo", () => {
+    montar({ initial: vazio, gravadoIlegivel: true });
+    expect(screen.getByTestId("expediente-salvar")).toBeEnabled();
+  });
+
+  it("'Sem restrição de horário' também deixa salvar, e salvar grava o expediente vazio e válido", async () => {
+    montar({ initial: vazio, gravadoIlegivel: true });
+    fireEvent.click(screen.getByTestId("expediente-preset-sem-restricao"));
+    expect(screen.getByTestId("expediente-salvar")).toBeEnabled();
+    fireEvent.click(screen.getByTestId("expediente-salvar"));
+    await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(1));
+    expect(corpoEnviado()).toEqual({ timezone: "America/Sao_Paulo", windows: [] });
+    // Consertado: não há mais nada pendente, e o botão volta a desligar.
+    await waitFor(() => expect(screen.getByTestId("expediente-salvar")).toBeDisabled());
+  });
+
+  it("um fuso inexistente continua barrando o Salvar mesmo no estado ilegível", () => {
+    montar({ initial: vazio, gravadoIlegivel: true });
+    fireEvent.change(screen.getByTestId("expediente-fuso"), { target: { value: "Nao/Existe" } });
+    expect(screen.getByTestId("expediente-salvar")).toBeDisabled();
+  });
+
+  it("sem o estado ilegível, quem não mudou nada continua sem poder salvar", () => {
+    montar({ initial: vazio });
+    expect(screen.getByTestId("expediente-salvar")).toBeDisabled();
   });
 });
 

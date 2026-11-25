@@ -20,7 +20,7 @@ import { redirect } from "next/navigation";
 
 import { requireAuth, resolveActiveOrg } from "@/lib/auth/server";
 import { DEFAULT_VISIBILITY_MODE, ROLE_RANK, type VisibilityMode } from "@/lib/auth/types";
-import { FUSO_PADRAO_DO_EDITOR } from "@/lib/expediente/editor";
+import { FUSO_PADRAO_DO_EDITOR, podeEditarOExpediente } from "@/lib/expediente/editor";
 import { lerExpediente } from "@/lib/expediente/expediente";
 import { routingConfigSchema } from "@/lib/schemas";
 import { createClient } from "@/lib/supabase/server";
@@ -59,10 +59,15 @@ export default async function AtendimentoSettingsPage() {
   // Expediente (PRD-01 / #67, T6). `lerExpediente` devolve `null` para "não configurado" e para
   // "gravado torto"; nos dois casos a tela parte do vazio, e a seção diz qual dos dois é (`invalido`).
   const expediente = lerExpediente(settings.business_hours) ?? { timezone: FUSO_PADRAO_DO_EDITOR, windows: [] };
-  // Só o admin grava (`PATCH /settings/expediente` é `requireRole("admin")`). Platform admin sem sessão
-  // de suporte passa pelo mesmo gate da página; a sessão de suporte, não: ela lê, e não escreve.
-  const podeEditarExpediente =
-    ROLE_RANK[activeOrg.role] >= ROLE_RANK.admin || (user.is_platform_admin && !user.support);
+  // Só o admin NA ORGANIZAÇÃO grava: a rota é `requireRole("admin")` sem `allowPlatformAdmin`, e a tela
+  // espelha a rota (platform admin que é manager lê, e não vê o botão — senão levaria 403).
+  const podeEditarExpediente = podeEditarOExpediente(activeOrg.role);
+  // Algo gravado que não é um expediente válido: a leitura o trata como "sem expediente", e a seção
+  // precisa deixar o admin consertá-lo (o Salvar fica ligado). Mesma regra de `descreverExpediente`.
+  const ilegivel =
+    settings.business_hours !== undefined &&
+    settings.business_hours !== null &&
+    lerExpediente(settings.business_hours) === null;
   const channels = await loadChannelRoutingSettings(supabase, activeOrg.orgId);
 
   return (
@@ -84,7 +89,7 @@ export default async function AtendimentoSettingsPage() {
       />
       {/* O expediente vem ANTES dos responsáveis por número: a lista de canais cresce com a instalação, e
           uma configuração que fica depois dela some para quem não rola até o fim. */}
-      <ExpedienteSecao initial={expediente} podeEditar={podeEditarExpediente} />
+      <ExpedienteSecao initial={expediente} podeEditar={podeEditarExpediente} gravadoIlegivel={ilegivel} />
       <ChannelRoutingForm initial={channels} />
     </div>
   );

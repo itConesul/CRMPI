@@ -195,6 +195,29 @@ test.describe("tela de configuração do expediente", () => {
     expect(patches, "nada foi mandado ao servidor enquanto o formulário estava torto").toEqual([]);
   });
 
+  test("expediente gravado ilegível se conserta pela tela, que deixa Salvar (revisão do #132, ponto 3)", async ({ page }) => {
+    // Algo gravado que NÃO é um expediente válido: a leitura o trata como "sem expediente".
+    await gravarSettings({ ...settingsOriginal, business_hours: { isto: "nao e um expediente" } });
+    await loginComoAdmin(page, creds);
+    await page.goto(TELA);
+    await expect(page.getByTestId("secao-expediente")).toBeVisible({ timeout: 30_000 });
+
+    await expect(page.getByTestId("expediente-invalido")).toBeVisible({ timeout: 20_000 });
+    // O aviso manda salvar de novo; o botão TEM de estar ligado sem o admin mexer em nada.
+    await expect(page.getByTestId("expediente-salvar")).toBeEnabled();
+    await captura(page, "08-expediente-ilegivel");
+
+    const salvou = page.waitForResponse((r) => r.url().includes("/api/v1/settings/expediente") && r.request().method() === "PATCH");
+    await page.getByTestId("expediente-salvar").click();
+    expect((await salvou).status()).toBe(200);
+
+    // O que estava torto foi substituído por um expediente válido, e o aviso some.
+    const gravado = await lerSettings();
+    expect(gravado.business_hours).toEqual({ timezone: "America/Sao_Paulo", windows: [] });
+    await expect(page.getByTestId("expediente-invalido")).toHaveCount(0, { timeout: 20_000 });
+    await expect(page.getByTestId("expediente-salvar")).toBeDisabled();
+  });
+
   test("no celular a seção cabe na largura da tela", async ({ browser }) => {
     await gravarSettings({ ...settingsOriginal, business_hours: { timezone: "Etc/UTC", windows: [1, 2, 3, 4, 5].map((d) => ({ dow: d, start: "08:00", end: "18:00" })) } });
     const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });

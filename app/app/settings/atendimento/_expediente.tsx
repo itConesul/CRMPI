@@ -15,7 +15,7 @@
  * Só o `admin` grava (a rota é `requireRole("admin")`); o `manager` chega aqui e LÊ, sem botão de salvar.
  */
 import { useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState, useSyncExternalStore, useTransition } from "react";
+import { useState, useSyncExternalStore, useTransition } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -28,7 +28,6 @@ import { apiClient } from "@/lib/api/client";
 import {
   SEMANA,
   fusoValido,
-  janelasDoDia,
   mesmoExpediente,
   novaJanelaNoDia,
   ordenar,
@@ -38,6 +37,7 @@ import {
   viraODia,
 } from "@/lib/expediente/editor";
 import { descreverAbertura } from "@/lib/expediente/formatar";
+import { randomId } from "@/lib/random-id";
 import type { ExpedienteConfig, ExpedienteWindow } from "@/lib/schemas/routing";
 
 const NOME_DO_DIA: Record<number, string> = {
@@ -60,6 +60,21 @@ function fusosConhecidos(): string[] {
   }
 }
 
+/**
+ * Uma janela como a tela a edita: com uma identidade PRÓPRIA (`uid`) que não muda enquanto se digita.
+ *
+ * A posição na lista e o `start` não servem de identidade: reordenar por `start` a cada tecla (e usar
+ * o índice como `key`) trocava o turno sob o cursor — com 08:00–12:00 e 13:00–18:00, mudar o início do
+ * primeiro para 14:00 deixava o foco no mesmo campo, que passava a mostrar o OUTRO turno. A ordem só
+ * é arrumada ao carregar e ao salvar (revisão do #132, ponto 2).
+ */
+type JanelaEditavel = ExpedienteWindow & { uid: string };
+
+const comIdentidade = (janelas: readonly ExpedienteWindow[]): JanelaEditavel[] =>
+  ordenar(janelas).map((j) => ({ ...j, uid: randomId() }));
+const semIdentidade = (janelas: readonly JanelaEditavel[]): ExpedienteWindow[] =>
+  janelas.map(({ dow, start, end }) => ({ dow, start, end }));
+
 const SEM_FUSOS: string[] = [];
 let fusosEmCache: string[] | null = null;
 const lerFusos = (): string[] => (fusosEmCache ??= fusosConhecidos());
@@ -68,47 +83,55 @@ const semAssinatura = () => () => {};
 export function ExpedienteSecao({
   initial,
   podeEditar,
+  gravadoIlegivel = false,
 }: {
   initial: ExpedienteConfig;
   podeEditar: boolean;
+  /**
+   * Há algo gravado em `business_hours` que o sistema não consegue ler (a leitura o trata como "sem
+   * expediente"). O aviso da tela manda "salvar de novo para consertar", então o Salvar tem de ficar
+   * LIGADO nesse estado, mesmo com o rascunho igual ao que a tela mostra (revisão do #132, ponto 3).
+   */
+  gravadoIlegivel?: boolean;
 }) {
   const t = useT();
   const queryClient = useQueryClient();
   const { data: estado, isLoading, isError } = useExpediente();
 
-  const [rascunho, setRascunho] = useState<ExpedienteConfig>(initial);
+  const [timezone, setTimezone] = useState(initial.timezone);
+  const [janelas, setJanelas] = useState<JanelaEditavel[]>(() => comIdentidade(initial.windows));
   const [salvo, setSalvo] = useState<ExpedienteConfig>(initial);
+  const [ilegivel, setIlegivel] = useState(gravadoIlegivel);
   const [isPending, startTransition] = useTransition();
   // Lista de sugestões só no navegador: no servidor é vazia, e a primeira renderização do cliente
   // também, para a hidratação não divergir.
   const fusos = useSyncExternalStore(semAssinatura, lerFusos, () => SEM_FUSOS);
 
-  const sujo = !mesmoExpediente(rascunho, salvo);
-  const fusoOk = fusoValido(rascunho.timezone);
+  const rascunho: ExpedienteConfig = { timezone, windows: semIdentidade(janelas) };
+  const sujo = ilegivel || !mesmoExpediente(rascunho, salvo);
+  const fusoOk = fusoValido(timezone);
   const salvavel = podeSalvar(rascunho);
   const desabilitado = isPending || !podeEditar;
 
-  const janelas = useMemo(() => rascunho.windows, [rascunho.windows]);
-
-  function trocar(janela: ExpedienteWindow, mudanca: Partial<ExpedienteWindow>) {
-    setRascunho((r) => ({ ...r, windows: r.windows.map((j) => (j === janela ? { ...j, ...mudanca } : j)) }));
+  function trocar(uid: string, mudanca: Partial<ExpedienteWindow>) {
+    setJanelas((js) => js.map((j) => (j.uid === uid ? { ...j, ...mudanca } : j)));
   }
-  function remover(janela: ExpedienteWindow) {
-    setRascunho((r) => ({ ...r, windows: r.windows.filter((j) => j !== janela) }));
+  function remover(uid: string) {
+    setJanelas((js) => js.filter((j) => j.uid !== uid));
   }
   function acrescentar(dow: number) {
-    setRascunho((r) => ({ ...r, windows: [...r.windows, novaJanelaNoDia(r.windows, dow)] }));
+    setJanelas((js) => [...js, { ...novaJanelaNoDia(semIdentidade(js), dow), uid: randomId() }]);
   }
 
   function salvar(e: React.FormEvent) {
     e.preventDefault();
     if (!podeEditar || !salvavel) return;
-    const corpo: ExpedienteConfig = { timezone: rascunho.timezone.trim(), windows: ordenar(rascunho.windows) };
+    const corpo: ExpedienteConfig = { timezone: timezone.trim(), windows: ordenar(rascunho.windows) };
     startTransition(async () => {
       try {
         await apiClient.patch("/api/v1/settings/expediente", corpo);
-        setRascunho(corpo);
         setSalvo(corpo);
+        setIlegivel(false); // o que estava gravado torto foi substituído por um expediente válido
         // A faixa do shell e a página "fora de expediente" leem a mesma chave: sem isto, quem acabou
         // de salvar veria a faixa antiga por até um minuto.
         await queryClient.invalidateQueries({ queryKey: ["expediente"] });
@@ -197,12 +220,12 @@ export function ExpedienteSecao({
               id="expediente-fuso"
               data-testid="expediente-fuso"
               list="expediente-fusos"
-              value={rascunho.timezone}
+              value={timezone}
               disabled={desabilitado}
               aria-invalid={!fusoOk}
               autoComplete="off"
               spellCheck={false}
-              onChange={(e) => setRascunho((r) => ({ ...r, timezone: e.target.value }))}
+              onChange={(e) => setTimezone(e.target.value)}
             />
             <datalist id="expediente-fusos">
               {fusos.map((f) => (
@@ -228,7 +251,7 @@ export function ExpedienteSecao({
                 size="sm"
                 data-testid="expediente-preset-comercial"
                 disabled={desabilitado}
-                onClick={() => setRascunho((r) => ({ ...r, windows: semanaComercial() }))}
+                onClick={() => setJanelas(comIdentidade(semanaComercial()))}
               >
                 {t("Segunda a sexta, 08:00–18:00")}
               </Button>
@@ -238,7 +261,7 @@ export function ExpedienteSecao({
                 size="sm"
                 data-testid="expediente-preset-sem-restricao"
                 disabled={desabilitado}
-                onClick={() => setRascunho((r) => ({ ...r, windows: [] }))}
+                onClick={() => setJanelas([])}
               >
                 {t("Sem restrição de horário")}
               </Button>
@@ -247,7 +270,8 @@ export function ExpedienteSecao({
 
           <ul className="divide-y" data-testid="expediente-dias">
             {SEMANA.map((dow) => {
-              const doDia = janelasDoDia(janelas, dow);
+              // Na ORDEM do estado, e não por `start`: reordenar enquanto se digita trocava o turno sob o cursor.
+              const doDia = janelas.filter((j) => j.dow === dow);
               return (
                 <li
                   key={dow}
@@ -279,7 +303,7 @@ export function ExpedienteSecao({
                       doDia.map((j, i) => {
                         const problema = problemaDaJanela(j);
                         return (
-                          <div key={`${dow}-${i}`} className="space-y-1">
+                          <div key={j.uid} className="space-y-1">
                             <div className="flex flex-wrap items-center gap-2">
                               <Input
                                 type="time"
@@ -289,7 +313,7 @@ export function ExpedienteSecao({
                                 value={j.start}
                                 disabled={desabilitado}
                                 aria-invalid={problema !== null}
-                                onChange={(e) => trocar(j, { start: e.target.value })}
+                                onChange={(e) => trocar(j.uid, { start: e.target.value })}
                               />
                               <span className="text-sm text-muted-foreground">{t("até")}</span>
                               <Input
@@ -300,7 +324,7 @@ export function ExpedienteSecao({
                                 value={j.end}
                                 disabled={desabilitado}
                                 aria-invalid={problema !== null}
-                                onChange={(e) => trocar(j, { end: e.target.value })}
+                                onChange={(e) => trocar(j.uid, { end: e.target.value })}
                               />
                               {podeEditar ? (
                                 <Button
@@ -310,7 +334,7 @@ export function ExpedienteSecao({
                                   data-testid={`expediente-remover-${dow}-${i}`}
                                   aria-label={`${t("Remover janela")}: ${t(NOME_DO_DIA[dow]!)}`}
                                   disabled={desabilitado}
-                                  onClick={() => remover(j)}
+                                  onClick={() => remover(j.uid)}
                                 >
                                   {t("Remover janela")}
                                 </Button>
@@ -352,7 +376,7 @@ export function ExpedienteSecao({
             })}
           </ul>
 
-          {rascunho.windows.length === 0 ? (
+          {janelas.length === 0 ? (
             <p className="text-xs text-muted-foreground" data-testid="expediente-aviso-vazio">
               {t("Sem nenhuma janela, o expediente não restringe ninguém: os atendentes agem a qualquer hora.")}
             </p>
