@@ -470,8 +470,7 @@ Dois mecanismos independentes, cada um com uma **função pura** testável sem b
   - **T2c — o que foi medido ao implementar o RF-10 (2026-11-24/25; o que NÃO foi provado está no fim).**
     (1) **Lista de exclusão por nome** (constante única em `lib/audit/fora-do-expediente.ts`, com teste):
     `authz.denied` e a família `auth.` (19 códigos) **não marcam** — decisão do dono.
-    `organization.switched` e `profile.updated` também ficam fora, mas **são PROPOSTA do autor da T2c,
-    não decisão do dono**: pedem ok de quem revisa. `security.mfa_desativada` e
+    `organization.switched` e `profile.updated` também ficam fora, por **decisão do dono** (2026-11-25, no PR #127; a lista nasceu da proposta do autor e o dono a aceitou). `security.mfa_desativada` e
     `mfa.recovery_codes_regenerated` **marcam** de propósito. (2) **Rotas isentas do `agent` que
     auditam:** só `attendants/availability` (`attendant.availability_changed`) e `notifications/push`
     (`notification_prefs.changed`); `mark-read` não audita; `agent` nunca marca. (3) **Escritores diretos

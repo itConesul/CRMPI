@@ -5,9 +5,10 @@ titulo: Ações de administrador e gerente fora do expediente ficam marcadas na 
 ---
 
 Quando uma organização configura o expediente, administradores e gerentes
-continuam livres para trabalhar a qualquer hora, mas agora a auditoria mostra
-quando isso aconteceu fora do horário: a linha de auditoria da ação ganha a
-marca `fora_do_expediente`. O mesmo vale para a equipe de suporte da plataforma
+continuam livres para trabalhar a qualquer hora, mas agora a ação feita fora do
+horário fica marcada: a linha de auditoria dela ganha a marca
+`fora_do_expediente`, registrada na auditoria da plataforma. Por enquanto não há
+tela da empresa para ver essa marca. O mesmo vale para a equipe de suporte da plataforma
 e para o administrador da plataforma. O atendente (`agent`) nunca recebe a marca,
 porque fora do horário ele é barrado, e a marca não cria linhas novas nem mexe
 no que o usuário vê.

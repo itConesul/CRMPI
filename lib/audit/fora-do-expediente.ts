@@ -28,8 +28,8 @@ import { metodoEhEscrita } from "@/lib/expediente/metodo";
  *    alcança (medido), então sem a exclusão elas marcariam.
  *  - `organization.switched` e `profile.updated`: troca de organização e edição do próprio perfil são
  *    as isenções fixas do `agent` (`02-design.md` §2.1) e as Server Actions que as auditam são de
- *    sessão/perfil. **Proposta da T2c, não decisão do dono** (o dono fixou `authz.denied` e `auth.`);
- *    registrada em `05-revisao.md` para o revisor confirmar.
+ *    sessão/perfil. **Decisão do dono** (2026-11-25, no PR #127, registrada em
+ *    `05-revisao.md`), somada à de `authz.denied` e `auth.`.
  *
  * Fica de FORA da lista, de propósito: `security.mfa_desativada` e `mfa.recovery_codes_regenerated`.
  * Desativar a verificação em duas etapas, ou regenerar os códigos, às 23h é exatamente o tipo de ação
