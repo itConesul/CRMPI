@@ -174,7 +174,8 @@ expediente da organização; rota ou tela `/app/fora-de-expediente`; erro `OUT_O
 
   **Resolvido (era "não medido" (1)): quem chama o MCP.** Um bearer `dsk_…` da tabela `api_tokens`
   (`lib/mcp/auth.ts`). O papel vem do escopo `role:<papel>` (padrão `agent`) e o ator é
-  `{ type: "user", id: <id do TOKEN> }` ou `ai_agent`: **o token não tem `user_id` nem setor**. A criação
+  `{ type: "user", id: <id do TOKEN> }` ou `ai_agent`: **o token não tem `user_id` nem setor** (a coluna `created_by` é o admin que o
+  CRIOU, não quem o opera). A criação
   é só de `admin` (policy `api_tokens_admin_only`). O agente de IA **nativo** não passa pelo `/api/mcp`
   (`lib/ai/runtime/tools.ts`). Quem chama o MCP é, então, uma credencial externa da organização, e não
   uma pessoa `agent` em sessão — por isso `visibility_mode` e setor não têm a quem se aplicar.

@@ -42,7 +42,7 @@ partir daí:
 
 Quando o agente externo assume o dispatch de uma org (§5, `ai_dispatch_mode='external'`),
 o dispatcher **nativo** deste repo **para de tocar** os eventos daquela org — o
-Vendaval os consome. O resto do contrato (tools, RLS, proibições) continua valendo
+Vendaval os consome. O resto do contrato (tools, isolamento entre organizações, proibições) continua valendo
 igual.
 
 ---
@@ -294,7 +294,8 @@ Restringe **apenas o role `agent`**; `viewer`/`manager`/`admin` veem toda a org.
 **O agente externo NÃO é limitado por `visibility_mode`.** O MCP lê com service role, a RLS não
 vale para ele, e nenhum código TypeScript reaplica a regra: um token com papel `agent` lê **toda**
 conversa e **todo** lead da organização do token. O token não tem `user_id` (nem setor) a quem
-aplicar a regra. O que o contrato antigo descrevia abaixo é o que a RLS faz para uma **pessoa em
+aplicar a regra. A tabela `api_tokens` tem `created_by`, mas é o **admin que CRIOU o token**, e não
+quem o opera: não é uma identidade a que se aplique `visibility_mode`, e não deve virar uma. O que o contrato antigo descrevia abaixo é o que a RLS faz para uma **pessoa em
 sessão** (REST e telas), e continua verdadeiro para ela:
 
 > *Corrigido em 2026-11-25.* O texto anterior dizia "O agente externo lê via MCP org-scoped e sujeito
@@ -420,8 +421,9 @@ O que o **Vendaval** precisa fazer do seu lado para consumir este contrato:
 5. **Usar `crm_request_human_handoff` v2 para o fallback humano** (§3.4) — deixar o
    roteamento G5 escolher o destino (passar `target_user_id` só como preferência);
    tratar os dois formatos de retorno (`assigned_to` OU `queued`+`position`).
-6. **Respeitar visibilidade** (§4): tratar o retorno das read tools como o teto do
-   que existe; não tentar acessar id fora do escopo.
+6. **Respeitar o escopo da organização** (§4): tratar o retorno das read tools como o teto
+   da **organização do token**, e não de um atendente (o MCP NÃO aplica `visibility_mode`);
+   não tentar acessar id de outra organização.
 7. **Respeitar as proibições §6:** não enviar a `is_blocked`; não intervir em
    conversa `assignee_kind='user'`; não reativar bot silenciado; nunca cross-org.
 8. **Idempotência no envio:** passar `idempotency_key` em `crm_send_whatsapp_message`
