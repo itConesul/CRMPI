@@ -11,7 +11,7 @@ departamentos e do expediente definidos aqui.
 | ID | Requisito | Origem na issue |
 |---|---|---|
 | RF-1 | O admin cadastra departamentos (ex.: Comercial, Financeiro, Suporte) | "O que o texto pede" 1 |
-| RF-2 | O admin vincula operadores a um setor | "O que o texto pede" 1 |
+| RF-2 | `admin` e `manager` vinculam operadores a um setor (**decisão A do dono, 2026-11-25**; antes só o `admin`). Criar, renomear e apagar o departamento (RF-1) continua só do `admin` | "O que o texto pede" 1 + decisão A |
 | RF-3 | O admin define início, fim e fuso do expediente da organização. O expediente **pode virar o dia** (`end < start`, ex.: 22:00–06:00); a janela pertence ao `dow` em que **começa**, e `start == end` é inválido (N3) | "O que o texto pede" 2 + decisão do dono do produto (2026-11-17) |
 | RF-4 | Fora do expediente, o papel `agent` é barrado **nas ações**: a API responde `403 OUT_OF_WORK_HOURS`. **Fail-closed:** todo método que não seja `GET`/`HEAD`/`OPTIONS` é barrado **por padrão** (assumir, responder, receber distribuição e demais escritas), e só escapa quem consta numa lista de isenções **com motivo escrito**. A leitura continua liberada (decisão Q1) | "O que o texto pede" 2 + "Melhorias propostas" 2 + decisão do dono do produto (2026-11-17) |
 | RF-5 | Fora do expediente, a tela do `agent` mostra uma faixa com a janela da empresa e desabilita as ações; a faixa leva a `/app/fora-de-expediente`, página informativa. *(Adaptado pela Q1: o texto pedia redirecionar a tela inteira)* | "O que o texto pede" 2 + "Melhorias propostas" 2 |
@@ -24,6 +24,9 @@ departamentos e do expediente definidos aqui.
 | RF-12 | Fora do expediente, o `agent` **não entra na distribuição**: a elegibilidade do roteamento passa a exigir expediente da organização **e** a janela própria do atendente (hoje só exige a segunda) | Decisão de produto (comentário de 2026-11-13) + RF-4 |
 | RF-13 | Um setor **com conversas não pode ser apagado**: a API responde `409 department_not_empty` com a contagem, e o admin reatribui as conversas explicitamente antes. Apagar um setor nunca devolve conversas a "sem setor" em silêncio (N1) | Decisão do dono do produto (2026-11-17) |
 | RF-14 | A regra de setor vale **também na escrita**: `agent` não faz `UPDATE`/`DELETE` em conversa nem `INSERT`/`UPDATE`/`DELETE` em `messages` de uma conversa que não enxerga, e não muda o `department_id` de uma conversa (N2) | Decisão do dono do produto (2026-11-17) |
+| RF-15 | **`agent` não passa conversa para outro departamento**: só `manager` ou `admin` transferem entre departamentos, e só eles atribuem a uma pessoa de **fora** do setor da conversa (o dono da conversa sempre a vê, Q5) | Decisão B do dono, 2026-11-25 |
+| RF-16 | **`viewer` vê só os departamentos dele**, e não todos (a proposta de 2026-11-17 dava ao `viewer` visão total). `admin` e `manager` continuam vendo tudo (RF-8). **Em aberto: o que o `viewer` vê de conversa SEM setor (Q10)** | Decisão C do dono, 2026-11-25 |
+| RF-17 | **A ficha e a linha do tempo do contato escondem o conteúdo de conversa de outro departamento**, e isso vem **antes** de o isolamento por setor ser ligado para clientes. Revê o risco aceito da Q6 (#80) | Decisão D do dono, 2026-11-25 |
 | RNF-1 | Nenhuma isenção do gate é opcional: `admin`/`manager`, platform admin e impersonação de suporte nunca são barrados, e ficam **fora do gate** (por escrito e com teste de varredura) token Bearer, MCP, agente de IA, `webhooks/*`, `cron/*` e a ingestão de mensagens. Isenções fixas do `agent`: leitura, login/logout, troca de organização, perfil, preferências, MFA, marcar notificação como lida, presença e `attendants/availability`. CRM interno (leads, contatos, tarefas, agenda) é barrado por padrão e liberado rota a rota, com o critério "dispara mensagem ao cliente?" | "Melhorias propostas" 4 |
 | RNF-2 | Isolamento entre organizações continua intacto; a mudança de RLS passa no teste de 2 organizações e ganha um caso por setor | "Melhorias propostas" 5 |
 | RNF-3 | Mudança de schema sai como migration versionada + apêndice idempotente no `baseline.sql` + linha no MANIFEST, e **só após a aprovação** | "Regra desta issue" |
@@ -48,8 +51,9 @@ Acréscimos desta spec (deixados implícitos pela issue):
 - **Horário do agente de IA** (`janela-de-atendimento.ts`) e **horário por atendente** na
   elegibilidade do roteamento: continuam como estão.
 - **Visibilidade de leads/contatos por setor**: o texto fala só de conversas. Ver Q6. **Risco aceito
-  pelo dono do produto (2026-11-17):** a timeline, as atividades e o 360 do contato podem mostrar
-  conteúdo de conversa de outro setor. Mapeado na [#80](https://github.com/itConesul/CRMPI/issues/80).
+  pelo dono do produto (2026-11-17), REVISTO em 2026-11-25 (decisão D, RF-17):** a ficha e a linha do
+  tempo do contato passam a esconder conteúdo de conversa de outro departamento, antes de o isolamento
+  ser ligado. Mapeado na [#80](https://github.com/itConesul/CRMPI/issues/80).
 - **Expediente por setor** (`departments.business_hours`): evolução prevista e aditiva, **não** desta
   spec (Q9).
 
@@ -71,7 +75,8 @@ divergir). Nenhuma está mais em aberto; N1 a N4 são decisões novas do mesmo d
 5. **Q5 — Conversa atribuída a mim em outro setor** (ex.: depois de uma transferência): continua
    visível? *(✅ aprovada em 2026-11-17)* Decisão: sim, o dono sempre vê (§4.3).
 6. **Q6 — Leads e contatos entram no isolamento por setor?** *(✅ fora do escopo, com **risco aceito**,
-   em 2026-11-17; mapeado na #80)* O texto cobre conversas e mensagens.
+   em 2026-11-17; mapeado na #80. **Revista em 2026-11-25 pela decisão D:** a ficha e a linha do tempo
+   do contato entram, RF-17.)* O texto cobre conversas e mensagens.
 7. **Q7 — Mensagem que chega com todos os atendentes barrados**: quem responde? A conversa fica sem
    dono até a abertura. Depende do PRD-07 para o cliente receber aviso (§7, §8). *(**Confirmada pelo
    dono do produto** em 2026-11-13: "a mensagem do cliente entra normalmente na fila; a resposta
@@ -82,3 +87,7 @@ divergir). Nenhuma está mais em aberto; N1 a N4 são decisões novas do mesmo d
    organização agora**.)* A evolução prevista é `departments.business_hours jsonb` nullable, com
    fallback para o expediente da organização — aditiva, sem backfill, não quebra o `update.sh`. Fica
    registrada em `02-design.md` §4.1 e **não** é implementada por esta spec.
+10. **Q10 — O `viewer` e a conversa SEM setor** *(⏳ **em aberto**, levantada em 2026-11-25)*: a decisão C
+    diz que o `viewer` vê só os departamentos dele, mas não diz se a conversa **sem setor** lhe é visível
+    (para o `agent` é, RF-7). Precisa de resposta do dono **antes da T4b**, que reescreve o ramo do `viewer`
+    em `fn_can_view_conversation`. Não decidi por conta própria.

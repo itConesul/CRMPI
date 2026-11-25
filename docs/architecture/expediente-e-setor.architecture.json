@@ -213,7 +213,7 @@
       "col": 9,
       "type": "database",
       "label": "department_members",
-      "sublabel": "T4a: operador ↔ setor; o setor e o operador têm de ser da MESMA organização (FK composta)"
+      "sublabel": "T4a: operador ↔ setor; o setor e o operador têm de ser da MESMA organização (FK composta); escrita `manager` ou acima (decisão A)"
     },
     {
       "id": "membros",

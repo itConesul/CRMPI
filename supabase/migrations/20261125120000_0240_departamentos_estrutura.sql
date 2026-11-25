@@ -88,8 +88,9 @@ create index if not exists idx_conversations_department
   on public.conversations (organization_id, department_id)
   where department_id is not null;
 
--- RLS por comando (nunca FOR ALL): leitura para quem é membro da organização,
--- escrita só para `admin`.
+-- RLS por comando (nunca FOR ALL): leitura para quem é membro da organização.
+-- Escrita: em `departments` só `admin` (criar, renomear e apagar setor); em `department_members`
+-- `manager` ou acima (vincular pessoas a um setor — decisão A do dono, 2026-11-25, #67).
 alter table public.departments enable row level security;
 
 drop policy if exists "departments_select" on public.departments;
@@ -117,16 +118,16 @@ create policy "department_members_select" on public.department_members
 
 drop policy if exists "department_members_insert" on public.department_members;
 create policy "department_members_insert" on public.department_members
-  for insert with check (public.fn_role_at_least(organization_id, 'admin'));
+  for insert with check (public.fn_role_at_least(organization_id, 'manager'));
 
 drop policy if exists "department_members_update" on public.department_members;
 create policy "department_members_update" on public.department_members
-  for update using (public.fn_role_at_least(organization_id, 'admin'))
-  with check (public.fn_role_at_least(organization_id, 'admin'));
+  for update using (public.fn_role_at_least(organization_id, 'manager'))
+  with check (public.fn_role_at_least(organization_id, 'manager'));
 
 drop policy if exists "department_members_delete" on public.department_members;
 create policy "department_members_delete" on public.department_members
-  for delete using (public.fn_role_at_least(organization_id, 'admin'));
+  for delete using (public.fn_role_at_least(organization_id, 'manager'));
 
 -- Sessão de suporte somente-leitura (migration de suporte temporário): o laço do baseline que
 -- cria estas 3 policies RESTRITIVAS varre o catálogo e só alcança tabela que JÁ EXISTE quando

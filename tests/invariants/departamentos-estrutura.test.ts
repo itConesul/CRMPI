@@ -32,6 +32,7 @@ const ORG_B = "0240bbbb-0000-4000-8000-000000000002";
 const ORG_C = "0240cccc-0000-4000-8000-000000000003";
 const ADMIN_A = "0240aaaa-1111-4000-8000-000000000001";
 const AGENT_A = "0240aaaa-1111-4000-8000-000000000002";
+const MANAGER_A = "0240aaaa-1111-4000-8000-000000000003";
 const ADMIN_B = "0240bbbb-1111-4000-8000-000000000001";
 const ADMIN_C = "0240cccc-1111-4000-8000-000000000001";
 const SESSION_A = "0240aaaa-2222-4000-8000-000000000001";
@@ -64,6 +65,7 @@ function semear(): void {
     insert into auth.users (id, email) values
       ('${ADMIN_A}', 'dep-admin-a@invariant.test'),
       ('${AGENT_A}', 'dep-agent-a@invariant.test'),
+      ('${MANAGER_A}', 'dep-manager-a@invariant.test'),
       ('${ADMIN_B}', 'dep-admin-b@invariant.test'),
       ('${ADMIN_C}', 'dep-admin-c@invariant.test')
       on conflict do nothing;
@@ -75,6 +77,7 @@ function semear(): void {
     insert into public.user_organizations (user_id, organization_id, role, accepted_at) values
       ('${ADMIN_A}', '${ORG_A}', 'admin', now()),
       ('${AGENT_A}', '${ORG_A}', 'agent', now()),
+      ('${MANAGER_A}', '${ORG_A}', 'manager', now()),
       ('${ADMIN_B}', '${ORG_B}', 'admin', now()),
       ('${ADMIN_C}', '${ORG_C}', 'admin', now())
       on conflict do nothing;
@@ -178,7 +181,7 @@ describe("0240 · isolamento entre organizações, com o JWT de gente de verdade
     expect(countAs(AGENT_A, `select count(*) from public.departments where id in ('${DEPT_A}', '${DEPT_A_VAZIO}')`)).toBe(2);
   });
 
-  it("só o admin escreve: o agent não cria, não renomeia e não apaga setor", () => {
+  it("o agent não escreve: não cria, não renomeia nem apaga setor, e não vincula ninguém", () => {
     expect(
       writeCountAs(AGENT_A, `insert into public.departments (organization_id, name) values ('${ORG_A}', 'Do agent')`),
     ).toBe(0);
@@ -189,6 +192,30 @@ describe("0240 · isolamento entre organizações, com o JWT de gente de verdade
         AGENT_A,
         `insert into public.department_members (organization_id, department_id, user_id)
            values ('${ORG_A}', '${DEPT_A_VAZIO}', '${AGENT_A}')`,
+      ),
+    ).toBe(0);
+  });
+
+  it("o manager VINCULA e desvincula pessoas ao setor, mas NÃO cria, renomeia nem apaga setor (decisão A, 2026-11-25)", () => {
+    // O setor em si continua só do admin.
+    expect(writeCountAs(MANAGER_A, `insert into public.departments (organization_id, name) values ('${ORG_A}', 'Do manager')`)).toBe(0);
+    expect(writeCountAs(MANAGER_A, `update public.departments set name = 'Hackeado' where id = '${DEPT_A}'`)).toBe(0);
+    expect(writeCountAs(MANAGER_A, `delete from public.departments where id = '${DEPT_A_VAZIO}'`)).toBe(0);
+    // O vínculo é do manager (e do admin).
+    expect(
+      writeCountAs(
+        MANAGER_A,
+        `insert into public.department_members (organization_id, department_id, user_id) values ('${ORG_A}', '${DEPT_A_VAZIO}', '${AGENT_A}')`,
+      ),
+    ).toBe(1);
+    expect(writeCountAs(MANAGER_A, `delete from public.department_members where department_id = '${DEPT_A_VAZIO}' and user_id = '${AGENT_A}'`)).toBe(1);
+  });
+
+  it("o admin da organização vizinha não vincula ninguém ao setor da org A (o lado do WITH CHECK do vínculo)", () => {
+    expect(
+      writeCountAs(
+        ADMIN_B,
+        `insert into public.department_members (organization_id, department_id, user_id) values ('${ORG_A}', '${DEPT_A_VAZIO}', '${AGENT_A}')`,
       ),
     ).toBe(0);
   });

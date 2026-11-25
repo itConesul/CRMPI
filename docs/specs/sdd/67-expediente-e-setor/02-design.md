@@ -656,7 +656,8 @@ Dois mecanismos independentes, cada um com uma **função pura** testável sem b
   aprovação). Como `drop function` falha se ainda houver dependente, um chamador esquecido aparece
   como erro no `install` (`ON_ERROR_STOP=1`) em vez de vazar. O `update.sh` (sem `ON_ERROR_STOP`)
   reaplica o baseline de cima para baixo, então o estado final é o do apêndice novo.
-- Regra proposta (ver §4.3): `viewer/manager/admin` e platform admin veem tudo; `agent` vê a conversa
+- Regra proposta (ver §4.3): `manager`/`admin` e platform admin veem tudo; **o `viewer` vê só os seus
+  departamentos (decisão C, 2026-11-25; a conversa sem setor é a Q10, em aberto)**; `agent` vê a conversa
   se **é o dono**, **ou** (`department_id` é nulo **ou** está entre os seus setores) **e** a regra de
   `visibility_mode` já existente a admite. As duas restrições **somam**; nenhuma substitui a outra.
 - **Realtime:** `postgres_changes` aplica a RLS de SELECT ao assinante, então a mudança de policy
@@ -674,6 +675,24 @@ Dois mecanismos independentes, cada um com uma **função pura** testável sem b
   `INSERT`/`UPDATE`/`DELETE` de `messages` (§4.3). A alternativa recusada na versão anterior
   ("a issue pede só leitura") deixou de valer: o dono do produto decidiu o contrário e a medição
   confirmou um buraco real no `INSERT` de `messages`.
+
+### 2.3 Decisões do dono de 2026-11-25 (isolamento entre equipes)
+
+Regra do dono: **equipes distintas não veem as conversas umas das outras; só `admin` ou `manager` pode
+permitir.** Setores podem ter número de WhatsApp próprio, e cada um recebe e responde pelo número em que a
+mensagem chegou. Registrado por Sciuba na [#67](https://github.com/itConesul/CRMPI/issues/67), 2026-11-25.
+
+| | Decisão | O que muda | Onde |
+|---|---|---|---|
+| **A** | Quem vincula pessoas a departamentos: `admin` **e `manager`**. Criar, renomear e apagar departamento segue só do `admin` | RF-2. RLS de `department_members` escrita `manager`+ (**feito na T4a**, migration 0240); rota `PUT /departments/[id]/members` `manager`+ (T5) | T4a, T5 |
+| **B** | `agent` não passa conversa para outro departamento; só `manager`/`admin`. Vale também para atribuir a uma pessoa de fora do setor (o dono da conversa sempre a vê, Q5) | RF-15 (novo). `conversations/[id]/transfer` e a atribuição; a trava no banco é decisão da T4b | T5, T4b |
+| **C** | `viewer` vê só os departamentos dele; `admin` e `manager` veem tudo | RF-16 (novo); a regra de §2.2 e a função de §4.3 mudam. **Q10 em aberto:** o `viewer` e a conversa sem setor | T4b |
+| **D** | A ficha e a linha do tempo do contato escondem conteúdo de conversa de outro departamento, **antes** de o isolamento ser ligado para clientes | RF-17 (novo). Revê o risco aceito da Q6 e **amplia a T3** (`crm_lead_activities`, Customer 360, #80) | T3, T4b |
+
+**Consequências já decididas:** número de WhatsApp por departamento é a [#135](https://github.com/itConesul/CRMPI/issues/135),
+fora da #67; e o **MCP** (achado F1 do #134): manter o token lendo a empresa toda por padrão **não atende à regra** —
+o token passa a ter departamento, e o acesso à empresa inteira só por escolha explícita de `admin` ou `manager`. Precisa
+de spec própria (§1, achado F1).
 
 ### Alternativas recusadas
 | Alternativa | Por que não |
@@ -713,7 +732,7 @@ nunca do body):
 | `GET/POST` | `/departments` | leitura `agent`+, escrita `admin` | `Idempotency-Key` no POST |
 | `PATCH/DELETE` | `/departments/[id]` | `admin` | `DELETE` com conversas no setor responde **`409 department_not_empty`** com `details: { conversation_count }` (N1); sem conversas, apaga. Nunca apaga nem desvincula conversa |
 | `POST` | `/departments/[id]/reassign` | `admin` | Corpo `{ to_department_id: uuid }` (outro setor da **mesma** organização) ou `{ sem_setor: true }` — a volta a "sem setor" é um ato **explícito**. Audita `department.conversations_reassigned` com a contagem |
-| `PUT` | `/departments/[id]/members` | `admin` | Substitui a lista de operadores do setor |
+| `PUT` | `/departments/[id]/members` | `manager`+ (`admin` e `manager`; decisão A) | Substitui a lista de operadores do setor |
 
 **Tela:** faixa no shell do app + página informativa `/app/fora-de-expediente` (RF-5), com a janela da
 empresa, o horário de reabertura e o botão de sair. Configuração em **Configurações › Atendimento**: seção "Expediente" e seção "Departamentos".
@@ -822,11 +841,17 @@ create index if not exists idx_conversations_department
   membro ativo.
 - `updated_at` de `departments` usa o `fn_set_updated_at()` do repo (trigger no apêndice).
 - RLS por comando (nunca `FOR ALL`), por `fn_user_org_ids()`: `SELECT` para membros da org;
-  `INSERT/UPDATE/DELETE` só `admin` (`fn_role_at_least(organization_id,'admin')`). Nome da policy no
+  `INSERT/UPDATE/DELETE` em `departments` só `admin` (`fn_role_at_least(organization_id,'admin')`); em
+  `department_members`, `manager` ou acima (`'manager'`; **decisão A, 2026-11-25**). Nome da policy no
   padrão `tenant_isolation_<tabela>_<comando>` quando houver aderência; senão o padrão por comando
   já usado em `attendant_availability`.
 
 ### 4.3 RLS de leitura (a mudança de maior risco)
+
+> **Superada em um ponto (decisão C, 2026-11-25).** A função abaixo é a PROPOSTA de 2026-11-17 e dá ao
+> `viewer` visão total (`in ('viewer','manager','admin') then true`). O `viewer` passa a ver só os seus
+> departamentos; a T4b reescreve esse ramo, **depois da resposta à Q10** (o que o `viewer` vê de conversa
+> sem setor).
 ```sql
 create or replace function public.fn_can_view_conversation(
   p_org uuid, p_assigned_to_user_id uuid, p_department_id uuid
