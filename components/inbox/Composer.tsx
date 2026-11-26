@@ -17,8 +17,16 @@ import { ContactPickerDialog } from "@/components/inbox/composer/ContactPickerDi
 import { AudioRecorder } from "@/components/inbox/composer/AudioRecorder";
 import { ReplyReviewPanel } from "@/components/inbox/composer/ReplyReviewPanel";
 import { EmojiButton } from "@/components/inbox/composer/EmojiButton";
+import {
+  filtrarMembros,
+  inserirMencao,
+  MentionMenu,
+  resolverMencao,
+  teclaNoMenu,
+} from "@/components/inbox/composer/MentionMenu";
 import { resolveSlash, TemplateMenu } from "@/components/inbox/composer/TemplateMenu";
 import { useExpedienteBarra } from "@/hooks/expediente/useExpediente";
+import { useAssignableMembers } from "@/hooks/inbox/useAssignableMembers";
 import { useCreateNote } from "@/hooks/inbox/useCreateNote";
 import { useMessageTemplates, type MessageTemplate } from "@/hooks/inbox/useMessageTemplates";
 import { X } from "lucide-react";
@@ -26,6 +34,7 @@ import { useSendMessage } from "@/hooks/inbox/useSendMessage";
 import { useUploadMedia } from "@/hooks/inbox/useUploadMedia";
 import { imagemDoClipboard } from "@/lib/inbox/clipboard-image";
 import { interpolateTemplate } from "@/lib/inbox/template-vars";
+import { tokenDeMencao, type MembroMencionavel } from "@/lib/notifications/mentions";
 import { cn } from "@/lib/utils";
 
 export interface ComposerHandle {
@@ -60,6 +69,12 @@ interface Props {
   contactName?: string | null;
   /** Contato da conversa — excluído do seletor de cartão compartilhado. */
   currentContactId?: string | null;
+  /**
+   * Quem escreve. A lista de `@` não o oferece (#69, Q2): auto-menção nunca avisa ninguém, no servidor
+   * nem no aviso in-app. Vem de fora porque `useAuth` lança fora do provider e o Composer é montado
+   * sem ele em vários testes; sem o valor, a lista é inteira.
+   */
+  autorId?: string | null;
 }
 
 export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
@@ -70,6 +85,7 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
     janelaFechada,
     contactName,
     currentContactId,
+    autorId,
     respondendo,
     onCancelarResposta,
   },
@@ -92,6 +108,23 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
   const templates = useMessageTemplates();
   const slash = resolveSlash(text);
   const menuOpen = mode === "reply" && slash.open && !menuDismissed;
+
+  // Autocomplete de `@` (#69): só em nota interna, e a busca de membros só liga nela (RF-1).
+  // `cursor` é rastreado porque a menção pode estar no meio do texto, não só no fim.
+  const [cursor, setCursor] = useState(0);
+  const [mencaoAtivo, setMencaoAtivo] = useState(0);
+  const [mencaoDispensada, setMencaoDispensada] = useState(false);
+  const membros = useAssignableMembers(mode === "note");
+  const membrosDaLista: MembroMencionavel[] = membros.data ?? [];
+  // A lista oferece todos menos o autor (Q2). O TOKEN, porém, é conferido contra todos: ele não pode
+  // depender de quem está escrevendo.
+  const membrosOferecidos = autorId ? membrosDaLista.filter((m) => m.user_id !== autorId) : membrosDaLista;
+  const estadoDaLista = membros.isLoading ? "carregando" : membros.isError ? "erro" : undefined;
+  const mencao = mode === "note" ? resolverMencao(text, cursor) : null;
+  const mencaoAberta = !!mencao?.aberto && !mencaoDispensada;
+  const membrosFiltrados = mencaoAberta
+    ? filtrarMembros(membrosOferecidos, mencao.consulta, t("Membro sem nome"))
+    : [];
 
   useImperativeHandle(ref, () => ({
     focus: () => taRef.current?.focus(),
@@ -163,6 +196,22 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
     });
   }
 
+  /** Troca `@consulta` pelo token do membro escolhido e devolve o cursor logo depois (RF-3). */
+  function escolherMembro(m: MembroMencionavel) {
+    if (!mencao) return;
+    const novo = inserirMencao(text, mencao, tokenDeMencao(m, membrosDaLista));
+    setText(novo.texto);
+    setCursor(novo.cursor);
+    setMencaoAtivo(0);
+    const ta = taRef.current;
+    if (!ta) return;
+    requestAnimationFrame(() => {
+      ta.focus();
+      ta.selectionStart = ta.selectionEnd = novo.cursor;
+      autoresize();
+    });
+  }
+
   /**
    * Ctrl/Cmd+V com imagem no clipboard cai no MESMO caminho do menu "+":
    * abre o preview com legenda e envia por ali. Nada de atalho paralelo — a
@@ -183,6 +232,33 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
   }
 
   function onKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
+    if (mencaoAberta) {
+      // Com a busca de membros carregando ou falha a lista não tem o que escolher, e prender o
+      // Enter aqui seria prender a nota: ele segue para o envio normal. Shift+Enter quebra linha.
+      const semLista = estadoDaLista !== undefined;
+      const tecla = e.key === "Enter" && (e.shiftKey || semLista) ? "" : e.key;
+      const acao = teclaNoMenu(tecla, mencaoAtivo, membrosFiltrados.length);
+      if (acao.tipo === "mover") {
+        e.preventDefault();
+        setMencaoAtivo(acao.ativo);
+        return;
+      }
+      if (acao.tipo === "selecionar") {
+        e.preventDefault();
+        const escolhido = membrosFiltrados[acao.indice];
+        if (escolhido) escolherMembro(escolhido);
+        return;
+      }
+      if (acao.tipo === "fechar") {
+        e.preventDefault();
+        setMencaoDispensada(true);
+        return;
+      }
+      if (acao.tipo === "consumir") {
+        e.preventDefault(); // Enter sem resultado: nem envia a nota nem insere nada (CA-13)
+        return;
+      }
+    }
     if (e.key === "Escape" && menuOpen) {
       setMenuDismissed(true);
       return;
@@ -234,6 +310,17 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
           onPick={applyTemplate}
           onClose={() => setMenuDismissed(true)}
         />
+        {mode === "note" && (
+          <MentionMenu
+            open={mencaoAberta}
+            consulta={mencao?.consulta ?? ""}
+            membros={membrosOferecidos}
+            ativo={mencaoAtivo}
+            onAtivo={setMencaoAtivo}
+            onPick={escolherMembro}
+            estado={estadoDaLista}
+          />
+        )}
         <div className="mb-1.5 flex gap-1">
           <button
             type="button"
@@ -310,6 +397,7 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
               const end = ta.selectionEnd ?? text.length;
               const next = text.slice(0, start) + emoji + text.slice(end);
               setText(next);
+              setCursor(start + emoji.length); // sem isto o gatilho do @ olharia o cursor antigo
               requestAnimationFrame(() => {
                 ta.focus();
                 ta.selectionStart = ta.selectionEnd = start + emoji.length;
@@ -321,10 +409,17 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
             ref={taRef}
             value={text}
             onChange={(e) => {
-              setText(e.target.value);
-              if (!resolveSlash(e.target.value).open) setMenuDismissed(false);
+              const valor = e.target.value;
+              const pos = e.target.selectionStart ?? valor.length;
+              setText(valor);
+              setCursor(pos);
+              setMencaoAtivo(0); // a lista mudou de consulta: o destaque volta ao primeiro
+              if (!resolveSlash(valor).open) setMenuDismissed(false);
+              // Esc dispensa ESTA menção; só um @ novo, depois de ela fechar, reabre a lista.
+              if (!resolverMencao(valor, pos).aberto) setMencaoDispensada(false);
               autoresize();
             }}
+            onSelect={(e) => setCursor(e.currentTarget.selectionStart ?? 0)}
             onKeyDown={onKeyDown}
             onPaste={onPaste}
             rows={1}

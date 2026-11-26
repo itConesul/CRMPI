@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import { DICIONARIO } from "@/lib/i18n/dicionario";
+
 import { descreverAbertura, descreverJanelas } from "./formatar";
 
 const w = (dow: number, start = "08:00", end = "18:00") => ({ dow, start, end });
@@ -43,6 +45,30 @@ describe("descreverJanelas — a janela é dita como o admin a escreveu", () => 
   it("usa a função de tradução recebida", () => {
     const es: Record<string, string> = { seg: "lun", sex: "vie", a: "a" };
     expect(descreverJanelas([1, 2, 3, 4, 5].map((d) => w(d)), (t) => es[t] ?? t)).toEqual(["lun a vie, 08:00–18:00"]);
+  });
+});
+
+describe("descreverJanelas — o dicionário de espanhol cobre todo termo que o formatador manda traduzir", () => {
+  // O guarda `i18n-espanhol-cobre-a-tela` só enxerga `t("literal")`. Aqui os dias saem de um array
+  // (`t(DIAS[d])`), então uma chave faltando passava em silêncio — foi o caso de `sáb` (#67, T7).
+  it("cada palavra enviada a `t` (os 7 dias, o 'a' e o 'e') tem entrada no dicionário", () => {
+    const enviadas = new Set<string>();
+    const registra = (texto: string) => {
+      enviadas.add(texto);
+      return texto;
+    };
+    // Um dia por vez cobre os 7 nomes; 3 dias seguidos cobrem o "a"; dias soltos cobrem o "e".
+    for (let dow = 0; dow < 7; dow++) descreverJanelas([w(dow)], registra);
+    descreverJanelas([1, 2, 3].map((d) => w(d)), registra);
+    descreverJanelas([w(1), w(3), w(5)], registra);
+    // dois blocos com o mesmo horário: "seg a qua e sáb"
+    descreverJanelas([w(1), w(2), w(3), w(6)], registra);
+
+    // A lista fixa é de propósito: se o formatador passar a mandar um termo novo a `t`, este teste
+    // reprova e obriga quem mexeu a decidir a entrada do dicionário. Não ajuste só a lista.
+    expect([...enviadas].sort()).toEqual(["a", "e", "qua", "qui", "sex", "seg", "ter", "dom", "sáb"].sort());
+    const semChave = [...enviadas].filter((texto) => DICIONARIO[texto]?.es === undefined);
+    expect(semChave).toEqual([]);
   });
 });
 

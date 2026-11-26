@@ -4489,6 +4489,10 @@ export const DICIONARIO: Traducoes = {
   "Sugerir resposta": { es: "Sugerir respuesta" },
   Emoji: { es: "Emoji" },
   "Templates de script": { es: "Plantillas de guion" },
+  "Mencionar membro": { es: "Mencionar miembro" },
+  "Nenhum membro encontrado": { es: "Ningún miembro encontrado" },
+  "Membro sem nome": { es: "Miembro sin nombre" },
+  "Não foi possível carregar os membros.": { es: "No se pudieron cargar los miembros." },
   "Nenhum template. Crie em Configurações.": { es: "Ningún modelo. Crea uno en Configuración." },
 
   // ─── Inbox: mídia (áudio, imagem, figurinha, vídeo, documento) ───
@@ -6789,6 +6793,7 @@ export const DICIONARIO: Traducoes = {
   "qui": { es: "jue" },
   "sex": { es: "vie" },
   "dom": { es: "dom" },
+  "sáb": { es: "sáb" },
   "Fora do expediente da empresa. Você pode consultar as conversas, mas só consegue agir quando o expediente abrir.": {
     es: "Fuera del horario de la empresa. Puedes consultar las conversaciones, pero solo podrás actuar cuando abra el horario.",
   },

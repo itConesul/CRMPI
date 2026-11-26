@@ -1,7 +1,7 @@
 # PRD-03 · Autocomplete de `@usuário` nas notas internas
 
 **Issue:** #69 — https://github.com/itConesul/CRMPI/issues/69
-**Estado:** `em-revisao`  <!-- rascunho | em-revisao | aprovada | implementando | concluida | substituida -->
+**Estado:** `implementando` — spec aprovada pelo Sciuba, que também confirmou Q1 a Q4 como dono do produto ([review `APPROVED` do PR #89](https://github.com/itConesul/CRMPI/pull/89), 2026-11-23, mergeado em `9defd7b`); o PR de código segue a ordem de `04-tarefas.md`. **CA-2 e RF-6 não estão atendidos** até a [#137](https://github.com/itConesul/CRMPI/issues/137) (ver `05-revisao.md`)  <!-- rascunho | em-revisao | aprovada | implementando | concluida | substituida -->
 **Autor:** cMoreiraSul (com Claude)
 **Medido em:** `365a670` (`origin/develop`, 2026-11-19)
 
@@ -28,4 +28,4 @@ nova, sem dependência nova** (sem TipTap).
 - [ ] Fora de escopo está explícito
 - [ ] Impacto em schema, RLS, API e `.changes/` declarado (ou declarado como "nenhum")
 - [ ] Living System Checklist respondido em `02-design.md`
-- [ ] Revisor registrou a aprovação em `05-revisao.md`
+- [x] Revisor registrou a aprovação em `05-revisao.md`
