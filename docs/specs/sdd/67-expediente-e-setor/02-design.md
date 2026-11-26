@@ -684,7 +684,7 @@ mensagem chegou. Registrado por Sciuba na [#67](https://github.com/itConesul/CRM
 
 | | Decisão | O que muda | Onde |
 |---|---|---|---|
-| **A** | Quem vincula pessoas a departamentos: `admin` **e `manager`**. Criar, renomear e apagar departamento segue só do `admin` | RF-2. RLS de `department_members` escrita `manager`+ (**feito na T4a**, migration 0240); rota `PUT /departments/[id]/members` `manager`+ (T5) | T4a, T5 |
+| **A** | Quem vincula pessoas a departamentos: `admin` **e `manager`**. Criar, renomear e apagar departamento segue só do `admin` | RF-2. RLS de `department_members` escrita `manager`+ (**feito na T4a**, migration 0239); rota `PUT /departments/[id]/members` `manager`+ (T5) | T4a, T5 |
 | **B** | `agent` não passa conversa para outro departamento; só `manager`/`admin`. Vale também para atribuir a uma pessoa de fora do setor (o dono da conversa sempre a vê, Q5) | RF-15 (novo). `conversations/[id]/transfer` e a atribuição; a trava no banco é decisão da T4b | T5, T4b |
 | **C** | `viewer` vê só os departamentos dele; `admin` e `manager` veem tudo | RF-16 (novo); a regra de §2.2 e a função de §4.3 mudam. **Q10 (instrução de Cauan, a confirmar pelo dono): todo `viewer` vê a conversa sem setor** | T4b |
 | **D** | A ficha e a linha do tempo do contato escondem conteúdo de conversa de outro departamento, **antes** de o isolamento ser ligado para clientes | RF-17 (novo). Revê o risco aceito da Q6 e **amplia a T3** (`crm_lead_activities`, Customer 360, #80) | T3, T4b |

@@ -11,7 +11,7 @@ import { describe, expect, it } from "vitest";
  * RESTRITIVAS `support_write_*` — o bloqueio de escrita da sessão de suporte somente-leitura — em toda
  * tabela com `organization_id` e RLS que o `authenticated` escreve. Esse laço só alcança tabela que JÁ
  * EXISTE quando ele roda, então numa instalação nova as tabelas criadas depois dele ficam sem o bloqueio.
- * A migration 0240 (`departments` e `department_members`) repete as 3 policies à mão, num bloco próprio.
+ * A migration 0239 (`departments` e `department_members`) repete as 3 policies à mão, num bloco próprio.
  *
  * ## Por que o teste é ESTÁTICO, e não de banco
  *
@@ -22,7 +22,7 @@ import { describe, expect, it } from "vitest";
  *
  * ## O que prova, e o que não prova
  *
- * Prova: as 3 definições do bloco da 0240 (no baseline E na migration) são idênticas às do laço,
+ * Prova: as 3 definições do bloco da 0239 (no baseline E na migration) são idênticas às do laço,
  * descontando o que o laço parametriza (o nome da tabela e o nome da coluna da organização). Reprova se
  * alguém mudar o laço sem mudar a cópia, ou o contrário, ou apagar uma das duas.
  * Não prova: o comportamento (isso é `tests/invariants/departamentos-estrutura.test.ts`) nem que uma
@@ -32,7 +32,7 @@ import { describe, expect, it } from "vitest";
 const RAIZ = join(__dirname, "..", "..");
 const BASELINE = readFileSync(join(RAIZ, "supabase", "baseline.sql"), "utf8");
 const MIGRATION = readFileSync(
-  join(RAIZ, "supabase", "migrations", "20261125120000_0240_departamentos_estrutura.sql"),
+  join(RAIZ, "supabase", "migrations", "20261125120000_0239_departamentos_estrutura.sql"),
   "utf8",
 );
 
@@ -68,14 +68,14 @@ describe("as policies de suporte das tabelas novas são cópia do laço do basel
     "%s: a definição da cópia é idêntica à do laço",
     (nome) => {
       expect(copiaNoBaseline.get(nome), `baseline.sql: ${nome} divergiu do laço`).toBe(laco.get(nome));
-      expect(copiaNaMigration.get(nome), `migration 0240: ${nome} divergiu do laço`).toBe(laco.get(nome));
+      expect(copiaNaMigration.get(nome), `migration 0239: ${nome} divergiu do laço`).toBe(laco.get(nome));
     },
   );
 
   it("as duas tabelas novas são as que a cópia cobre, nos dois arquivos", () => {
     for (const [nome, texto] of [
       ["baseline.sql", BASELINE],
-      ["migration 0240", MIGRATION],
+      ["migration 0239", MIGRATION],
     ] as const) {
       expect(texto, nome).toMatch(/foreach t in array array\['departments','department_members'\] loop/);
     }

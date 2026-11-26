@@ -3,7 +3,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { countAs, sql, writeCountAs } from "./gov-helpers";
 
 /**
- * A ESTRUTURA DE SETOR CHEGA AO CLONE E NASCE COM OS DENTES CERTOS (PRD-01 / #67, T4a, migration 0240).
+ * A ESTRUTURA DE SETOR CHEGA AO CLONE E NASCE COM OS DENTES CERTOS (PRD-01 / #67, T4a, migration 0239).
  *
  * Lê o Postgres descartável que nasce do `supabase/baseline.sql` (`TEST_DB_CONTAINER`, via
  * `scripts/test-db.sh`), nunca o banco de dev. A migration é o caminho de quem já tem banco; o baseline
@@ -25,29 +25,29 @@ import { countAs, sql, writeCountAs } from "./gov-helpers";
  * Arquivo NOVO de propósito: `tests/invariants/**` é congelado contra modificação.
  */
 
-// Namespace pela MIGRATION (`0240aaaa`/`0240bbbb`/`0240cccc`): os arquivos de invariante rodam em
+// Namespace pela MIGRATION (`0239aaaa`/`0239bbbb`/`0239cccc`): os arquivos de invariante rodam em
 // PARALELO contra o MESMO container, e o número da migration é único por construção.
-const ORG_A = "0240aaaa-0000-4000-8000-000000000001";
-const ORG_B = "0240bbbb-0000-4000-8000-000000000002";
-const ORG_C = "0240cccc-0000-4000-8000-000000000003";
-const ADMIN_A = "0240aaaa-1111-4000-8000-000000000001";
-const AGENT_A = "0240aaaa-1111-4000-8000-000000000002";
-const MANAGER_A = "0240aaaa-1111-4000-8000-000000000003";
-const ADMIN_B = "0240bbbb-1111-4000-8000-000000000001";
-const ADMIN_C = "0240cccc-1111-4000-8000-000000000001";
-const SESSION_A = "0240aaaa-2222-4000-8000-000000000001";
-const SESSION_B = "0240bbbb-2222-4000-8000-000000000002";
-const SESSION_C = "0240cccc-2222-4000-8000-000000000003";
-const CONTACT_A = "0240aaaa-3333-4000-8000-000000000001";
-const CONTACT_B = "0240bbbb-3333-4000-8000-000000000002";
-const CONTACT_C = "0240cccc-3333-4000-8000-000000000003";
-const DEPT_A = "0240aaaa-4444-4000-8000-000000000001";
-const DEPT_A_VAZIO = "0240aaaa-4444-4000-8000-000000000002";
-const DEPT_B = "0240bbbb-4444-4000-8000-000000000001";
-const DEPT_C = "0240cccc-4444-4000-8000-000000000001";
-const CONV_A = "0240aaaa-5555-4000-8000-000000000001";
-const CONV_B = "0240bbbb-5555-4000-8000-000000000001";
-const CONV_C = "0240cccc-5555-4000-8000-000000000001";
+const ORG_A = "0239aaaa-0000-4000-8000-000000000001";
+const ORG_B = "0239bbbb-0000-4000-8000-000000000002";
+const ORG_C = "0239cccc-0000-4000-8000-000000000003";
+const ADMIN_A = "0239aaaa-1111-4000-8000-000000000001";
+const AGENT_A = "0239aaaa-1111-4000-8000-000000000002";
+const MANAGER_A = "0239aaaa-1111-4000-8000-000000000003";
+const ADMIN_B = "0239bbbb-1111-4000-8000-000000000001";
+const ADMIN_C = "0239cccc-1111-4000-8000-000000000001";
+const SESSION_A = "0239aaaa-2222-4000-8000-000000000001";
+const SESSION_B = "0239bbbb-2222-4000-8000-000000000002";
+const SESSION_C = "0239cccc-2222-4000-8000-000000000003";
+const CONTACT_A = "0239aaaa-3333-4000-8000-000000000001";
+const CONTACT_B = "0239bbbb-3333-4000-8000-000000000002";
+const CONTACT_C = "0239cccc-3333-4000-8000-000000000003";
+const DEPT_A = "0239aaaa-4444-4000-8000-000000000001";
+const DEPT_A_VAZIO = "0239aaaa-4444-4000-8000-000000000002";
+const DEPT_B = "0239bbbb-4444-4000-8000-000000000001";
+const DEPT_C = "0239cccc-4444-4000-8000-000000000001";
+const CONV_A = "0239aaaa-5555-4000-8000-000000000001";
+const CONV_B = "0239bbbb-5555-4000-8000-000000000001";
+const CONV_C = "0239cccc-5555-4000-8000-000000000001";
 
 /** Roda como superusuário e devolve o texto do erro; falha se o comando PASSAR. */
 function falhaCom(script: string): string {
@@ -114,7 +114,7 @@ beforeAll(() => {
   semear();
 });
 
-describe("0240 · a estrutura de setor chega ao baseline que o clone recebe", () => {
+describe("0239 · a estrutura de setor chega ao baseline que o clone recebe", () => {
   it("as duas tabelas e a coluna existem, com RLS ligada", () => {
     expect(
       sql(`select string_agg(relname || '=' || relrowsecurity::text, ',' order by relname)
@@ -165,7 +165,7 @@ describe("0240 · a estrutura de setor chega ao baseline que o clone recebe", ()
   });
 });
 
-describe("0240 · isolamento entre organizações, com o JWT de gente de verdade", () => {
+describe("0239 · isolamento entre organizações, com o JWT de gente de verdade", () => {
   it("o admin da org A lê o setor dela e NÃO lê o da org B (departments)", () => {
     expect(countAs(ADMIN_A, `select count(*) from public.departments where id in ('${DEPT_A}', '${DEPT_A_VAZIO}')`)).toBe(2);
     expect(countAs(ADMIN_A, `select count(*) from public.departments where organization_id = '${ORG_B}'`)).toBe(0);
@@ -233,7 +233,7 @@ describe("0240 · isolamento entre organizações, com o JWT de gente de verdade
   });
 });
 
-describe("0240 · a integridade entre organizações é constraint, não teste", () => {
+describe("0239 · a integridade entre organizações é constraint, não teste", () => {
   it("a conversa da org B não aponta para o setor da org A", () => {
     expect(
       falhaCom(`update public.conversations set department_id = '${DEPT_A}' where id = '${CONV_B}'`),
@@ -283,7 +283,7 @@ describe("0240 · a integridade entre organizações é constraint, não teste",
   });
 });
 
-describe("0240 · N1 — apagar setor nunca apaga nem desvincula conversa", () => {
+describe("0239 · N1 — apagar setor nunca apaga nem desvincula conversa", () => {
   it("apagar um setor COM conversas falha (NO ACTION), e a conversa continua no setor", () => {
     expect(falhaCom(`delete from public.departments where id = '${DEPT_A}'`)).toContain("conversations_department_fk");
     expect(sql(`select department_id from public.conversations where id = '${CONV_A}'`)).toBe(DEPT_A);
@@ -291,11 +291,11 @@ describe("0240 · N1 — apagar setor nunca apaga nem desvincula conversa", () =
 
   it("apagar um setor VAZIO funciona, e leva os vínculos junto (cascade só do vínculo)", () => {
     sql(`insert into public.departments (id, organization_id, name)
-           values ('0240aaaa-4444-4000-8000-0000000000aa', '${ORG_A}', 'Temporário') on conflict do nothing;
+           values ('0239aaaa-4444-4000-8000-0000000000aa', '${ORG_A}', 'Temporário') on conflict do nothing;
          insert into public.department_members (organization_id, department_id, user_id)
-           values ('${ORG_A}', '0240aaaa-4444-4000-8000-0000000000aa', '${AGENT_A}') on conflict do nothing;
-         delete from public.departments where id = '0240aaaa-4444-4000-8000-0000000000aa';`);
-    expect(sql(`select count(*) from public.department_members where department_id = '0240aaaa-4444-4000-8000-0000000000aa'`)).toBe("0");
+           values ('${ORG_A}', '0239aaaa-4444-4000-8000-0000000000aa', '${AGENT_A}') on conflict do nothing;
+         delete from public.departments where id = '0239aaaa-4444-4000-8000-0000000000aa';`);
+    expect(sql(`select count(*) from public.department_members where department_id = '0239aaaa-4444-4000-8000-0000000000aa'`)).toBe("0");
   });
 
   it("apagar a ORGANIZAÇÃO inteira continua funcionando, mesmo com conversa dentro de setor", () => {

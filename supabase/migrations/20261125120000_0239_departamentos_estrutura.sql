@@ -1,4 +1,4 @@
--- 0240 — Departamentos: a ESTRUTURA (PRD-01 / #67, T4a)
+-- 0239 — Departamentos: a ESTRUTURA (PRD-01 / #67, T4a)
 --
 -- Cria `departments`, `department_members` e `conversations.department_id`, com
 -- RLS nas duas tabelas novas. É a metade ADITIVA da mudança de setor: NÃO troca

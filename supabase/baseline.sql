@@ -23551,7 +23551,7 @@ $$;
 revoke execute on function public.fn_conta_existe_por_email(text) from public, anon, authenticated;
 grant  execute on function public.fn_conta_existe_por_email(text) to service_role;
 
--- ---- departamentos: estrutura (migration 0240) ----
+-- ---- departamentos: estrutura (migration 0239) ----
 -- PRD-01 / #67, T4a. `departments`, `department_members` e `conversations.department_id`,
 -- com RLS nas duas tabelas novas. NÃO troca policy existente nem
 -- `fn_can_view_conversation` (isso é a T4b, depois da T3). Toda conversa existente fica

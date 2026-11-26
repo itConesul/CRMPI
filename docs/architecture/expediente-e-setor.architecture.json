@@ -205,7 +205,7 @@
       "col": 8,
       "type": "database",
       "label": "departments",
-      "sublabel": "T4a (migration 0240): setor por organização; nome único sem caixa; RLS por comando, escrita só admin; ainda sem rota nem tela (T5, T6)"
+      "sublabel": "T4a (migration 0239): setor por organização; nome único sem caixa; RLS por comando, escrita só admin; ainda sem rota nem tela (T5, T6)"
     },
     {
       "id": "vinculos",
