@@ -15204,7 +15204,7 @@ create table if not exists public.calendar_appointments (
   owner_user_id uuid references auth.users(id) on delete set null,
 
   -- QUEM VAI SER ATENDIDO. `restrict` acompanha conversations.contact_id e
-  -- messages.contact_id — as duas únicas FKs RESTRICT do schema, e existem
+  -- messages.contact_id — FKs RESTRICT (com esta, as TRÊS que bloqueiam apagar contato), e existem
   -- pela mesma razão: apagar um contato não pode apagar o histórico dele. Na
   -- prática a LGPD deste produto anonimiza em vez de apagar (CLAUDE.md § LGPD),
   -- então o RESTRICT nunca é o caminho normal — é o cinto.
