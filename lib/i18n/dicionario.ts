@@ -7700,8 +7700,8 @@ export const DICIONARIO: Traducoes = {
   },
   "Nenhum campo para atualizar.": { es: "Ningún campo para actualizar." },
   "Contato não encontrado após update.": { es: "Contacto no encontrado después del update." },
-  "Não foi possível excluir: o contato ainda tem registros vinculados.": {
-    es: "No fue posible eliminar: el contacto todavía tiene registros vinculados.",
+  "Este contato tem conversas ou compromissos vinculados e não pode ser excluído, para preservar o histórico. Peça a um administrador para anonimizá-lo.": {
+    es: "Este contacto tiene conversaciones o citas vinculadas y no se puede eliminar, para preservar el historial. Pida a un administrador que lo anonimice.",
   },
 
   // ─── Fase B: handlers compartidos REST/MCP (leads/_handler.ts) ───
