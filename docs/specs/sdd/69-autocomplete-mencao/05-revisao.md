@@ -35,4 +35,4 @@ A regra do `README` (passo 5 do fluxo) é: se a implementação descobrir que a 
 - [x] **Aprovada por:** cMoreiraSul, em 2026-11-19, no chat, com as propostas Q1–Q4 — implementação liberada após o merge do PR #89
 - [x] **Confirmação do dono do produto (Sciuba):** `APPROVED` no review do PR #89, 2026-11-23 15:17Z (sobre `eaa57bf`), com Q1 a Q4 confirmadas. PR #89 mergeado em `9defd7b`.
 - **Estado do README:** `implementando` — a spec está aprovada e o PR de código está aberto (o `04-tarefas.md` pode começar, e começou).
-- **Os desvios D-3 a D-9 acima** são do autor da implementação e aguardam a confirmação do revisor no PR de código.
+- **Os desvios D-3 a D-9 acima** são do autor da implementação. **Revisão do Sciuba no #138, 2026-11-26** (relatada pelo cMoreiraSul; ainda não consta como review no GitHub): **aceitos D-3 a D-8**; **D-9 fica registrado** — CA-2 e RF-6 não são atendidos (aviso in-app sem link; `conversation_notes` fora da publicação Realtime) e o merge do #138 não resolve isso: quem resolve é a [#137](https://github.com/itConesul/CRMPI/issues/137). Confirmação de D-3 a D-9 pelo cMoreiraSul: **pendente**.
