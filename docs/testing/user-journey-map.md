@@ -156,6 +156,7 @@ fonte só (`lib/onboarding/passos.ts`) — eram três listas que discordavam. Ga
 | J4.27 | Anonimizar um contato (LGPD) | mesma causa da J4.26 na rota `/api/v1/lgpd/anonymize` — **a anonimização não acontecia**. Corrigido; guardado pelo invariante de colunas geradas, ainda **sem prova de tela** |
 | J4.25 | ⚠️ O funil de entrada de uma org nova é de **e-commerce** | `fn_seed_default_pipeline_for_org` semeia "Pedidos" com *Carrinho abandonado · Pago · Em separação…*. Numa clínica ou imobiliária, o lead nasce em **"Carrinho abandonado"**. Achado em 2026-08-06 ao provar J4.22; conserto é decisão de produto (spec 17 passo 4) |
 | J4.36 | **Editar campos do funil pela barra da conversa** | só os customizados (`settings.fields`) aparecem como inputs; título/valor ficam no dossiê. Salvar grava `custom_fields` no mesmo PATCH do quadro e a seção relê · `tests/unit/inbox-campos-lead.test.tsx` |
+| J4.37 | **Excluir contato: só manager+, e o histórico não se apaga** | `agent`/`viewer` não têm o botão (nem no DOM) e a rota dá 403; `manager` vê o diálogo que manda anonimizar; contato COM conversa ou compromisso dá 409 explicado e conversa e mensagens ficam no banco; sem histórico, some da lista e do banco. Antes (até a migration 0240): `agent` apagava a conversa inteira pelo PostgREST e um `viewer` editava mensagem (#99) · `tests/e2e/contato-excluir-so-manager.spec.ts` + `tests/invariants/conversa-nao-se-apaga-pela-api.test.ts`; o `admin` (TOTP) é coberto pelo predicado em unit |
 
 ## J5 — Time: convites e atuação de atendentes `[P0]` (convite) / `[P1]` (rotina)
 
