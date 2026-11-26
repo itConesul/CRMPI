@@ -602,6 +602,7 @@ jobs:
         central-avisos-resolver-em-lote.spec.ts
         trocar-propria-senha.spec.ts
         funil-cor-das-colunas.spec.ts
+        nota-mencao.spec.ts
 
       FORA_DO_CI: >-
         vps-fresh-onboarding.spec.ts

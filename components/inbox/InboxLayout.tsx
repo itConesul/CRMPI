@@ -489,6 +489,7 @@ export function InboxLayout({ initialSelectedId = null }: InboxLayoutProps = {})
               respondendo={respondendo}
               onCancelarResposta={() => setRespondendo(null)}
               currentContactId={selectedConversation.contact_id}
+              autorId={user.id}
             />
           </>
         ) : selectionNotFound ? (
