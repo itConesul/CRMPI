@@ -282,6 +282,11 @@ expediente da organização; rota ou tela `/app/fora-de-expediente`; erro `OUT_O
        conversas, mas o chunk não tem `conversation_id` (só `knowledge_source_id`) e **não conferi se ele guarda
        texto de conversa**; as notificações push (#120 e #123); e o Realtime destas tabelas.
 
+    **Estado do F6 (2026-11-26): ABERTO, e declarado assim de propósito.** Os itens 2 (as 14 relações
+    só-organização entram no isolamento?) e 4 (como `crm_lead_activities` sabe o departamento: opções a, b ou c)
+    esperam o dono. **A T3 não aplica a regra por setor antes dessas duas respostas**; o item 5 segue "não medido".
+    Documentar o F6 não destrava a T3.
+
 ## 2. Decisão de design
 
 Dois mecanismos independentes, cada um com uma **função pura** testável sem banco ou DOM.
