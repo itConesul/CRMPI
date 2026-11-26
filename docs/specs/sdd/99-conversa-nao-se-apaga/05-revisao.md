@@ -43,6 +43,22 @@ Itens que **eu** achei ao responder, fora do que foi pedido:
   escopo; anotado em `01-requisitos.md` e levado para a issue da D, a **[#116](https://github.com/itConesul/CRMPI/issues/116)**
   (aberta em 2026-11-24, T8). A segunda issue de seguimento (C / `UPDATE` direto) é a **própria #99**.
 
+## Desvios registrados na implementação
+Onde a implementação difere do que a spec dizia, corrigido em `02-design.md`/`04-tarefas.md` e listado aqui
+(a spec e o código não divergem em silêncio). Nada abaixo muda o contrato aprovado: RF-1 a RF-7 e CA-1 a CA-10
+seguem como estavam.
+
+| # | Desvio | Por quê |
+|---|---|---|
+| D-1 | **Migration `0240`, não `0239`** (arquivo `20261126190000_0240_…`). | A `0239` foi tomada pelo #131 (T4a da #67, mergeado em `f9a79cf`). A spec já dizia "o próximo livre; confirmar na implementação". Corrigido em `02-design.md` §4 e `04-tarefas.md` T2 |
+| D-2 | O predicado de papel mora num módulo compartilhado, `lib/contacts/pode-excluir-contato.ts` (`PAPEL_MINIMO_PARA_EXCLUIR_CONTATO` e `podeExcluirContato`), usado pela rota e pela tela. A spec dizia só "o mesmo predicado, via `useActiveOrg()` e `ROLE_RANK`, como `ChatThread`" | Dois lugares com a mesma regra é exatamente o risco "UI e rota divergirem de novo" (§7). Uma constante só, e o teste `contato-excluir-predicado.test.ts` prova que os dois a usam |
+| D-3 | O e2e (T6) cobre `manager`, `agent` e `viewer`; **`admin` fica de fora** | O login do `admin` das credenciais de teste pede TOTP e não completa em sonda simples. O `admin` tem a regra do `manager` (`podeExcluirContato`), provada em unit. **NÃO provado pela tela** |
+| D-4 | O e2e semeia contato, conversa e mensagem pelo cliente `service role` do supabase-js | Nada de nome de container fixo no spec. Não afeta o contrato |
+| D-5 | **Texto do diálogo** ("Isso remove {nome}. Contato com conversas ou compromissos vinculados não pode ser excluído, para preservar o histórico: peça a um administrador para anonimizá-lo. Esta ação não pode ser desfeita.") e do 409 definidos e traduzidos para `es`; a chave antiga ("…conversa associada…") saiu do dicionário | A spec fixava o 409 e pedia "o diálogo deixa de dizer 'conversa associada'", sem o texto novo do diálogo |
+| D-6 | O comentário do baseline ("as duas únicas FKs RESTRICT") foi corrigido **neste PR**, como a decisão de 2026-11-24 registrada acima; a migration `0177`, histórica, não foi editada | Cumpre a decisão. `apendice-do-baseline-nao-diverge-da-cadeia` segue verde |
+| D-7 | **Risco novo:** a janela do `update.sh` com app antigo e banco novo derruba "Excluir contato" | Medido na T6; ver `02-design.md` §7 e o "Requer atenção" do fragmento |
+| D-8 | O `test:db` completo rodou 190 arquivos verdes e **um (`operador-le-o-turno-certo`) não iniciou o worker** ("Timeout waiting for worker"); rodado sozinho, passou (4 testes) | Falha de infraestrutura da máquina, não de código. Registrado como está, sem chamar de "rodada completa limpa" |
+
 ## Aprovação
 - [x] **Aprovada por:** Sciuba em 2026-11-24 — implementação liberada. `APPROVED` sobre `d949618` no PR #105
   (mergeado em `6149baa`). Condições do revisor para o PR de código: **seguir a spec à risca**, rodar
