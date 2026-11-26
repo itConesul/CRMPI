@@ -13,6 +13,7 @@ import { ApiError } from "@/lib/api/types";
 import { ok, fail, noContent } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
 import { loadAuthUser, resolveActiveOrg } from "@/lib/auth/server";
+import { PAPEL_MINIMO_PARA_EXCLUIR_CONTATO } from "@/lib/contacts/pode-excluir-contato";
 import { traduzir } from "@/lib/i18n/dicionario";
 import { contactPatchSchema, validateRequest } from "@/lib/schemas";
 import { createClient } from "@/lib/supabase/server";
@@ -129,7 +130,7 @@ export async function DELETE(
 
   // #99 (RF-5): só manager ou acima apagam contato. A regra mora AQUI, no servidor; o botão da tela
   // só a espelha. Contato com conversa ou compromisso é recusado pelo banco (409), não apagado.
-  const authz = await requireRole("manager", { requestId, resource: "contacts" });
+  const authz = await requireRole(PAPEL_MINIMO_PARA_EXCLUIR_CONTATO, { requestId, resource: "contacts" });
   if (!authz.ok) return authz.response;
   const user = authz.user;
   const activeOrg = authz.org;

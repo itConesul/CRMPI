@@ -6495,8 +6495,8 @@ export const DICIONARIO: Traducoes = {
   "Rótulo do campo": { es: "Etiqueta del campo" },
   "Tipo do campo": { es: "Tipo del campo" },
   "chave (endereco)": { es: "clave (direccion)" },
-  "e a conversa associada, se houver. Esta ação não pode ser desfeita.": {
-    es: "y la conversación asociada, si la hay. Esta acción no puede deshacerse.",
+  "Contato com conversas ou compromissos vinculados não pode ser excluído, para preservar o histórico: peça a um administrador para anonimizá-lo. Esta ação não pode ser desfeita.": {
+    es: "Un contacto con conversaciones o citas vinculadas no se puede eliminar, para preservar el historial: pida a un administrador que lo anonimice. Esta acción no puede deshacerse.",
   },
 
   // ─── Mensagens literais de `fail()` em app/api/v1/** ───
