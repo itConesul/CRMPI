@@ -137,18 +137,35 @@ O servidor, o parser e o `NoteCard` não mudam. A ambiguidade **do que se digita
 export interface MembroMencionavel { user_id: string; full_name: string | null }
 // `todos` = a lista inteira de team/assignable (inclui `m`). Sem o "@" no retorno.
 export function tokenDeMencao(m: MembroMencionavel, todos: MembroMencionavel[]): string;
-export function rotuloDoMembro(m: MembroMencionavel): string; // full_name ou "Membro sem nome · xxxxxxxx" (via useT no componente)
+// full_name ou "Membro sem nome · xxxxxxxx". `semNome` é o texto já traduzido (o componente passa `t(...)`;
+// uma função pura não chama `useT`); o padrão é o pt-BR. Desvio D-3.
+export function rotuloDoMembro(m: MembroMencionavel, semNome?: string): string;
 
 // components/inbox/composer/MentionMenu.tsx
 export function resolverMencao(texto: string, cursor: number):
   { aberto: boolean; consulta: string; inicio: number; fim: number };
+// Troca [inicio, fim) por "@token" + UM espaço; devolve o cursor logo depois do espaço (RF-3, CA-5).
+export function inserirMencao(texto: string, trecho: { inicio: number; fim: number }, token: string):
+  { texto: string; cursor: number };
+// "Contém" no RÓTULO, sem diferenciar maiúsculas e sem ignorar acentos (Q3).
+export function filtrarMembros(membros: MembroMencionavel[], consulta: string, semNome?: string): MembroMencionavel[];
+// O foco fica no <textarea>, então quem lê as teclas é o Composer, que chama esta função pura (RNF-1). Desvio D-4.
+//   ↑/↓ movem (dando a volta) · Enter seleciona (e sem resultado é "consumir": nem envia nem insere) · Esc fecha
+export type AcaoDoTeclado =
+  | { tipo: "mover"; ativo: number } | { tipo: "selecionar"; indice: number }
+  | { tipo: "fechar" } | { tipo: "consumir" } | { tipo: "ignorar" };
+export function teclaNoMenu(key: string, ativo: number, total: number): AcaoDoTeclado;
 export function MentionMenu(props: {
   open: boolean; consulta: string; membros: MembroMencionavel[];
   ativo: number; onAtivo: (i: number) => void;
   onPick: (m: MembroMencionavel) => void;
+  estado?: "carregando" | "erro"; // a busca ainda corre ou falhou; senão o menu diria "nenhum membro" (D-5)
 }): JSX.Element | null;
+
+// components/inbox/Composer.tsx — nova prop opcional (D-6). O InboxLayout passa `user.id`.
+//   autorId?: string | null   // a lista NÃO oferece o autor (Q2); o token segue conferido contra a lista inteira
 ```
-Rota, payload, Zod e evento: **sem mudança**.
+Rota, payload, Zod e evento: **sem mudança**. Os desvios D-3 a D-9 estão registrados em `05-revisao.md`.
 
 ## 4. Dados
 **Nenhuma mudança de schema.** Sem migration, sem apêndice no `baseline.sql`, sem linha no
