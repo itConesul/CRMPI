@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  comoUsuario,
   mencaoAtingeUsuario,
   rotuloDoMembro,
   tokenDeMencao,
@@ -47,12 +48,50 @@ const CONJUNTO: MembroMencionavel[] = [
   CARLA,
 ];
 
-// O cliente não tem e-mail (`team/assignable` não o devolve, por PII). O helper
-// avalia com um e-mail marcador derivado do id, que não casa com token por nome.
-const comMarcador = (m: MembroMencionavel) => ({
-  id: m.user_id,
-  email: `${m.user_id}@marcador.invalid`,
-  full_name: m.full_name,
+// O cliente não tem e-mail (`team/assignable` não o devolve, por PII). O helper de produção
+// avalia com um e-mail marcador derivado do id, que não casa com token por nome. Os testes usam
+// ESSA função: uma cópia do marcador aqui seguiria verde mesmo se a de produção deixasse de servir.
+const comMarcador = comoUsuario;
+
+// Contrato entre `comoUsuario` e `mencaoAtingeUsuario` (ressalva da revisão do #138): o
+// autocomplete só funciona porque o parser, recebendo o usuário-marcador, aplica as regras de
+// NOME. Se o parser mudar (ex.: validar o e-mail, ou olhar o nome antes dele), o `tokenDeMencao`
+// cairia para `@<user_id>` em silêncio. Estes casos falham no ponto do contrato, com mensagem clara.
+describe("contrato: comoUsuario x mencaoAtingeUsuario", () => {
+  const m: MembroMencionavel = { user_id: "a1000000-0000-4000-8000-000000000001", full_name: "Ana Silva" };
+  const u = comoUsuario(m);
+
+  it("o marcador é não vazio e não roteável (e-mail real nunca é inventado)", () => {
+    expect(u.email).not.toBe("");
+    expect(u.email.endsWith("@marcador.invalid")).toBe(true);
+    expect(u.id).toBe(m.user_id);
+    expect(u.full_name).toBe("Ana Silva");
+  });
+
+  it("o parser aplica as regras de NOME ao usuário-marcador: primeiro nome e nome sem espaços", () => {
+    expect(mencaoAtingeUsuario("@Ana", u), "primeiro nome").toBe(true);
+    expect(mencaoAtingeUsuario("@AnaSilva", u), "nome sem espaços").toBe(true);
+  });
+
+  it("o parser casa o user_id, o token de queda", () => {
+    expect(mencaoAtingeUsuario(`@${m.user_id}`, u)).toBe(true);
+  });
+
+  it("o marcador não casa por e-mail com token nenhum que alguém digitaria", () => {
+    expect(mencaoAtingeUsuario("@marcador.invalid", u)).toBe(false);
+    expect(mencaoAtingeUsuario("@marcador", u)).toBe(false);
+    expect(mencaoAtingeUsuario("@Maria", u)).toBe(false);
+  });
+
+  it("sem o marcador (e-mail vazio) as regras de nome NÃO rodam: é por isso que ele existe", () => {
+    expect(mencaoAtingeUsuario("@AnaSilva", { ...u, email: "" })).toBe(false);
+  });
+
+  it("membro sem nome só é atingido pelo user_id", () => {
+    const sem = comoUsuario({ user_id: "e1000000-0000-4000-8000-000000000007", full_name: null });
+    expect(mencaoAtingeUsuario("@Ana", sem)).toBe(false);
+    expect(mencaoAtingeUsuario("@e1000000-0000-4000-8000-000000000007", sem)).toBe(true);
+  });
 });
 
 describe("tokenDeMencao (CA-6)", () => {

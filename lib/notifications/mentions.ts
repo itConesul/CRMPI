@@ -33,9 +33,10 @@ const CABE_NO_TOKEN = /^[\p{L}\p{N}._-]+$/u;
 /**
  * O parser devolve `false` com e-mail vazio ANTES de olhar o nome (`mencaoAtingeUsuario`),
  * e o cliente não tem e-mail. Este marcador, derivado do id, não casa com token por nome
- * nenhum. Tirá-lo faz todo token por nome falhar em silêncio — vigiado em `mentions.test.ts`.
+ * nenhum. Tirá-lo faz todo token por nome falhar em silêncio — vigiado em `mentions.test.ts`
+ * (bloco "contrato"), que usa ESTA função e não uma cópia do marcador.
  */
-function comoUsuario(m: MembroMencionavel): { id: string; email: string; full_name: string | null } {
+export function comoUsuario(m: MembroMencionavel): { id: string; email: string; full_name: string | null } {
   return { id: m.user_id, email: `${m.user_id}@marcador.invalid`, full_name: m.full_name };
 }
 
