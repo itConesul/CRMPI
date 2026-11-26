@@ -23797,3 +23797,30 @@ on conflict (model) do update set
   completion_cents_per_million_tokens = excluded.completion_cents_per_million_tokens,
   notes = excluded.notes,
   superseded_at = null;
+
+-- ---- conversa não se apaga pela API (migration 0240) ----
+-- Vai DEPOIS de tudo, de propósito: o dump re-concede `GRANT ALL` e recria `conversations_agent_delete`
+-- a cada re-aplicação, e a revogação precisa vencer. Corpo idêntico ao da migration (spec da #99, §4).
+drop policy if exists "conversations_agent_delete" on public.conversations;
+revoke delete on public.conversations from authenticated, anon;
+
+drop policy if exists "messages_update" on public.messages;
+drop policy if exists "messages_delete" on public.messages;
+
+create policy "messages_update" on public.messages
+  for update using (
+    public.fn_is_platform_admin()
+    or (public.fn_role_at_least(organization_id, 'agent')
+        and exists (select 1 from public.conversations c where c.id = messages.conversation_id))
+  ) with check (
+    public.fn_is_platform_admin()
+    or (public.fn_role_at_least(organization_id, 'agent')
+        and exists (select 1 from public.conversations c where c.id = messages.conversation_id))
+  );
+
+create policy "messages_delete" on public.messages
+  for delete using (
+    public.fn_is_platform_admin()
+    or (public.fn_role_at_least(organization_id, 'agent')
+        and exists (select 1 from public.conversations c where c.id = messages.conversation_id))
+  );
