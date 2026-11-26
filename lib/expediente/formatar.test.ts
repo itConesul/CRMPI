@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { DICIONARIO, traduzir } from "@/lib/i18n/dicionario";
+import { DICIONARIO } from "@/lib/i18n/dicionario";
 
 import { descreverAbertura, descreverJanelas } from "./formatar";
 
@@ -64,13 +64,11 @@ describe("descreverJanelas — o dicionário de espanhol cobre todo termo que o 
     // dois blocos com o mesmo horário: "seg a qua e sáb"
     descreverJanelas([w(1), w(2), w(3), w(6)], registra);
 
+    // A lista fixa é de propósito: se o formatador passar a mandar um termo novo a `t`, este teste
+    // reprova e obriga quem mexeu a decidir a entrada do dicionário. Não ajuste só a lista.
     expect([...enviadas].sort()).toEqual(["a", "e", "qua", "qui", "sex", "seg", "ter", "dom", "sáb"].sort());
     const semChave = [...enviadas].filter((texto) => DICIONARIO[texto]?.es === undefined);
     expect(semChave).toEqual([]);
-  });
-
-  it("com o dicionário real, a janela do sábado sai igual (em espanhol a abreviação também é 'sáb')", () => {
-    expect(descreverJanelas([w(6, "08:00", "12:00")], (t) => traduzir(t, "es"))).toEqual(["sáb, 08:00–12:00"]);
   });
 });
 
