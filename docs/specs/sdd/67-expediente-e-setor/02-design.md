@@ -150,6 +150,66 @@ expediente da organização; rota ou tela `/app/fora-de-expediente`; erro `OUT_O
   entra no escopo de setor; (2) se cada helper acima **lista conversas para uma pessoa em sessão** ou só
   serve processo interno. A T3 fecha esses dois pontos, helper a helper.
 
+  **T3 — inventário completo, MEDIDO em 2026-11-25 (`origin/develop` em `f582cbc`).** Fecha os dois
+  "não medidos" acima. A medição por texto de 2026-11-19 (piso: só `route.ts`) vira a medição por
+  **todo acesso direto a `conversations`**, em qualquer arquivo de produção, com o client de origem
+  **resolvido pelos chamadores**:
+
+  | O que se mede | Comando | Resultado |
+  |---|---|---|
+  | Arquivos que acessam `from("conversations")` | `git grep -lE '\.from\(\s*["'"'"']conversations["'"'"']\s*\)' -- app lib workers hooks components ':!*.test.*' ':!*.spec.*' \| wc -l` | **46** |
+  | Chamadas (linhas) | o mesmo, com `-c` e `awk -F: '{s+=$2} END{print s}'` | **72** |
+  | Dessas, com o client de origem **indireta** (parâmetro ou variável distante) | resolvidas lendo os chamadores de cada arquivo | **25** |
+
+  A classificação não sai de um comando: sai de ler, para cada chamada, **de onde vem o client** e
+  **quem a alcança**. Cinco grupos:
+
+  | Grupo | Client | Quem alcança | Onde | O que a T3 faz |
+  |---|---|---|---|---|
+  | **A. Pessoa em sessão** | `createClient()` — a RLS vale | `viewer`+ logado | `conversations/_handler.ts` (REST), `conversations/[id]/{close,draft-reply,media,notes,pause-ai,retention,snooze,usable-for-rag}`, `conversations/counts`, `messages/_handler.ts` (REST), `contacts/*` (REST), `agenda/{vinculos,agendamentos/[id]}`, `pipelines/[id]/board`, `lib/escalacao/retomada.ts` (`reactivate-bot`), `lib/leads/radar-de-risco.ts` (`leads/at-risk`), `hooks/notifications/useInboundMessageAlerts.ts` | **Nada a mudar.** Herdam a regra quando a T4b a liga. A T3 **prova** por teste, uma rota por papel |
+  | **B. Token de API (MCP)** | `createAdminClient()` em `lib/mcp/server.ts:41` — **a RLS NÃO vale** | credencial externa de organização, com papel `agent`+ | `lib/mcp/tools/{conversations,governance,handoff,contacts,leads}.ts` e os handlers que elas **compartilham** com o REST (`conversations/_handler.ts`, `messages/_handler.ts`, `contacts/_handler.ts`), mais `lib/escalacao/{atendentes,retomada}.ts`, `lib/leads/radar-de-risco.ts`, `lib/routing/{eligibles,queue}.ts` e `lib/operacao/marcadores-e-time.ts` quando chamados por tool | **Decisão tomada (F1): o token ganha departamento; spec própria.** É o trabalho real da T3 |
+  | **C. Platform admin** | admin | `requirePlatformAdmin()` | `admin/dashboard/kpis`, `admin/inbox/conversations{,/[id]}`, `admin/tenants/[id]`, `admin/usage` | **Nada.** `fn_can_view_conversation` já devolve `true` para platform admin. `kpis:60` conta `pending` sem `organization_id` **por desenho** (painel entre organizações) |
+  | **D. Sistema, sem pessoa** | admin | segredo de cron, webhook, worker, dispatcher, agente de IA nativo | `cron/{contact-phones,snooze-watcher}`, `workers/*`, `lib/ai/{dispatcher,runtime/agent,elegibilidade,handoff,rag/ingest}`, `lib/channels/zernio/ingest.ts`, `lib/routing/worker.ts`, `lib/followup/{silence-sweep,gatilho-caso,reactivity}`, `lib/escalacao/atendimento-manual.ts`, `lib/atendimento/origem-automacao.ts` | **Nada.** Organização inteira é o contrato de quem processa. A distribuição **por setor** é outra decisão (a #73, URA) |
+  | **E. Admin com papel humano, caso a caso** | admin | `agent`+ ou `admin` | `attendants/availability` (`agent`+): lê só `assigned_to_user_id` para contar a carga de cada atendente, e a conta **precisa** ser de todos os setores. `lgpd/requests/[id]/preview` (`admin`): lê id, status e canal de **todas** as conversas do contato, por obrigação legal de exportação | **Nada**, com a justificativa escrita aqui |
+
+  **Resolvido (era "não medido" (1)): quem chama o MCP.** Um bearer `dsk_…` da tabela `api_tokens`
+  (`lib/mcp/auth.ts`). O papel vem do escopo `role:<papel>` (padrão `agent`) e o ator é
+  `{ type: "user", id: <id do TOKEN> }` ou `ai_agent`: **o token não tem `user_id` nem setor** (a coluna `created_by` é o admin que o
+  CRIOU, não quem o opera). A criação
+  é só de `admin` (policy `api_tokens_admin_only`). O agente de IA **nativo** não passa pelo `/api/mcp`
+  (`lib/ai/runtime/tools.ts`). Quem chama o MCP é, então, uma credencial externa da organização, e não
+  uma pessoa `agent` em sessão — por isso `visibility_mode` e setor não têm a quem se aplicar.
+
+  **Resolvido (era "não medido" (2)):** os helpers estão nos grupos acima. Só os do grupo B listam
+  conversas para além do processo interno, e só por tool do MCP.
+
+  **Achados que a T3 leva adiante (nenhum corrigido neste PR):**
+  - **F1 — O contrato 14 promete o que o MCP não faz.** `14-contrato-governanca-agentes-externos.md` §0 e
+    §4 diziam que o agente externo lê "sujeito à RLS" e "não vê além do escopo". O MCP usa service role
+    (`lib/mcp/server.ts:41`; o próprio comentário de `app/api/v1/leads/_handler.ts:203-209` diz que ele
+    "bypassa RLS"), e **nenhum** TypeScript aplica `visibility_mode` (`git grep -n visibility_mode -- app lib
+    workers ':!*.test.*'` só acha leitura e escrita da CONFIGURAÇÃO, nenhum filtro). O isolamento entre **organizações** é do handler
+    e é real (`tests/invariants/mcp-nao-alcanca-outro-tenant.test.ts`); o isolamento por **atendente** não
+    existe no MCP, e **não existiria por setor** depois da T4b: um token `agent` lê toda conversa da
+    organização. **Lido no código; não executei uma chamada MCP real para provar.** O §0 e o §4 do contrato
+    foram corrigidos para dizer isto. **Decisão do dono (2026-11-25, [#67](https://github.com/itConesul/CRMPI/issues/67)):**
+    manter o token lendo a empresa toda por padrão **não atende à regra** de isolamento entre equipes (a
+    opção (i), que este achado recomendava, foi **recusada**). **O token passa a ter departamento**; o acesso
+    à empresa inteira só por **escolha explícita** de quem é `admin` ou `manager`. É funcionalidade nova e
+    **precisa de spec própria** (token com departamento, como o handler o aplica à mão, e o que acontece
+    com os tokens que já existem). Não é desta PR e **não muda o comportamento de hoje**.
+  - **F2 — `messages/_handler.ts` lê e atualiza a conversa só por `id`** (linhas 314–322 e 912, sem
+    `organization_id` no próprio acesso). Ele é chamado pelo REST (sessão) e também pelo agent-engine com
+    service role e pelo MCP. Ponto de atenção da doutrina ("admin client **DEVE** filtrar `organization_id`"),
+    **lido, não explorado**: o `conversation_id` vem de quem chama, e a T3 confere cada chamador.
+  - **F3 — Os chamadores de `fn_can_view_conversation` que não são policy** (`fn_appointment_stamp`,
+    `fn_meet_action`, `fn_reply_action`) **não foram lidos nesta rodada**; "de onde vem o setor" nesses três
+    segue sendo item da T3.
+  - **F4 — Fora do que esta medição alcança:** SQL dentro de funções `fn_*` e `rpc`; o join embutido
+    `conversations!inner` em `lib/routing/eligibles.ts:87`; as assinaturas Realtime (sob RLS, sessão); a
+    tabela `messages`, que herda a visibilidade da conversa; e **leads e contatos**, que ficam de fora por
+    decisão da Q6 (a #80).
+
 ## 2. Decisão de design
 
 Dois mecanismos independentes, cada um com uma **função pura** testável sem banco ou DOM.

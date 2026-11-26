@@ -28,9 +28,12 @@ partir daí:
   NUNCA do input da tool.** As tools de governança carimbam isto explicitamente no
   cabeçalho do módulo (`lib/mcp/tools/governance.ts:9`). O agente externo não
   consegue "escolher" a org por parâmetro — ela é fixada pelo token.
-- **Toda leitura passa pela RLS org-scoped + visibilidade** (§4). Service role
-  bypassa RLS, por isso cada handler ainda filtra `organization_id` manualmente
-  como defesa em profundidade (ex.: `lib/mcp/tools/governance.ts:72-74`).
+- **O isolamento entre organizações é do handler, não do banco.** O servidor MCP lê com
+  **service role** (`lib/mcp/server.ts:41`), que bypassa a RLS; por isso cada handler filtra
+  `organization_id` manualmente (ex.: `lib/mcp/tools/governance.ts:72-74`), e é isso que impede um
+  token de alcançar outra organização. **A visibilidade por atendente (`visibility_mode`) NÃO se aplica
+  ao MCP** (§4). *Corrigido em 2026-11-25: este parágrafo dizia que "toda leitura passa pela RLS +
+  visibilidade", e o código nunca fez isso.*
 - **Toda escrita relevante gera audit** (`api_audit_log`, fire-and-forget) — o
   agente externo é auditado como ator não-humano (`actor_type` no metadata,
   `lib/mcp/tools/governance.ts:21-34`).
@@ -39,7 +42,7 @@ partir daí:
 
 Quando o agente externo assume o dispatch de uma org (§5, `ai_dispatch_mode='external'`),
 o dispatcher **nativo** deste repo **para de tocar** os eventos daquela org — o
-Vendaval os consome. O resto do contrato (tools, RLS, proibições) continua valendo
+Vendaval os consome. O resto do contrato (tools, isolamento entre organizações, proibições) continua valendo
 igual.
 
 ---
@@ -288,8 +291,19 @@ família de guard que `force_human` e `bot_silenced_until` (§6.2).
 (migration `0035`, `supabase/migrations/20260717200000_0035_visibility_mode_conversation_rls.sql:1-3`).
 Restringe **apenas o role `agent`**; `viewer`/`manager`/`admin` veem toda a org.
 
-O agente externo lê via MCP **org-scoped e sujeito à RLS**. A visibilidade é
-imposta no banco, não na aplicação — o agente **não vê além do escopo**:
+**O agente externo NÃO é limitado por `visibility_mode`.** O MCP lê com service role, a RLS não
+vale para ele, e nenhum código TypeScript reaplica a regra: um token com papel `agent` lê **toda**
+conversa e **todo** lead da organização do token. O token não tem `user_id` (nem setor) a quem
+aplicar a regra. A tabela `api_tokens` tem `created_by`, mas é o **admin que CRIOU o token**, e não
+quem o opera: não é uma identidade a que se aplique `visibility_mode`, e não deve virar uma. O que o contrato antigo descrevia abaixo é o que a RLS faz para uma **pessoa em
+sessão** (REST e telas), e continua verdadeiro para ela:
+
+> *Corrigido em 2026-11-25.* O texto anterior dizia "O agente externo lê via MCP org-scoped e sujeito
+> à RLS … o agente não vê além do escopo". Isso descrevia a intenção, não o código
+> (`lib/mcp/server.ts:41`). **Decisão do dono (2026-11-25, #67):** o token passa a
+> ter departamento, e o acesso à empresa inteira só por escolha explícita de `admin` ou `manager`. Isso ainda
+> **não existe no código** e precisa de spec própria (PRD-01 / #67, T3, `02-design.md` §1, achado F1): até lá,
+> vale o que está descrito acima.
 
 - **Conversas:** policy `conversations_select` usa `fn_can_view_conversation(org, assigned_to_user_id)`
   (`0035:25-57`). Para `agent`: `'all'` = tudo da org; `'own_and_unassigned'` = suas +
@@ -304,10 +318,11 @@ imposta no banco, não na aplicação — o agente **não vê além do escopo**:
   `supabase/migrations/20260718160000_0042_lead_children_visibility_rls.sql:41-56`).
   Fecha o vazamento de herança (activities/links de lead invisível).
 
-> **Regra para o Vendaval:** trate o que a tool retorna como o **teto** do que existe
-> para aquele token. Se uma conversa/lead não veio, para aquele escopo ela **não
-> existe** — não infira nem tente acessá-la por id direto (a RLS + o filtro
-> manual de org no handler barram, ex.: `governance.ts:72-74`, `leads.ts:143-146`).
+> **Regra para o Vendaval:** o que a tool retorna é o **teto da organização do token**, e não
+> de um atendente. Se uma conversa/lead de **outra organização** não veio, ela **não existe**
+> para este token — não tente acessá-la por id direto (o filtro manual de org no handler
+> barra, ex.: `governance.ts:72-74`, `leads.ts:143-146`). **Não** conte com `visibility_mode`
+> para esconder conversas de um atendente: o MCP não o aplica.
 
 ---
 
@@ -408,8 +423,9 @@ O que o **Vendaval** precisa fazer do seu lado para consumir este contrato:
 5. **Usar `crm_request_human_handoff` v2 para o fallback humano** (§3.4) — deixar o
    roteamento G5 escolher o destino (passar `target_user_id` só como preferência);
    tratar os dois formatos de retorno (`assigned_to` OU `queued`+`position`).
-6. **Respeitar visibilidade** (§4): tratar o retorno das read tools como o teto do
-   que existe; não tentar acessar id fora do escopo.
+6. **Respeitar o escopo da organização** (§4): tratar o retorno das read tools como o teto
+   da **organização do token**, e não de um atendente (o MCP NÃO aplica `visibility_mode`);
+   não tentar acessar id de outra organização.
 7. **Respeitar as proibições §6:** não enviar a `is_blocked`; não intervir em
    conversa `assignee_kind='user'`; não reativar bot silenciado; nunca cross-org.
 8. **Idempotência no envio:** passar `idempotency_key` em `crm_send_whatsapp_message`
