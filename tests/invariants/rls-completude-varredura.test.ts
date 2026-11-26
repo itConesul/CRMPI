@@ -75,6 +75,18 @@ interface Excecao {
  * linhas da OUTRA organização, não uma leitura como superusuário.
  */
 const PROVA_PROPRIA: readonly Excecao[] = [
+  {
+    tabela: "departments",
+    razao:
+      "tests/invariants/departamentos-estrutura.test.ts — JWT do admin da org A lê o setor dela e " +
+      "zero da org B; agent não escreve; admin B não escreve com o organization_id de A (WITH CHECK).",
+  },
+  {
+    tabela: "department_members",
+    razao:
+      "tests/invariants/departamentos-estrutura.test.ts — vínculo não vaza entre organizações, " +
+      "só o admin escreve, e a FK composta recusa setor e operador de outra organização.",
+  },
   { tabela: "channel_routing_policies", razao: "tests/invariants/channel-routing.test.ts — dois tenants reais, leitura positiva local e negativa cruzada por JWT; FK composta rejeita canal de outra org" },
   { tabela: "channel_routing_responsibles", razao: "tests/invariants/channel-routing.test.ts — JWT do tenant B não lê responsáveis de A; revogação remove vínculo e claim revalida membro ativo" },
   { tabela: "channel_connection_requests", razao: "tests/invariants/channel-routing.test.ts — recibo privado sem SELECT authenticated; reserva admin com MFA e finalização service-only cercada por org e lease" },
