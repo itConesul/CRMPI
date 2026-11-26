@@ -207,9 +207,12 @@ Dois mecanismos independentes, cada um com uma **função pura** testável sem b
     `useTasks`, `PropostasDeDado` — não a têm: o `agent` fora do horário pode clicar e recebe o 403
     `OUT_OF_WORK_HOURS` cru. **A contagem é por padrão de texto (`method: "POST"` etc.) e pode estar
     incompleta.** O servidor barra do mesmo jeito; o que falta é a UI avisar antes do clique.
-  - **Dicionário `es`:** faltam `sáb`, `a` e `e` em `lib/i18n/dicionario.ts` (`seg` e `dom` existem), então
-    a frase do horário em espanhol sai com esses termos em português. Antes de acrescentar `a` e `e`,
-    conferir se as chaves curtas não traduzem outra string igual.
+  - **Dicionário `es`:** `a` e `e` já existiam em `lib/i18n/dicionario.ts`; faltava só `sáb`, e a entrada
+    `"sáb": { es: "sáb" }` foi acrescentada (em espanhol a abreviação é a mesma, então a frase do
+    horário não muda — a chave faltante era só lacuna de cobertura). O que o vigia é
+    `lib/expediente/formatar.test.ts`, que coleta todo termo que o formatador manda traduzir e exige
+    entrada no dicionário; o guarda `i18n-espanhol-cobre-a-tela` só enxerga `t("literal")`, e os dias
+    saem de um array (`t(DIAS[d])`). Para conferir: `npx vitest run lib/expediente/formatar.test.ts`.
 - **Default = sem restrição** (`windows` vazio = 24/7). Uma instalação que atualiza pelo `update.sh`
   continua operando; o expediente só passa a valer quando o admin o configura (primeira impressão).
 - **Falha aberta:** config ausente, fuso inválido ou shape torto = sem expediente. Uma configuração

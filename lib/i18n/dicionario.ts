@@ -6789,6 +6789,7 @@ export const DICIONARIO: Traducoes = {
   "qui": { es: "jue" },
   "sex": { es: "vie" },
   "dom": { es: "dom" },
+  "sáb": { es: "sáb" },
   "Fora do expediente da empresa. Você pode consultar as conversas, mas só consegue agir quando o expediente abrir.": {
     es: "Fuera del horario de la empresa. Puedes consultar las conversaciones, pero solo podrás actuar cuando abra el horario.",
   },
