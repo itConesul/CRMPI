@@ -1,7 +1,7 @@
 # PRD-01 · Expediente da empresa e isolamento por setor
 
 **Issue:** #67 — https://github.com/itConesul/CRMPI/issues/67
-**Estado:** `implementando` — **spec e proposta de schema aprovadas pelo dono do produto em 2026-11-17** ([review do PR #75](https://github.com/itConesul/CRMPI/pull/75#pullrequestreview-5946320660)); **o primeiro PR de código (o gate, #88) foi mergeado na `develop` em 2026-11-24**; o resto segue em PRs novos, na ordem de `04-tarefas.md` (a coluna **Feito** de lá é a fonte do que falta)
+**Estado:** `implementando` — **spec e proposta de schema aprovadas pelo dono do produto em 2026-11-17** ([review do PR #75](https://github.com/itConesul/CRMPI/pull/75#pullrequestreview-5946320660)); **o primeiro PR de código (o gate, #88) foi mergeado na `develop` em 2026-11-24**; o resto segue em PRs novos, na ordem de `04-tarefas.md` (a coluna **Feito** de lá é a fonte do que falta). **O dono decidiu o F6, a Q10 e o escopo dos não medidos em 2026-11-27** ([#67](https://github.com/itConesul/CRMPI/issues/67#issuecomment-7219537234)); a T3 foi dividida em T3.0 a T3.7
 **Autor:** cMoreiraSul (com Claude)
 **Medido em:** `eb8bd68` (develop; afirmações sobre o código re-conferidas em 2026-11-17)
 
