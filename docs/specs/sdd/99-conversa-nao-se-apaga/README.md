@@ -1,7 +1,7 @@
 # Conversa não se apaga pela API (endurecer a RLS de `conversations` e `messages`)
 
 **Issue:** #99 — https://github.com/itConesul/CRMPI/issues/99
-**Estado:** `implementando`  <!-- rascunho | em-revisao | aprovada | implementando | concluida | substituida -->
+**Estado:** `concluida`  <!-- rascunho | em-revisao | aprovada | implementando | concluida | substituida -->
 **Autor:** cMoreiraSul (com Claude)
 **Medido em:** `a673ace`; reconferido em `3be7195` (develop, após a v1.23.7, 2026-11-24) — ver `02-design.md`
 **Origem:** T7 da spec da #70 (`docs/specs/sdd/70-modo-espiao/`, RNF-4)
@@ -12,8 +12,8 @@ Um `agent`+ apaga conversa direto pelo PostgREST, e o cascade leva junto `messag
 enxerga. O log das conversas é registro e hoje é perdível e adulterável por quem não devia. Esta spec:
 (1) tira o `DELETE` de `conversations` do usuário; (2) restringe `UPDATE`/`DELETE` de `messages` a
 `agent`+ em conversa visível; (3) faz `DELETE /contacts/[id]` recusar com **409** o contato que tem
-conversa, em vez de apagar o histórico; (4) restringe **apagar contato** a `manager`+, na rota e na
-tela. Uma migration, **sem função nova** e sem coluna nova.
+conversa, em vez de apagar o histórico; (4) restringe **apagar contato** a `manager`+, na rota, na
+tela e (D-10, review do #140) no banco. Uma migration, **sem função nova** e sem coluna nova.
 
 ## O que esta spec NÃO resolve
 A issue nasceu como "`agent`+ faz `UPDATE` direto em `conversations`". **Este escopo (B+) não fecha o
@@ -40,5 +40,5 @@ conversa em `visibility_mode=all`. Isso fica para a RPC do contador (opção C) 
 - [x] Revisor registrou a aprovação em `05-revisao.md`
 
 Aprovada pelo Sciuba em 2026-11-24 (PR #105, `APPROVED` sobre `d949618`, mergeado em `6149baa`).
-**Implementação liberada**, seguindo `04-tarefas.md` à risca. O PR de código cita **"Ref. #99"**, nunca
+**Implementada e mergeada em 2026-11-27** ([#140](https://github.com/itConesul/CRMPI/pull/140), merge `81c516c`), seguindo `04-tarefas.md`; os desvios D-1 a D-10 estão em `05-revisao.md`. O PR de código cita **"Ref. #99"**, nunca
 "Closes" (a #99 segue aberta: o `UPDATE` direto em `conversations` não é fechado por esta spec).
