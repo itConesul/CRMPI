@@ -31,7 +31,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useActiveOrg } from "@/hooks/auth/AuthProvider";
 import { useDeleteContact } from "@/hooks/contacts/useDeleteContact";
+import { podeExcluirContato } from "@/lib/contacts/pode-excluir-contato";
 import type { ContactOrderBy } from "@/lib/schemas/contacts";
 import type { Contact } from "@/lib/types/contacts";
 import { rotuloDoContato } from "@/lib/contacts/rotulo-do-contato";
@@ -109,6 +111,9 @@ export function ContactsTable({ contacts, orderBy, orderDir, onSort }: Props) {
   const localeDaData = useLocaleDeData();
   const t = useT();
   const del = useDeleteContact();
+  // Só manager+ apaga contato (#99): o MESMO predicado que a rota usa. Só o papel efetivo da org ativa;
+  // a condição de administrador de plataforma não entra, porque a rota a negaria com 403 (spec §1.3).
+  const podeExcluir = podeExcluirContato(useActiveOrg()?.role);
   const [alvo, setAlvo] = useState<Contact | null>(null);
   const [abrindo, setAbrindo] = useState<string | null>(null);
   const router = useRouter();
@@ -255,16 +260,18 @@ export function ContactsTable({ contacts, orderBy, orderDir, onSort }: Props) {
                     <ChatCircle size={16} weight="regular" aria-hidden />
                   </Button>
                 ) : null}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-muted-foreground hover:text-error-fg"
-                  title={t("Excluir contato")}
-                  aria-label={`${t("Excluir contato")} ${displayName(c, t)}`}
-                  onClick={() => setAlvo(c)}
-                >
-                  <Trash size={16} weight="regular" aria-hidden />
-                </Button>
+                {podeExcluir ? (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-error-fg"
+                    title={t("Excluir contato")}
+                    aria-label={`${t("Excluir contato")} ${displayName(c, t)}`}
+                    onClick={() => setAlvo(c)}
+                  >
+                    <Trash size={16} weight="regular" aria-hidden />
+                  </Button>
+                ) : null}
               </div>
             </TableCell>
           </TableRow>
@@ -278,7 +285,7 @@ export function ContactsTable({ contacts, orderBy, orderDir, onSort }: Props) {
           <AlertDialogTitle>{t("Excluir contato?")}</AlertDialogTitle>
           <AlertDialogDescription>
             {alvo
-              ? `${t("Isso remove")} ${displayName(alvo, t)} ${t("e a conversa associada, se houver. Esta ação não pode ser desfeita.")}`
+              ? `${t("Isso remove")} ${displayName(alvo, t)}. ${t("Contato com conversas ou compromissos vinculados não pode ser excluído, para preservar o histórico: peça a um administrador para anonimizá-lo. Esta ação não pode ser desfeita.")}`
               : null}
           </AlertDialogDescription>
         </AlertDialogHeader>

@@ -603,6 +603,7 @@ jobs:
         trocar-propria-senha.spec.ts
         funil-cor-das-colunas.spec.ts
         nota-mencao.spec.ts
+        contato-excluir-so-manager.spec.ts
 
       FORA_DO_CI: >-
         vps-fresh-onboarding.spec.ts
