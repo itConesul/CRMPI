@@ -27,8 +27,9 @@ provado.
 ## Gates antes do PR
 - [x] `pnpm typecheck`
 - [x] `pnpm lint` (0 erros)
-- [ ] `pnpm test:unit` (suíte inteira, rodapé conferido): local no Windows, antes do merge da `develop`,
-  19 falhas em 8675; 17 repetem na `develop` limpa e 2 são estouro de tempo, verdes sozinhos. Vale o `verify` do CI
-- [x] `pnpm test:db`: completo antes do merge da `develop` (1591 verdes, 1 estouro de tempo, verde
-  sozinho); depois dele, só os quatro arquivos afetados (128 verdes). O resultado inteiro é o `invariants` do CI
+- [x] `pnpm test:unit` (suíte inteira): `verify` do CI verde em `ef661a5`. Local no Windows havia 19
+  falhas em 8675; 17 repetem na `develop` limpa e 2 são estouro de tempo, verdes sozinhos
+- [x] `pnpm test:db`: completo local (1591 verdes, 1 estouro de tempo, verde sozinho) e `invariants` do CI
+  verde em `ef661a5`. Depois do merge do #147, local só os quatro arquivos afetados (136 verdes); o
+  resultado inteiro é o `invariants` do CI no commit final
 - [x] `pnpm release:conferir`

@@ -30,14 +30,15 @@ Sciuba é autor e dono do produto: decide P1 a P3 acima, mas não aprova a próp
 **Aprovação confirmada em 2026-11-27:** review `APPROVED` de cMoreiraSul no PR #143, sobre `756cfbf`;
 merge `692e4d0`. Estado `implementando` a partir desta data.
 
-**Migration:** `0243`. A `0241` é do #145, que entrou na `develop` durante a implementação, e a
-`0242` é do #147, ainda aberto.
+**Migration:** `0243`. A `0241` é do #145 e a `0242` é do #147; os dois entraram na `develop` durante
+a implementação.
 
-**Relação com #145 e #147:** o #145 (já na `develop`) revoga todo o acesso da sessão a `outbound_copies` e
+**Relação com #145 e #147:** o #145 revoga todo o acesso da sessão a `outbound_copies` e
 `ai_invocations`; o #147 faz o mesmo com `lead_state_transitions`, `event_log` e
-`ai_router_decisions`. Esta mudança só revoga escrita, é idempotente e vale em qualquer ordem. Quem
-entrar depois resolve o conflito textual no fim do `baseline.sql` e no `MANIFEST.md` mantendo os
-dois blocos.
+`ai_router_decisions`. Esta mudança só revoga escrita, é idempotente e vale em qualquer ordem. O
+conflito no fim do `baseline.sql` foi resolvido mantendo os blocos `0241`, `0242` e `0243`, nessa
+ordem. O caso "a leitura não mudou" do invariante declara as duas tabelas do laço que perderam também
+a leitura (`outbound_copies` e `lead_state_transitions`).
 
 ### E2E dos quatro caminhos (T1)
 | Caminho | Spec e2e no CI | Como fica provado |

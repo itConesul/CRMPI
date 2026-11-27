@@ -53,6 +53,12 @@ const TABELAS = tabelasDoLaco();
 const INSERT_PERMITIDO = ["agent_inbox_items", "cron_jobs", "lead_checkpoints"];
 const UPDATE_DE_COLUNA: Record<string, string[]> = { lead_state: ["next_action"] };
 
+/** Tabelas do laço que perderam também a LEITURA por outra tarefa da #67, compatível com esta. */
+const SEM_LEITURA_DE_SESSAO = [
+  "lead_state_transitions", // T3.1, migration 0242 (#147)
+  "outbound_copies", // T3.0, migration 0241 (#145)
+];
+
 type Resposta = { linhas: number } | "sem_privilegio" | "rls" | `outro: ${string}`;
 
 /** Executa como `authenticated` com o JWT do usuário e DESFAZ. */
@@ -180,8 +186,9 @@ describe("CA-5 · a lista é a do laço no baseline.sql", () => {
                            ('service_role','update'), ('service_role','delete')) v(r, p)
        where not has_table_privilege(r, 'public.' || t, p);
     `);
-    // outbound_copies sem SELECT é decisão do #145 (T3.0 da #67), compatível com esta.
-    expect(perdas.split("\n").filter((l) => l && l !== "outbound_copies:authenticated:select")).toEqual([]);
+    expect(perdas.split("\n").filter(Boolean).sort()).toEqual(
+      SEM_LEITURA_DE_SESSAO.map((t) => `${t}:authenticated:select`),
+    );
   });
 });
 
