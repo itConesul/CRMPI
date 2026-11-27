@@ -660,14 +660,21 @@ function throwOnDbError(
   idioma: Idioma = "pt-BR",
 ): void {
   if (!err) return;
-  // conversations/messages apontam para contacts com ON DELETE RESTRICT.
+  // `conversations`, `messages` e `calendar_appointments` apontam para `contacts` com ON DELETE RESTRICT
+  // (#99, spec `02-design.md` §2). QUEM DECIDE É O BANCO: uma checagem prévia pelo cliente do usuário
+  // passaria pela RLS e não enxergaria a conversa de outro atendente. O texto é ÚNICO para as três
+  // causas — a saída é a mesma (anonimizar, que preserva a linha) — e o handler NÃO lê o nome da
+  // constraint, só o código.
   if (err.code === "23503") {
     throw new ApiError(
       409,
       "state_conflict",
       undefined,
       requestId,
-      traduzir("Não foi possível excluir: o contato ainda tem registros vinculados.", idioma),
+      traduzir(
+        "Este contato tem conversas ou compromissos vinculados e não pode ser excluído, para preservar o histórico. Peça a um administrador para anonimizá-lo.",
+        idioma,
+      ),
     );
   }
   throw new ApiError(500, "internal_error", undefined, requestId, err.message);
@@ -698,22 +705,8 @@ export async function deleteContactHandler(
     );
   }
 
-  // Mensagens e conversas RESTRICT no contato: apagar primeiro, senão o DELETE
-  // da ficha falha para qualquer lead que já falou no canal.
-  const { error: msgErr } = await supabase
-    .from("messages")
-    .delete()
-    .eq("contact_id", contactId)
-    .eq("organization_id", ctx.organization_id);
-  throwOnDbError(msgErr, ctx.requestId, ctx.idioma);
-
-  const { error: convErr } = await supabase
-    .from("conversations")
-    .delete()
-    .eq("contact_id", contactId)
-    .eq("organization_id", ctx.organization_id);
-  throwOnDbError(convErr, ctx.requestId, ctx.idioma);
-
+  // O histórico NÃO é apagado aqui (#99, RF-3): o log das conversas é registro. Contato com conversa ou
+  // compromisso é recusado pelo banco (`23503`) e vira 409; só contato sem histórico se apaga.
   const { data: deleted, error: delErr } = await supabase
     .from("contacts")
     .delete()

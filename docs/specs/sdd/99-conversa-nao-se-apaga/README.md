@@ -1,7 +1,7 @@
 # Conversa não se apaga pela API (endurecer a RLS de `conversations` e `messages`)
 
 **Issue:** #99 — https://github.com/itConesul/CRMPI/issues/99
-**Estado:** `aprovada`  <!-- rascunho | em-revisao | aprovada | implementando | concluida | substituida -->
+**Estado:** `implementando`  <!-- rascunho | em-revisao | aprovada | implementando | concluida | substituida -->
 **Autor:** cMoreiraSul (com Claude)
 **Medido em:** `a673ace`; reconferido em `3be7195` (develop, após a v1.23.7, 2026-11-24) — ver `02-design.md`
 **Origem:** T7 da spec da #70 (`docs/specs/sdd/70-modo-espiao/`, RNF-4)
