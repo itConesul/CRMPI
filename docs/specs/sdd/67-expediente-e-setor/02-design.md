@@ -307,10 +307,14 @@ expediente da organização; rota ou tela `/app/fora-de-expediente`; erro `OUT_O
     - **Item 4 (a atividade): (a), grava o `conversation_id`** (e não o `department_id`: a visibilidade acompanha a
       transferência), com backfill. Atividade **conversacional** (`ai_turn`, `handoff_*`, `conversation_*`) sem
       origem identificável fica só para `manager`+. Atividade que não vem de conversa segue a regra de lead de hoje.
-    - **Item 5 (os não medidos): (b).** Os itens de vazamento (`ai_chunks`, `job_queue`, `before_send_traces`,
-      `ai_agent_runs`, `ai_invocations`, `ai_router_decisions`) são medidos **antes da T4b**; push, Realtime das
-      tabelas e a trava na tela da T7 viram issue própria. Se a #103 achar conteúdo de conversa num broadcast,
-      ela volta a bloquear a T4b.
+    - **Escopo dos não medidos: (b)** ([pergunta](https://github.com/itConesul/CRMPI/issues/67#issuecomment-7217563291),
+      [decisão](https://github.com/itConesul/CRMPI/issues/67#issuecomment-7219537234)). Os **itens 1 a 4** da pergunta
+      são medidos **antes da T4b**: (1) `ai_chunks`; (2) **push (#120 e #123) e o Realtime das tabelas do F6**;
+      (3) `job_queue.payload` e `before_send_traces.trace`; (4) o conteúdo de `ai_agent_runs`, `ai_invocations` e
+      `ai_router_decisions` e o vínculo com conversa das 8 tabelas sem `conversation_id`. **Só os itens 5 e 6 viram
+      issue própria:** os broadcasts `alerts-platform` e `tenant-health` (a #103 já existe) e a trava na tela da
+      T7 (**ainda sem issue**). Se a #103 achar conteúdo de conversa num broadcast, ela volta a bloquear a T4b.
+      (A primeira versão deste texto mandava push e Realtime para issue: estava errado, e o review do #144 pegou.)
     - **Mecanismo, do dono:** o banco garante e o app acompanha. Quatro tipos de tabela:
 
     | Tipo | O que fazer |
