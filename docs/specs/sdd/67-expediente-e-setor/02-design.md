@@ -254,14 +254,15 @@ expediente da organização; rota ou tela `/app/fora-de-expediente`; erro `OUT_O
        (corpo da nota interna), `agent_inbox_items` e `agent_case_events` (corpo), `lead_notes` (corpo),
        `contact_field_proposals` (dado dito pelo cliente na conversa), `lead_checkpoints`, `followup_enrollments`,
        `agent_cases`, `demandas`, `demanda_conversas`, `calendar_appointments` (leitura; a escrita exige `agent`),
-       `ai_agent_runs`, `ai_invocations` e `ai_router_decisions` (o conteúdo destas três **não foi conferido**),
+       `ai_agent_runs`, `ai_invocations` e `ai_router_decisions` (conteúdo **medido na T3.2**: só `ai_agent_runs`
+       carrega texto livre; ver "Resultado da T3.2" abaixo),
        e, **achadas na revisão do #136 (Sciuba, 2026-11-27)** porque a busca original foi por coluna
        `conversation_id` e estas se ligam por contato ou por canal: `outbound_copies` (`normalized_text` é o texto
        das mensagens enviadas, gravado em `lib/agent-engine/spinning/store.ts`), `lead_state` (`qualification`,
        `next_action`), `lead_state_transitions` (`reason`) e `event_log` (`payload.body_preview` guarda os
        **280 primeiros caracteres** do corpo de cada mensagem, gravados por `fn_emit_message_event`; a policy é
        `event_log_select`, só por organização, e `authenticated` tem `SELECT`).
-       São **18 tabelas** (as 13 acima menos as 3 que herdam, mais 8 sem a coluna); **10** têm `conversation_id`, e
+       São **18 tabelas** neste ponto da spec (**20 depois da T3.2**, mais abaixo) (as 13 acima menos as 3 que herdam, mais 8 sem a coluna); **10** têm `conversation_id`, e
        `agent_case_events`, `agent_inbox_items`, `demandas`, `lead_notes`, `outbound_copies`, `lead_state`,
        `lead_state_transitions` e `event_log` entram por terem texto ou serem da conversa, **sem coluna que as ligue
        a ela** (o vínculo destas oito com uma conversa **não foi medido**).
@@ -270,11 +271,20 @@ expediente da organização; rota ou tela `/app/fora-de-expediente`; erro `OUT_O
        o `ALTER DEFAULT PRIVILEGES` do baseline dá `ALL` a `authenticated`. Pelo texto do schema, o `viewer` **lê e
        também altera e apaga** estas linhas pelo PostgREST (não executei como usuário; não achei policy nem `revoke`
        posterior que mude isso).
-       **Duas tabelas do mesmo laço ficam fora da contagem por NÃO MEDIDAS:** `job_queue.payload` (o código diz que o
-       payload "só carrega ponteiros do CRM" e que `last_error` nunca leva conteúdo de mensagem, mas **não li todos
-       os pontos que gravam o payload**) e `before_send_traces.trace` (o schema diz "sem PII" para as entradas
-       `{ gate, verdict, code?, detail? }`; **não conferi o que o código grava em `detail`**). Se alguma carregar
-       texto de conversa, a lista passa de 18 para 19 ou 20.
+       **As duas tabelas do mesmo laço que estavam NÃO MEDIDAS foram medidas na T3.2 (2026-11-27):** `job_queue.payload`
+       **carrega texto de conversa** em três produtores (`cases/[id]/reply`: `body`; `followup/engine`: `fixed_body` e
+       `prompt_hint`; `cron_jobs.payload`: `reason` e `promise`), então **entra**; `before_send_traces.trace` **não**
+       carrega (os cinco produtores de `detail` gravam rótulos fechados e números), então **não é acrescentada** (ela não estava nas 18; a medição só acrescenta o que mostrar texto de conversa).
+       **Efeito na lista: ela PASSA A TER 20 TABELAS** (as 18 + `job_queue` + `crm_lead_reactivations`, a `draft` é
+       texto, está no Realtime e é só por organização). A decisão do dono
+       ([#67](https://github.com/itConesul/CRMPI/issues/67#issuecomment-7219537234)) é que **as 18 entram** e que a
+       medição **só acrescenta**: o que ela mostrar com texto de conversa entra **também**, sem nova decisão. Ela **não
+       tira** ninguém, e a primeira versão deste parágrafo tirava (errado; o review do #150 apontou).
+       `ai_router_decisions` e `ai_invocations` **continuam na lista**, e já estão atendidas pelo mecanismo do dono para
+       tabela interna: `authenticated` sem acesso, pelas migrations `0241` (`ai_invocations`) e `0242`
+       (`ai_router_decisions`). Que a medição não tenha achado texto livre nelas (colunas estruturadas; `ai_invocations`
+       sem escritor) explica por que **basta** a revogação, e não é motivo para sair da lista. O conteúdo de dois jsonb
+       de `ai_invocations` **não foi conferido**, e isso continua registrado como não medido (não muda a inclusão).
        Pela policy, **qualquer membro ativo da organização, `viewer` inclusive, lê estas linhas direto pelo
        PostgREST, hoje, sem enxergar a conversa que as originou**. Isso **não depende de setor**: vale com o
        `visibility_mode` de hoje. A regra do dono ("equipes distintas não veem as conversas umas das outras")
@@ -288,21 +298,21 @@ expediente da organização; rota ou tela `/app/fora-de-expediente`; erro `OUT_O
        `conversation_claimed`/`transferred`/`released`/`ai_paused` (só o `reason`). `evidence` guarda só ids, e
        `reason` é "sem PII" por contrato. **Não conferi** o `payload` dos demais tipos do vocabulário.
     4. **Questão de desenho em aberto, que a T3 não resolve sozinha:** `crm_lead_activities` **não tem
-       `conversation_id` nem `department_id`** (não está entre as 18 tabelas acima), então a RLS **não tem como
+       `conversation_id` nem `department_id`** (não está entre as tabelas acima), então a RLS **não tem como
        saber de qual conversa ou departamento uma atividade veio**. Opções, **sem escolha minha**: (a) gravar o
        `department_id` (ou o `conversation_id`) na atividade ao emiti-la e filtrar na policy, com backfill dos
        tipos já gravados; (b) esconder **categorias inteiras de tipo** (`ai_turn`, `note`, …) de quem não é do
        departamento, sem olhar a conversa; (c) derivar por `source_id` quando `source_module` aponta uma
        conversa (**não medi** se todo emissor grava isso). Cada uma muda o que o dono quis ver, e a escolha vem
        **antes** de a T3 aplicar a regra.
-    5. **Não medido:** `ai_chunks` (o RAG): a policy é só organização e `lib/ai/rag/ingest/conversations.ts` ingere
-       conversas, mas o chunk não tem `conversation_id` (só `knowledge_source_id`) e **não conferi se ele guarda
-       texto de conversa**; as notificações push (#120 e #123); e o Realtime destas tabelas.
+    5. **Medido na T3.2 (2026-11-27), com duas pontas soltas declaradas (`ai_chunks` com acervo real e a proporção
+       de atividades sem origem em instalação real):** `ai_chunks`, push (#120 e #123) e Realtime. Resultado em
+       "Resultado da T3.2", abaixo.
 
     **Estado do F6 (2026-11-27, à tarde): DECIDIDO pelo dono ([#67](https://github.com/itConesul/CRMPI/issues/67#issuecomment-7219537234), registrado em `05-revisao.md`).**
     O que a T3 e a T4b herdam:
 
-    - **Item 2 (as 18 tabelas): (a), entram.** Qualquer tabela que a medição mostrar com texto de conversa entra
+    - **Item 2 (as 18 tabelas, que a T3.2 fez 20): (a), entram.** Qualquer tabela que a medição mostrar com texto de conversa entra
       também, sem nova decisão.
     - **Item 4 (a atividade): (a), grava o `conversation_id`** (e não o `department_id`: a visibilidade acompanha a
       transferência), com backfill. Atividade **conversacional** (`ai_turn`, `handoff_*`, `conversation_*`) sem
@@ -340,8 +350,10 @@ expediente da organização; rota ou tela `/app/fora-de-expediente`; erro `OUT_O
     | `lead_state_transitions` | `lead-state.ts` (`pg`) **e a rota `ai/evolution` por SESSÃO**, via helper `ler(tabela, …)` | **Lida pelas telas** (tela Evolução). Trocar a rota para client admin com `organization_id` e então revogar (T3.1) |
     | `ai_router_decisions` | `inbound-turn.ts` (`pg`) **e a rota `ai/evolution` por SESSÃO**, mesmo helper | **Lida pelas telas** (tela Evolução). Mesma troca (T3.1) |
     | `ai_invocations` | **sem escritor** desde a migration 0130; só contagem em rotas de plataforma (client admin); a rota `ai/usage` (sessão) só a cita em comentário | **Interna.** Revogar (T3.0) |
-    | `agent_case_events`, `agent_cases`, `lead_checkpoints`, `demanda_conversas` | `pg`/admin; `continuidade.ts` e `retomada.ts` recebem o client por parâmetro (`?`) | **Interna, a confirmar** (ler quem chama) |
-    | `job_queue` | `pg`/admin; **uma** leitura de `status` em `agenda/agendamentos/[id]/route.ts`; o payload do `inbound_turn` é só ids (`conversation_id`, `contact_id`, `channel_session_id`, `inbound_message_id`, `crm_event_id`) | **Interna.** Os outros produtores do payload (`scheduler`, `followup/engine`, `cases/[id]/reply`, `inbound-turn`) **não foram lidos** |
+    | `agent_cases`, `agent_case_events` | **T3.2 (i):** `ai/cases` e `ai/cases/[id]` com client **admin** (`listarChamados`, `lerChamado`); `reactivate-bot` com client de **SESSÃO** (via `devolverAtendimentoAoAgente` → `continuidade.ts`); MCP `escalacao` com admin; o motor por `pg`. A tela de casos (`useCases`) chama as rotas, não a tabela | **Não é interna** (a proposta anterior estava errada): tem leitor de sessão **e** de servidor. `agent_cases.conversation_id` é `NOT NULL` e `agent_case_events` liga por `case_id`: **RLS herda** + filtro de setor nas rotas admin (T3.4 e T3.5). **Não revogar** |
+    | `lead_checkpoints` | **T3.2 (i):** `pg` (motor, flywheel, score); **escrita por SESSÃO** em `retomada.ts` (via `reactivate-bot`); tem `conversation_id` (**nulável**), `declaracao` e `demanda_id`, colunas que entraram **depois** do `CREATE TABLE` | Com `conversation_id` nulável: **RLS herda** onde houver; as linhas sem conversa precisam de regra (T3.3b). **Não revogar** |
+    | `demanda_conversas` | **T3.2 (i):** só servidor: `radar-de-risco.ts` (admin), `get-lead-context.ts` (`pg`) e a limpeza de dados; **nenhum leitor de sessão** | **Interna.** Revogável. É a ponte demanda → conversa |
+    | `job_queue` | **T3.2 (ii):** `pg`/admin; **uma** leitura de `status` em `agenda/agendamentos/[id]/route.ts`. **Oito kinds** no `CHECK` atual; payload por produtor: `inbound_turn` e `operator_turn` só ids; `transactional_delivery` e `approved_reply` (criados por função SQL) só ids (o texto fica em `ai_reply_drafts`); **com texto:** `case_reply_turn` (`cases/[id]/reply`: `{ case_id, action, body }`, `body` é o que o atendente escreveu), `followup_turn` (`followup/engine`: `fixed_body`, `prompt_hint`, `hint`, `classes`) e o que o `scheduler` repassa de `cron_jobs.payload` (`reason`, `promise`) | **Tem texto de conversa → entra.** Tem **um leitor de SESSÃO**: `agenda/agendamentos/[id]/route.ts:65` lê só `status` do job de entrega da reunião com `createClient()`. Revogar `authenticated` exige **antes** trocar essa leitura para client admin com `organization_id` (o padrão da T3.1). A anonimização limpa o payload de `approved_reply` (`fn_reply_redact`); que ela limpe o de `case_reply_turn` e o de `followup_turn` é **NÃO MEDIDO** |
     | `conversation_notes` | rotas de sessão **e** Realtime (`useConversationNotes`) | Com `conversation_id`: **RLS herda** |
     | `contact_field_proposals`, `followup_enrollments`, `calendar_appointments` | rotas/páginas de sessão | Com `conversation_id`: **RLS herda** |
     | `ai_agent_runs` | **Realtime** (`hooks/ai/useAgentRuns.ts`) e está na publicação | **Não revogar.** RLS |
@@ -349,8 +361,9 @@ expediente da organização; rota ou tela `/app/fora-de-expediente`; erro `OUT_O
     | `lead_notes`, `demandas` | `crm-summary` por sessão | Sem `conversation_id`: gravar + RLS |
     | `lead_state` | `next-action` e o board por sessão | Dado de lead: **regra de lead**, sem inventar `conversation_id` |
     | `event_log` | `operator-metrics`, `usage` e `automation-rules/runs/[runId]/resend` (esta lê o evento inteiro, `select *`) leem **por sessão**, e `ai/evolution` também (contagem); a quarta rota só apareceu na varredura larga da T3.1; Realtime **não** assina | **Trocar as 4 rotas para client admin com `organization_id`** e então revogar (T3.1) |
-    | `before_send_traces` | `conversations/[id]/retention` por sessão; o `trace` leva rótulos e números ("NUNCA o corpo", comentário do contrato em `before-send.ts`) | Sem texto de conversa **por contrato do código, não provado por dado**. Fica fora do isolamento por conversa; a rota é de conversa |
-    | `ai_chunks` | rota `trechos` por sessão; a ingestão de conversa **anonimiza** e tem guarda de PII, e o chunk não tem `conversation_id` | Tem texto de conversa **anonimizado**, sem vínculo por desenho: **só `manager`+**, que é a regra do dono para "o que não der para ligar" |
+    | `before_send_traces` | `conversations/[id]/retention` por sessão; **T3.2 (iii):** o `detail` tem **cinco produtores**, todos rótulo fixo ou número (`promise/engine.ts` ×3: `promise_kind` e valores numéricos; `before-send.ts`: `promise_layer: 'semantic'` e `leaked_count` + `leaked_kinds`, este último de um tipo **união fechado** `CategoriaVazamento`); o texto achado (`termos`) **não é persistido** | **Sem texto de conversa, medido no código.** O **tipo** de `detail` é `Record<string, string \| number>` e aceitaria texto: o que protege é o contrato, não o tipo. Fica fora do isolamento; a rota é de conversa |
+    | `ai_chunks` | rota `trechos` por sessão; a ingestão de conversa **anonimiza** (CPF, e-mail, telefone, CEP e primeiros nomes PT-BR) e tem guarda de PII. **T3.2 (v):** `metadata.conversation_id` **existe** (`source_type: "conversas"`), em jsonb, e não só `knowledge_source_id` | Tem texto de conversa **anonimizado**; o vínculo existe **no jsonb**, não em coluna. **Resíduo de PII que o anonimizador não pega: NÃO MEDIDO** (exige acervo real). Proposta anterior ("só `manager`+") **continua**, e o vínculo por `metadata` abre uma alternativa que o dono pode preferir |
+    | `crm_lead_reactivations` | **T3.2 (vii):** está na publicação do Realtime; policy `for all` só por organização; a coluna `draft` é **texto** (o rascunho da mensagem de retomada ao lead) | **Achada na T3.2; não estava nas 18.** Tem texto de conversa → entra (decisão (a) do item 2) |
 
     **O que "origem identificável" significa na atividade (medido nos emissores).** `source_module` guarda o **módulo**
     (`crm`, `agent`, `human-handoff`, `inbox.comando`, `escalacao.retomada`, `ai`…) e `source_id` é `uuid` sem tabela
@@ -368,6 +381,99 @@ expediente da organização; rota ou tela `/app/fora-de-expediente`; erro `OUT_O
     O `ai_turn` é o tipo que mais carrega conteúdo (compromissos e objeções extraídos) e o que **mais perde origem**
     no backfill. A proporção real de linhas sem origem **não foi medida**: este ambiente não tem dado de produção.
     A consulta que mede (rodar em uma instalação real, só leitura) está em `04-tarefas.md`, T3.2.
+
+    ### Resultado da T3.2 (2026-11-27; só leitura)
+
+    **Estado: 7 dos 9 itens medidos; (iv) e (v) têm uma ponta solta cada, que só uma instalação real fecha.** Por isso a
+    T3.2 **não** passa a `[x]`: a saída que ela pede ("a tabela sem nenhum `a confirmar`") só vale com essas duas.
+
+    **Método, e o que ele corrigiu.**
+    - Banco: o `deskcomm-fresh` (o `baseline.sql` aplicado, que é o que o `install.sh` produz) e o banco de dev, sempre em
+      `begin read only` + `rollback`. **Dado local não é produção:** serve para provar que uma consulta executa e como
+      uma linha se comporta, nunca para dizer "a proporção é X".
+    - **As colunas vêm de `information_schema.columns`, não do `CREATE TABLE` do apêndice.** O apêndice guarda o schema
+      **original**; `lead_checkpoints` ganhou `conversation_id`, `declaracao` e `demanda_id` depois, e a primeira leitura
+      (pelo `CREATE TABLE`) a deu como "só `contact_id`". Coluna só se afirma com o catálogo.
+    - Código: busca por string em qualquer posição (a lição do ponto cego da T3.0), nunca só `.from("t")`.
+    - Não executei **nenhuma** leitura como usuário (JWT simulado) nem **nenhum** push: a RLS foi lida em `pg_policies`
+      e o push, no código.
+
+    **(ix) Como cada uma das 8 tabelas chega a uma conversa (catálogo + código):**
+
+    | Tabela | Vínculo medido |
+    |---|---|
+    | `agent_case_events` | `case_id → agent_cases.conversation_id` (**NOT NULL**): um salto, determinístico |
+    | `demandas` | **n:n** por `demanda_conversas` (uma demanda pode ter várias conversas: **a regra "vê se vê alguma ou todas" precisa de decisão**); e `agent_case_id → agent_cases.conversation_id` |
+    | `agent_inbox_items` | `ref_kind = 'conversation'` + `ref_id` (**sem FK**), só em alguns kinds (cron `snooze-watcher`, `recover-stuck-messages`, `aviso-caso-obsoleto`, `operator-turn`, `inbound-turn`). Os demais apontam `contact`, `lead`, `organization`, `channel_session`, `appointment`, `ai_agent`, `ai_knowledge_source`, `followup_enrollment`, `ai_budget`… e **não têm conversa** |
+    | `event_log` | `payload->>'conversation_id'` nos eventos de mensagem e de roteamento (**medido no dado local, top 25, não exaustivo:** `message.received`, `message.sent`, `conversation.routing_requested`, `ai.case_opened`); os de lead, contato, organização e canal **não têm** |
+    | `lead_state_transitions` | `contact_id` + `job_id`; só chega à conversa por `job_queue.payload->>'conversation_id'`, e o job pode ter sido expurgado |
+    | `lead_notes`, `lead_state` | só `contact_id` |
+    | `outbound_copies` | só `channel_session_id`: **nem contato, nem conversa**. Só se liga a quem usa o número de WhatsApp, que é a #135 |
+
+    **(vi) Push (#120 e #123), medido no código; nenhum push foi disparado.** Tudo só sai com `vapidPronto()`; sem as
+    chaves VAPID o handler devolve `skipped` (é o estado de um primeiro deploy).
+
+    | Evento | Destino | O que a notificação carrega | Quem recebe |
+    |---|---|---|---|
+    | `message.received` | **`enviarPushDaOrg`**: `select … from push_subscriptions where organization_id = $1` | título = rótulo do contato; corpo = **texto da mensagem cortado em 140** (mídia vira "Mídia"); ícone = avatar (URL assinada, 300 s) | **todo assinante da organização, de qualquer papel e de qualquer departamento**, sem checar a visibilidade da conversa |
+    | `user.mentioned` | só `to_user_id` | **140 primeiros caracteres da nota interna** | sem checar papel nem conversa (é a #120) |
+    | `lead.assigned`, `lead.won`, `lead.lost` | um usuário (`to_user_id` ou o dono do lead) | título do lead | — |
+
+    `message.received` é o **maior vazamento de setor que a T3.2 achou**: é o único evento que não escolhe destinatário, e
+    carrega o texto. A decisão do dono (item 2, `(b)`) mandou medir o push; **a correção é decisão dela**, ver
+    `05-revisao.md`.
+
+    **(vii) Realtime.** A publicação `supabase_realtime` tem **12 tabelas**, idênticas no baseline aplicado e no banco de
+    dev (a lista que a spec já trazia estava certa): `messages`, `conversations`, `crm_leads`, `ai_agents`,
+    `ai_agent_runs`, `ai_knowledge_sources`, `crm_lead_activities`, `calendar_appointments`, `crm_lead_reactivations`,
+    `crm_lead_risk_states`, `user_organizations` e `agent_inbox_items`. **Com texto de conversa: 4** (`ai_agent_runs`,
+    `agent_inbox_items`, `calendar_appointments`, `crm_lead_reactivations`). O que a policy de SELECT entrega ao assinante
+    (lida em `pg_policies`):
+    - **só organização, qualquer membro, `viewer` inclusive:** `ai_agent_runs`, `agent_inbox_items`,
+      `crm_lead_reactivations`, `crm_lead_risk_states` (`bucket`, só rótulo), `calendar_appointments` (leitura);
+    - **por dono do lead** (`fn_can_view_lead`): `crm_leads` e `crm_lead_activities`;
+    - **por conversa:** `messages` (herda) e `conversations` (`fn_can_view_conversation`).
+
+    **(viii) Conteúdo das tabelas `ai_*`:**
+    - `ai_agent_runs.tool_calls` carrega **`text` do modelo (até 4000 caracteres por passo)** e `args`/`result` de cada
+      ferramenta (strings até 500), mascarando só `authorization`, `api_key`, `token`, `password` e `cpf`
+      (`lib/ai/runtime/serialize.ts`); `error_message` até 500. **Quem a povoa:** o dispatcher nativo (cron
+      `agent-dispatcher`, **agendado a cada minuto** em `docker/scheduler/entrypoint.sh`) e o teste de agente (dry run).
+      Um comentário em `inbound-turn.ts` diz que "motor nenhum vivo" a escreve (o motor atual grava em `llm_calls`).
+      **Se ela é povoada numa instalação real: NÃO MEDIDO.** No dado local: dev 13 linhas, 11 dry run, **0 com
+      `tool_calls`**; fresco, 0.
+    - `ai_router_decisions`: colunas estruturadas (`intent_name`, `confidence`, `outcome` enumerado, ids). `intent_name`
+      sai de `routed.intentName`; **não reli o classificador**.
+    - `ai_invocations`: **sem escritor** (já revogada na T3.0). Tem caminhos de blob (`prompt_blob_path`,
+      `response_blob_path`) e dois jsonb (`citations`, `error_payload`) cujo **conteúdo NÃO foi conferido**; como a
+      revogação já a tirou do alcance da sessão, o que sobra é linha antiga.
+
+    **(iv) A consulta da spec.** Ela **executa** nos dois bancos (dev: 5 atividades conversacionais, todas com origem;
+    fresco: 1, com origem). O controle do `NULL` que o review do #144 pediu está **provado com uma linha sintética
+    (desfeita no `rollback`):** um `ai_turn` sem `payload.conversation_id` e com job sem `conversation_id` dá
+    `tem_origem = NULL`; **com** o `coalesce` ele é contado (`sem_origem = 1`), **sem** ele some (`sem_origem = 0`,
+    `tem_origem_nulo = 1`). **A proporção real: NÃO MEDIDA.**
+
+    **O que continua NÃO MEDIDO, e quem fecha:**
+    1. **(iv) proporção de atividades sem origem** e **(v) resíduo de PII em `ai_chunks`**: precisam de uma instalação
+       real; quem tiver uma roda a consulta de `04-tarefas.md`, T3.2.
+    2. Se `ai_agent_runs` é povoada em instalação real (ver (viii)).
+    3. Se algum caminho limpa o payload de `case_reply_turn` e de `followup_turn` na anonimização (só o de
+       `approved_reply` é limpo, por `fn_reply_redact`).
+    4. O push: lido no código, **não disparado** (precisa de VAPID e de um assinante).
+    5. A RLS como assinante: lida em `pg_policies`, **sem JWT simulado**.
+
+    **Reproduzir (só leitura, num banco com o baseline):**
+    ```bash
+    docker exec -i <container-do-banco> psql -U postgres -d postgres -X -c \
+      "select tablename from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' order by 1;"
+    docker exec -i <container-do-banco> psql -U postgres -d postgres -X -c \
+      "select table_name, column_name, is_nullable from information_schema.columns
+        where table_schema='public' and table_name in ('lead_checkpoints','agent_cases','demanda_conversas')
+          and column_name='conversation_id';"
+    docker exec -i <container-do-banco> psql -U postgres -d postgres -X -c \
+      "select kind, k, count(*) from job_queue, lateral jsonb_object_keys(payload) k group by 1,2 order by 1,3 desc;"
+    ```
 
     **Regra adotada para o que a decisão do dono não disse (instrução de Cauan em 2026-11-27, opção 2; a confirmar pelo
     dono, como foi a Q10):** a atividade conversacional exige a visibilidade do **lead E** a da **conversa** (as duas
