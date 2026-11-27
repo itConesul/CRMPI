@@ -58,7 +58,7 @@ com o client do contexto MCP, que é o **client admin** nos pontos conferidos (`
 | Tabela | Devolve | Policy restritiva |
 |---|---|---|
 | `lead_state` | `update (next_action)`, só a coluna | `update`: `fn_role_at_least(organization_id,'agent')` |
-| `lead_checkpoints` | `insert` | `agent`+ e `job_id is null` |
+| `lead_checkpoints` | `insert` | `agent`+ e `job_id is null` (a retomada nasce de uma pessoa, não de um job; `lib/escalacao/retomada.ts` grava `null`) |
 | `cron_jobs` | `insert` | `agent`+, `kind = 'at'` e `job_kind = 'followup_turn'` |
 | `agent_inbox_items` | `insert` | `agent`+ e `kind = 'next_action_ambiguous'` |
 
@@ -66,7 +66,11 @@ A policy permissiva do laço fica como está. O laço só derruba e recria `tena
 as restritivas sobrevivem à reaplicação do `baseline.sql`. Os `revoke` ficam **no apêndice, depois
 do laço**, e são idempotentes.
 
-Nenhuma mudança de código de aplicação.
+**Ordem no SQL:** o `revoke` de tabela também apaga os privilégios por coluna, então vem **antes** do
+`grant update (next_action)`.
+
+**Código de aplicação:** a única mudança é `avisaAmbiguas` registrar no log a recusa do banco
+(`42501`), que hoje é ignorada. O fluxo do quadro não muda.
 
 ### Alternativas recusadas
 | Alternativa | Por que não |
@@ -79,9 +83,14 @@ Nenhuma mudança de código de aplicação.
 Nenhuma rota, payload ou função nova.
 
 ## 4. Dados
-Sem tabela nem coluna nova. Migration `<ts>_0241_escrita_por_papel_nas_tabelas_do_agente.sql`,
-apêndice no `baseline.sql` e linha no `MANIFEST.md`. A `0240` é do PR #140; **conferir o número no
-momento de abrir o PR de código**. Nenhum dado é alterado.
+Sem tabela nem coluna nova. Migration `<ts>_<NNNN>_escrita_por_papel_nas_tabelas_do_agente.sql`,
+apêndice no `baseline.sql` e linha no `MANIFEST.md`. `NNNN` é o **próximo número livre** quando o PR
+de código abrir, contando os PRs abertos. Nenhum dado é alterado.
+
+**Relação com o #145** (T3.0 da #67): ele revoga todo o acesso de `anon` e `authenticated` a
+`outbound_copies`, leitura inclusive. Esta spec revoga só a escrita. Os dois são idempotentes e
+compatíveis em qualquer ordem. Se o #145 entrar antes, o caso dessa tabela já nasce verde no CA-1; o
+vermelho exigido continua valendo para as demais.
 
 ## 5. Rastreabilidade
 | Requisito | Onde |

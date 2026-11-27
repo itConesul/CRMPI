@@ -1,7 +1,7 @@
 # Escrita aberta nas tabelas do agente: exigir papel no banco
 
 **Issue:** #141 — https://github.com/itConesul/CRMPI/issues/141
-**Estado:** `aprovada`  <!-- rascunho | em-revisao | aprovada | implementando | concluida | substituida -->
+**Estado:** `em-revisao`  <!-- rascunho | em-revisao | aprovada | implementando | concluida | substituida -->
 **Autor:** Sciuba (com Claude)
 **Medido em:** `23df681` (develop, 2026-11-27)
 
