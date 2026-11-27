@@ -23824,3 +23824,41 @@ create policy "messages_delete" on public.messages
     or (public.fn_role_at_least(organization_id, 'agent')
         and exists (select 1 from public.conversations c where c.id = messages.conversation_id))
   );
+
+-- 3. `contacts`: só `manager`+ apaga, TAMBÉM pelo banco (pedido do revisor no #140). Antes,
+--    `tenant_isolation_contacts_all` era `FOR ALL` só por organização e `authenticated` tem `GRANT ALL`:
+--    um `agent` ou `viewer` apagava contato sem conversa e sem compromisso direto pelo PostgREST (e a
+--    cascata leva notas, demandas e follow-ups), mesmo com a rota e o botão exigindo `manager`.
+--    A policy `FOR ALL` é separada POR COMANDO: `select`, `insert` e `update` ficam com a MESMA regra de
+--    antes (membro da organização, ou administrador de plataforma); só o `delete` muda. Policies
+--    permissivas somam por OU, então a `FOR ALL` TEM de sair — manter as duas deixaria o `delete` aberto.
+--    `fn_is_platform_admin()` segue passando, como em todas as policies do schema (suporte); a sessão de
+--    suporte `full` já chega aqui como papel efetivo `admin`. O nome `tenant_isolation_<t>_all` deixa de
+--    valer para esta tabela, de propósito: ela deixou de ser `all`.
+drop policy if exists "tenant_isolation_contacts_all" on public.contacts;
+drop policy if exists "tenant_isolation_contacts_select" on public.contacts;
+drop policy if exists "tenant_isolation_contacts_insert" on public.contacts;
+drop policy if exists "tenant_isolation_contacts_update" on public.contacts;
+drop policy if exists "contacts_delete_manager" on public.contacts;
+
+create policy "tenant_isolation_contacts_select" on public.contacts
+  for select using (
+    organization_id in (select public.fn_user_org_ids()) or public.fn_is_platform_admin()
+  );
+
+create policy "tenant_isolation_contacts_insert" on public.contacts
+  for insert with check (
+    organization_id in (select public.fn_user_org_ids()) or public.fn_is_platform_admin()
+  );
+
+create policy "tenant_isolation_contacts_update" on public.contacts
+  for update using (
+    organization_id in (select public.fn_user_org_ids()) or public.fn_is_platform_admin()
+  ) with check (
+    organization_id in (select public.fn_user_org_ids()) or public.fn_is_platform_admin()
+  );
+
+create policy "contacts_delete_manager" on public.contacts
+  for delete using (
+    public.fn_is_platform_admin() or public.fn_role_at_least(organization_id, 'manager')
+  );
