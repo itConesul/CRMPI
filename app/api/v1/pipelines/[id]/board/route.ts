@@ -24,6 +24,7 @@ import {
   type PropostaAmbigua,
 } from "@/lib/leads/next-action";
 import type { LeadCandidate } from "@/lib/leads/active-lead";
+import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase/server";
 import type { BoardData, Pipeline, Stage } from "@/lib/kanban/types";
 import type { Lead } from "@/lib/types/leads";
@@ -128,8 +129,9 @@ async function withOwnerAgents(
  * caixa virar ruído e ninguém mais olhar.
  *
  * Falha aqui NÃO derruba o board: o aviso é importante, mas menos que a tela
- * abrir. O erro sobe para o Sentry pelo caminho normal de exceção não tratada
- * do handler — o que não pode é o usuário perder o board por causa do aviso.
+ * abrir. O Supabase DEVOLVE o erro em vez de lançar, então ele é registrado
+ * aqui. O caso esperado é o `42501`: o banco só aceita este `insert` de
+ * `agent`+ (#141), e o aviso nasce quando um deles abrir o quadro.
  */
 async function avisaAmbiguas(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -166,7 +168,15 @@ async function avisaAmbiguas(
     }));
   if (novos.length === 0) return;
 
-  await supabase.from("agent_inbox_items").insert(novos);
+  const { error } = await supabase.from("agent_inbox_items").insert(novos);
+  if (error) {
+    // Só ids e código: título e corpo carregam o texto da proposta.
+    logger.warn("[pipelines.board] aviso de proposta ambígua não foi gravado", {
+      organization_id: organizationId,
+      code: error.code,
+      error: error.message,
+    });
+  }
 }
 
 /**
