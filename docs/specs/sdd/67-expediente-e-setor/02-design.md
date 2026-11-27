@@ -254,10 +254,27 @@ expediente da organização; rota ou tela `/app/fora-de-expediente`; erro `OUT_O
        (corpo da nota interna), `agent_inbox_items` e `agent_case_events` (corpo), `lead_notes` (corpo),
        `contact_field_proposals` (dado dito pelo cliente na conversa), `lead_checkpoints`, `followup_enrollments`,
        `agent_cases`, `demandas`, `demanda_conversas`, `calendar_appointments` (leitura; a escrita exige `agent`),
-       `ai_agent_runs`, `ai_invocations` e `ai_router_decisions` (o conteúdo destas três **não foi conferido**).
-       São **14 tabelas** (as 13 acima menos as 3 que herdam, mais 4 sem a coluna); **10** têm `conversation_id`, e `agent_case_events`, `agent_inbox_items`, `demandas` e
-       `lead_notes` entram por terem texto ou serem da conversa, **sem coluna que as ligue a ela** (o vínculo destas
-       quatro com uma conversa **não foi medido**).
+       `ai_agent_runs`, `ai_invocations` e `ai_router_decisions` (o conteúdo destas três **não foi conferido**),
+       e, **achadas na revisão do #136 (Sciuba, 2026-11-27)** porque a busca original foi por coluna
+       `conversation_id` e estas se ligam por contato ou por canal: `outbound_copies` (`normalized_text` é o texto
+       das mensagens enviadas, gravado em `lib/agent-engine/spinning/store.ts`), `lead_state` (`qualification`,
+       `next_action`), `lead_state_transitions` (`reason`) e `event_log` (`payload.body_preview` guarda os
+       **280 primeiros caracteres** do corpo de cada mensagem, gravados por `fn_emit_message_event`; a policy é
+       `event_log_select`, só por organização, e `authenticated` tem `SELECT`).
+       São **18 tabelas** (as 13 acima menos as 3 que herdam, mais 8 sem a coluna); **10** têm `conversation_id`, e
+       `agent_case_events`, `agent_inbox_items`, `demandas`, `lead_notes`, `outbound_copies`, `lead_state`,
+       `lead_state_transitions` e `event_log` entram por terem texto ou serem da conversa, **sem coluna que as ligue
+       a ela** (o vínculo destas oito com uma conversa **não foi medido**).
+       `outbound_copies`, `lead_state` e `lead_state_transitions` estão no mesmo laço `do $$ … foreach t` do
+       `supabase/baseline.sql` (perto da linha 7070): policy `for all` só por organização, `revoke` só de `anon`, e
+       o `ALTER DEFAULT PRIVILEGES` do baseline dá `ALL` a `authenticated`. Pelo texto do schema, o `viewer` **lê e
+       também altera e apaga** estas linhas pelo PostgREST (não executei como usuário; não achei policy nem `revoke`
+       posterior que mude isso).
+       **Duas tabelas do mesmo laço ficam fora da contagem por NÃO MEDIDAS:** `job_queue.payload` (o código diz que o
+       payload "só carrega ponteiros do CRM" e que `last_error` nunca leva conteúdo de mensagem, mas **não li todos
+       os pontos que gravam o payload**) e `before_send_traces.trace` (o schema diz "sem PII" para as entradas
+       `{ gate, verdict, code?, detail? }`; **não conferi o que o código grava em `detail`**). Se alguma carregar
+       texto de conversa, a lista passa de 18 para 19 ou 20.
        Pela policy, **qualquer membro ativo da organização, `viewer` inclusive, lê estas linhas direto pelo
        PostgREST, hoje, sem enxergar a conversa que as originou**. Isso **não depende de setor**: vale com o
        `visibility_mode` de hoje. A regra do dono ("equipes distintas não veem as conversas umas das outras")
@@ -271,7 +288,7 @@ expediente da organização; rota ou tela `/app/fora-de-expediente`; erro `OUT_O
        `conversation_claimed`/`transferred`/`released`/`ai_paused` (só o `reason`). `evidence` guarda só ids, e
        `reason` é "sem PII" por contrato. **Não conferi** o `payload` dos demais tipos do vocabulário.
     4. **Questão de desenho em aberto, que a T3 não resolve sozinha:** `crm_lead_activities` **não tem
-       `conversation_id` nem `department_id`** (não está entre as 14 tabelas acima), então a RLS **não tem como
+       `conversation_id` nem `department_id`** (não está entre as 18 tabelas acima), então a RLS **não tem como
        saber de qual conversa ou departamento uma atividade veio**. Opções, **sem escolha minha**: (a) gravar o
        `department_id` (ou o `conversation_id`) na atividade ao emiti-la e filtrar na policy, com backfill dos
        tipos já gravados; (b) esconder **categorias inteiras de tipo** (`ai_turn`, `note`, …) de quem não é do
@@ -282,8 +299,9 @@ expediente da organização; rota ou tela `/app/fora-de-expediente`; erro `OUT_O
        conversas, mas o chunk não tem `conversation_id` (só `knowledge_source_id`) e **não conferi se ele guarda
        texto de conversa**; as notificações push (#120 e #123); e o Realtime destas tabelas.
 
-    **Estado do F6 (2026-11-26): ABERTO, e declarado assim de propósito.** Os itens 2 (as 14 relações
-    só-organização entram no isolamento?) e 4 (como `crm_lead_activities` sabe o departamento: opções a, b ou c)
+    **Estado do F6 (2026-11-27): ABERTO, e declarado assim de propósito.** Os itens 2 (as 18 tabelas
+    só-organização entram no isolamento? a lista cresceu de 14 para 18 na revisão do #136, e `job_queue` e
+    `before_send_traces` seguem não medidas) e 4 (como `crm_lead_activities` sabe o departamento: opções a, b ou c)
     esperam o dono. **A T3 não aplica a regra por setor antes dessas duas respostas**; o item 5 segue "não medido".
     Documentar o F6 não destrava a T3.
 
