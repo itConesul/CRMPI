@@ -12,6 +12,7 @@
 ## Comentários de review
 | Data | Revisor | Comentário | Resolução |
 |---|---|---|---|
+| 2026-11-27 | cMoreiraSul | `APPROVED` no [PR #155](https://github.com/itConesul/CRMPI/pull/155), sobre `40d36b8`, sem comentários | Mergeado em `a28f695`; implementação liberada |
 
 ## Aprovação
 **Revisor independente:** cMoreiraSul. A aprovação é o review `APPROVED` dele no PR da spec, sobre o
