@@ -108,6 +108,44 @@ Todos incorporados em 2026-11-17 e **aprovados pelo revisor às 20:44**.
 | 2026-11-27 13:29 | Sciuba, na [#67](https://github.com/itConesul/CRMPI/issues/67#issuecomment-7219537234) — **decisões do dono** sobre o F6, a Q10 e o escopo (perguntas: [F6](https://github.com/itConesul/CRMPI/issues/67#issuecomment-7170234558), [lista de 18](https://github.com/itConesul/CRMPI/issues/67#issuecomment-7217123055), [Q10](https://github.com/itConesul/CRMPI/issues/67#issuecomment-7169409751), [escopo](https://github.com/itConesul/CRMPI/issues/67#issuecomment-7217563291)) | **1. F6-1 (a):** as 18 tabelas entram no isolamento por departamento; **qualquer tabela que a medição mostrar com texto de conversa entra também, sem nova decisão.** **2. F6-2 (a):** gravar o **`conversation_id`** na atividade (não o `department_id`, para a visibilidade acompanhar a transferência), com backfill; atividade conversacional sem origem identificável fica só para `manager`+; atividade que não vem de conversa segue a regra de lead atual. **3. Q10: sim.** **4. Escopo (b):** os itens 1 a 4 (possível vazamento) são medidos **antes da T4b**; os itens 5 e 6 viram issue própria; se a #103 achar conteúdo de conversa num broadcast, ela volta a bloquear a T4b. **Mecanismo:** o banco garante e o app acompanha (tabela de 4 tipos em `02-design.md` §1, F6). **Ordem:** (1) corrigir o que está exposto e não depende de departamento; (2) medir e classificar; (3) T3; (4) T4b com índice e `explain`; (5) teste de duas equipes pelo PostgREST e pelas telas **antes de liberar**, com o isolamento desligado por padrão até lá | F6 decidido (`02-design.md` §1); T3 dividida em T3.0 a T3.7 e T4b ampliada (`04-tarefas.md`); a coluna `crm_lead_activities.conversation_id` é **mudança de schema** e vai em migration versionada (autorizada pelo autor em 2026-11-27, a decisão (a) do dono a pede) | ✅ 2026-11-27 |
 | 2026-11-27 | Cauan, ao desenhar a T3.3 — **instrução, e não decisão do dono** (a decisão do dono sobre a atividade não dizia como combinar as duas visibilidades) | **Atividade conversacional exige a visibilidade do lead E a da conversa** (opção 2). A alternativa, só a da conversa, abriria atividades de leads de outros donos | Registrada em `02-design.md` §1 (F6) e `04-tarefas.md` (T3.3). **A confirmar pelo dono:** se ele preferir a outra, muda só a policy da T4b | ⏳ a confirmar |
 
+## T3.2 — o que a medição desmentiu e o que ela pergunta (2026-11-27)
+
+Medição de **só leitura** (`02-design.md` §1, "Resultado da T3.2"). Nada aqui é decisão do dono: a coluna da direita
+é **pergunta**, e a resposta muda as tarefas T3.x.
+
+**Afirmações da spec que a medição corrigiu** (cada uma com o comando ou o arquivo em `02-design.md`):
+
+| Estava na spec | O que a medição mostrou |
+|---|---|
+| `agent_cases`, `agent_case_events`, `lead_checkpoints`, `demanda_conversas`: "**Interna, a confirmar**" | **Só `demanda_conversas` é interna.** `agent_cases`/`agent_case_events` têm leitor de **sessão** (`reactivate-bot`) e de servidor (rotas `ai/cases`, MCP); `lead_checkpoints` é **escrita** por sessão e tem `conversation_id` |
+| `job_queue.payload`: "só ids" | **Não.** Três produtores gravam texto: `cases/[id]/reply` (`body`), `followup/engine` (`fixed_body`, `prompt_hint`) e `cron_jobs.payload` (`reason`, `promise`). Os kinds `approved_reply` e `transactional_delivery`, que a spec nem citava, só têm ids |
+| `job_queue`: "Interna" | Tem **um leitor de sessão** (`agenda/agendamentos/[id]/route.ts:65`, `status`) |
+| `ai_chunks`: "não tem `conversation_id`" | `metadata.conversation_id` **existe** (jsonb, `source_type: "conversas"`) |
+| `lead_checkpoints` sem `conversation_id` (minha 1ª leitura) | Tem, **nulável**. Eu li o `CREATE TABLE` do apêndice, que é o schema **original**; coluna só se afirma pelo `information_schema` |
+| `before_send_traces.detail`: "não conferi" | Cinco produtores, todos rótulo fechado ou número; o texto achado não é persistido |
+| A lista de 18 tabelas | Entram `job_queue` e `crm_lead_reactivations` (`draft`); `ai_router_decisions` e `ai_invocations` saem por não terem texto livre medido. **Continua 18, mas não é a mesma lista** |
+
+**Ponto cego do inventário da T3 (o mesmo da T3.0, em outra escala).** O inventário de 2026-11-25 foi medido por *todo
+acesso direto a `conversations`* (46 arquivos, 72 chamadas). Por construção ele **não enxerga** rota que lê conteúdo de
+conversa por **outra tabela**. A T3.2 achou duas: `ai/cases` e `ai/cases/[id]` (client **admin**; `lib/escalacao/chamados.ts`
+seleciona título, resumo e bloqueio dos casos, o **nome e o telefone do contato** e o `body` dos eventos, filtrando só
+por `organization_id`, `status` e `case_id`: **sem filtro de visibilidade**). A T3.5 e a T3.4 devem ser conduzidas pela
+**lista de tabelas do F6**, e não pela lista de acessos a `conversations`.
+
+**Perguntas ao dono do produto (via Sciuba):**
+
+| # | Pergunta | Por que muda o plano |
+|---|---|---|
+| P-A | **Push de mensagem recebida.** `message.received` vai para **todo assinante da organização** (qualquer papel, qualquer setor) com o texto da mensagem cortado em 140 e o nome e a foto do contato. Medido no código; **nenhum push foi disparado**. Corrigir antes de ligar o isolamento? Como: **filtrar o destinatário pela visibilidade da conversa**, ou mandar só "Nova mensagem" sem o texto a quem não vê? | É o maior vazamento de setor que a medição achou, e **não passa por RLS** (`enviarPushDaOrg` usa client admin). Pede tarefa própria, antes da T4b |
+| P-B | **`ai_chunks`:** a proposta atual é "só `manager`+". Como `metadata.conversation_id` existe, a alternativa é herdar a visibilidade da conversa de origem. Qual? | Muda a policy e o backfill; a regra de "o que não der para ligar" (item 2) talvez nem se aplique |
+| P-C | **`demandas`:** uma demanda liga a várias conversas (`demanda_conversas`, n:n). Quem vê a demanda: quem vê **alguma** das conversas ou só quem vê **todas**? | Sem isso a policy de `demandas` não se escreve |
+| P-D | **`job_queue`:** revogar `authenticated` exige trocar antes a leitura de `agenda/agendamentos/[id]` para client admin. Aceita tratar como a T3.1 (mesma tarefa, mesmo padrão)? | Vira a T3.1b, pequena, mas **antes** do `revoke` |
+| P-E | **Reativação (`crm_lead_reactivations.draft`)** está no Realtime e só por organização. Pela regra do item 2 ela entra sem nova decisão; confirmo que é a **mesma regra de lead** que `lead_state`, e não a da conversa? | Escolhe a regra da tabela |
+
+**Pontas soltas que nenhuma pergunta fecha** (precisam de uma instalação real ou de execução): a proporção de
+atividades sem origem (iv); o resíduo de PII em `ai_chunks` (v); se `ai_agent_runs` é povoada fora de teste; se a
+anonimização limpa o payload de `case_reply_turn` e de `followup_turn`; o push **disparado**; a RLS **como assinante**.
+
 ## Decisões pós-aprovação (T0(f), 2026-11-18)
 A conferência rota a rota das isenções fixas (`02-design.md` §2.1) achou dois pontos que a aprovação de
 2026-11-17 não cobria. O dono do produto decidiu os dois em 2026-11-18, relatados pelo `Sciuba` na
