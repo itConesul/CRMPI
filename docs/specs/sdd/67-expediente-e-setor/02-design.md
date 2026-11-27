@@ -299,11 +299,88 @@ expediente da organização; rota ou tela `/app/fora-de-expediente`; erro `OUT_O
        conversas, mas o chunk não tem `conversation_id` (só `knowledge_source_id`) e **não conferi se ele guarda
        texto de conversa**; as notificações push (#120 e #123); e o Realtime destas tabelas.
 
-    **Estado do F6 (2026-11-27): ABERTO, e declarado assim de propósito.** Os itens 2 (as 18 tabelas
-    só-organização entram no isolamento? a lista cresceu de 14 para 18 na revisão do #136, e `job_queue` e
-    `before_send_traces` seguem não medidas) e 4 (como `crm_lead_activities` sabe o departamento: opções a, b ou c)
-    esperam o dono. **A T3 não aplica a regra por setor antes dessas duas respostas**; o item 5 segue "não medido".
-    Documentar o F6 não destrava a T3.
+    **Estado do F6 (2026-11-27, à tarde): DECIDIDO pelo dono ([#67](https://github.com/itConesul/CRMPI/issues/67#issuecomment-7219537234), registrado em `05-revisao.md`).**
+    O que a T3 e a T4b herdam:
+
+    - **Item 2 (as 18 tabelas): (a), entram.** Qualquer tabela que a medição mostrar com texto de conversa entra
+      também, sem nova decisão.
+    - **Item 4 (a atividade): (a), grava o `conversation_id`** (e não o `department_id`: a visibilidade acompanha a
+      transferência), com backfill. Atividade **conversacional** (`ai_turn`, `handoff_*`, `conversation_*`) sem
+      origem identificável fica só para `manager`+. Atividade que não vem de conversa segue a regra de lead de hoje.
+    - **Escopo dos não medidos: (b)** ([pergunta](https://github.com/itConesul/CRMPI/issues/67#issuecomment-7217563291),
+      [decisão](https://github.com/itConesul/CRMPI/issues/67#issuecomment-7219537234)). Os **itens 1 a 4** da pergunta
+      são medidos **antes da T4b**: (1) `ai_chunks`; (2) **push (#120 e #123) e o Realtime das tabelas do F6**;
+      (3) `job_queue.payload` e `before_send_traces.trace`; (4) o conteúdo de `ai_agent_runs`, `ai_invocations` e
+      `ai_router_decisions` e o vínculo com conversa das 8 tabelas sem `conversation_id`. **Só os itens 5 e 6 viram
+      issue própria:** os broadcasts `alerts-platform` e `tenant-health` (a #103 já existe) e a trava na tela da
+      T7 ([#148](https://github.com/itConesul/CRMPI/issues/148)). Se a #103 achar conteúdo de conversa num broadcast, ela volta a bloquear a T4b.
+      (A primeira versão deste texto mandava push e Realtime para issue: estava errado, e o review do #144 pegou.)
+    - **Mecanismo, do dono:** o banco garante e o app acompanha. Quatro tipos de tabela:
+
+    | Tipo | O que fazer |
+    |---|---|
+    | **Interna** (nenhuma tela lê com a sessão do usuário) | Revogar o acesso de `authenticated`; só o servidor lê |
+    | **Lida pelas telas, com `conversation_id`** | RLS que herda a visibilidade da conversa |
+    | **Lida pelas telas, sem `conversation_id`** | Gravar o `conversation_id`, backfill e a mesma RLS; o que não der para ligar fica só para `manager`+ |
+    | **Escrita pelo usuário** | `insert`, `update` e `delete` exigem papel mínimo **e** conversa visível |
+
+    - Linhas sem conversa (`conversation_id` nulo) precisam de **regra explícita por tabela**. O que roda com
+      `service_role` (rotas com client admin, MCP, workers, push) **não é coberto pela RLS**: filtro de setor no
+      código, numa **função compartilhada**, com teste que reprove quem não a usa (T3.4).
+    - **O isolamento fica desligado por padrão até o teste de duas equipes passar** (T3.7 e T8).
+
+    **Classificação medida das tabelas (2026-11-27; lida no código, sem execução como usuário).** "Sessão" =
+    rota com client de sessão ou hook Realtime (a RLS vale); "servidor" = client admin ou `pg` direto (a RLS **não**
+    vale). A coluna do tipo é a **proposta** da medição, a confirmar na T3 com a leitura de cada chamador; onde o
+    arquivo recebe o client por parâmetro (`?`), a medição por `grep` **não decide**. **Ponto cego achado ao implementar a T3.0:** a primeira varredura procurou `.from("tabela")` e **errou** duas tabelas (`ai_router_decisions` e `lead_state_transitions`, lidas pela rota `ai/evolution` por um helper que recebe o nome como string). A varredura certa procura o nome como **string em qualquer posição** e é **refeita antes de cada `revoke`**.
+
+    | Tabela | Quem lê (medido) | Tipo proposto |
+    |---|---|---|
+    | `outbound_copies` | só `lib/agent-engine/spinning/store.ts` (`pg`); varredura larga (string literal, não só `.from`) confirmou | **Interna.** Revogar (T3.0) |
+    | `lead_state_transitions` | `lead-state.ts` (`pg`) **e a rota `ai/evolution` por SESSÃO**, via helper `ler(tabela, …)` | **Lida pelas telas** (tela Evolução). Trocar a rota para client admin com `organization_id` e então revogar (T3.1) |
+    | `ai_router_decisions` | `inbound-turn.ts` (`pg`) **e a rota `ai/evolution` por SESSÃO**, mesmo helper | **Lida pelas telas** (tela Evolução). Mesma troca (T3.1) |
+    | `ai_invocations` | **sem escritor** desde a migration 0130; só contagem em rotas de plataforma (client admin); a rota `ai/usage` (sessão) só a cita em comentário | **Interna.** Revogar (T3.0) |
+    | `agent_case_events`, `agent_cases`, `lead_checkpoints`, `demanda_conversas` | `pg`/admin; `continuidade.ts` e `retomada.ts` recebem o client por parâmetro (`?`) | **Interna, a confirmar** (ler quem chama) |
+    | `job_queue` | `pg`/admin; **uma** leitura de `status` em `agenda/agendamentos/[id]/route.ts`; o payload do `inbound_turn` é só ids (`conversation_id`, `contact_id`, `channel_session_id`, `inbound_message_id`, `crm_event_id`) | **Interna.** Os outros produtores do payload (`scheduler`, `followup/engine`, `cases/[id]/reply`, `inbound-turn`) **não foram lidos** |
+    | `conversation_notes` | rotas de sessão **e** Realtime (`useConversationNotes`) | Com `conversation_id`: **RLS herda** |
+    | `contact_field_proposals`, `followup_enrollments`, `calendar_appointments` | rotas/páginas de sessão | Com `conversation_id`: **RLS herda** |
+    | `ai_agent_runs` | **Realtime** (`hooks/ai/useAgentRuns.ts`) e está na publicação | **Não revogar.** RLS |
+    | `agent_inbox_items` | **Realtime** (`useCentralAlerts`) e o board por sessão | **Não revogar.** Sem `conversation_id`: gravar + RLS |
+    | `lead_notes`, `demandas` | `crm-summary` por sessão | Sem `conversation_id`: gravar + RLS |
+    | `lead_state` | `next-action` e o board por sessão | Dado de lead: **regra de lead**, sem inventar `conversation_id` |
+    | `event_log` | `operator-metrics`, `usage` e `automation-rules/runs/[runId]/resend` (esta lê o evento inteiro, `select *`) leem **por sessão**, e `ai/evolution` também (contagem); a quarta rota só apareceu na varredura larga da T3.1; Realtime **não** assina | **Trocar as 4 rotas para client admin com `organization_id`** e então revogar (T3.1) |
+    | `before_send_traces` | `conversations/[id]/retention` por sessão; o `trace` leva rótulos e números ("NUNCA o corpo", comentário do contrato em `before-send.ts`) | Sem texto de conversa **por contrato do código, não provado por dado**. Fica fora do isolamento por conversa; a rota é de conversa |
+    | `ai_chunks` | rota `trechos` por sessão; a ingestão de conversa **anonimiza** e tem guarda de PII, e o chunk não tem `conversation_id` | Tem texto de conversa **anonimizado**, sem vínculo por desenho: **só `manager`+**, que é a regra do dono para "o que não der para ligar" |
+
+    **O que "origem identificável" significa na atividade (medido nos emissores).** `source_module` guarda o **módulo**
+    (`crm`, `agent`, `human-handoff`, `inbox.comando`, `escalacao.retomada`, `ai`…) e `source_id` é `uuid` sem tabela
+    declarada, então **`source_id` não é "a conversa" em geral** e a opção (c) da pergunta 2 nunca valeria sozinha.
+    Por tipo:
+
+    | Tipo | Onde está a conversa hoje | Backfill |
+    |---|---|---|
+    | `handoff_triggered` (`human-handoff.ts`) | `source_id` **e** `payload.conversation_id` | Direto |
+    | `handoff_triggered` (`orchestrator.ts`) | só `payload.conversation_id`, sem `source_id` | Pelo `payload` |
+    | `handoff_resolved` (`retomada.ts`) | `source_id` **e** `payload.conversation_id` | Direto |
+    | `conversation_claimed/transferred/released/ai_paused` (`atividade-de-comando.ts`) | `source_id` **e** `payload.conversation_id` | Direto |
+    | **`ai_turn`** (`inbound-turn.ts:3722`) | **`source_id` é o id do JOB**, e o `payload` **não** tem a conversa | **Só pelo `job_queue.payload->>'conversation_id'`**, e o job pode já ter sido expurgado pela retenção |
+
+    O `ai_turn` é o tipo que mais carrega conteúdo (compromissos e objeções extraídos) e o que **mais perde origem**
+    no backfill. A proporção real de linhas sem origem **não foi medida**: este ambiente não tem dado de produção.
+    A consulta que mede (rodar em uma instalação real, só leitura) está em `04-tarefas.md`, T3.2.
+
+    **Regra adotada para o que a decisão do dono não disse (instrução de Cauan em 2026-11-27, opção 2; a confirmar pelo
+    dono, como foi a Q10):** a atividade conversacional exige a visibilidade do **lead E** a da **conversa** (as duas
+    fechaduras). É monótona: só restringe mais do que a regra de lead de hoje, e **nunca abre o que hoje está fechado**,
+    então confirmar ou trocar depois não deixa ninguém com acesso que não tinha. Exemplo: atendente dono do lead que
+    **não** vê a conversa (é de outro setor) não vê a atividade; atendente que vê a conversa mas **não** é dono do lead
+    segue sem ver (como hoje); `manager` e `admin` veem. A alternativa descartada, só a fechadura da conversa, **abriria**
+    atividades de leads de outros donos.
+
+    **Onde mora o "desligado por padrão" (proposta, a confirmar na T4b):** dentro de `fn_can_view_conversation`, e
+    não nas policies. Com o interruptor desligado a função responde como hoje (`visibility_mode`, sem setor); ligado,
+    aplica o setor. Todas as policies novas chamam a função, então um único `if` liga e desliga tudo, sem recriar
+    policy. O valor vive em `organizations.settings` (sem coluna nova).
 
 ## 2. Decisão de design
 
@@ -845,7 +922,7 @@ mensagem chegou. Registrado por Sciuba na [#67](https://github.com/itConesul/CRM
 |---|---|---|---|
 | **A** | Quem vincula pessoas a departamentos: `admin` **e `manager`**. Criar, renomear e apagar departamento segue só do `admin` | RF-2. RLS de `department_members` escrita `manager`+ (**feito na T4a**, migration 0239); rota `PUT /departments/[id]/members` `manager`+ (T5) | T4a, T5 |
 | **B** | `agent` não passa conversa para outro departamento; só `manager`/`admin`. Vale também para atribuir a uma pessoa de fora do setor (o dono da conversa sempre a vê, Q5) | RF-15 (novo). `conversations/[id]/transfer` e a atribuição; a trava no banco é decisão da T4b | T5, T4b |
-| **C** | `viewer` vê só os departamentos dele; `admin` e `manager` veem tudo | RF-16 (novo); a regra de §2.2 e a função de §4.3 mudam. **Q10 (instrução de Cauan, a confirmar pelo dono): todo `viewer` vê a conversa sem setor** | T4b |
+| **C** | `viewer` vê só os departamentos dele; `admin` e `manager` veem tudo | RF-16 (novo); a regra de §2.2 e a função de §4.3 mudam. **Q10 (instrução de Cauan, confirmada pelo dono em 2026-11-27): todo `viewer` vê a conversa sem setor** | T4b |
 | **D** | A ficha e a linha do tempo do contato escondem conteúdo de conversa de outro departamento, **antes** de o isolamento ser ligado para clientes | RF-17 (novo). Revê o risco aceito da Q6 e **amplia a T3** (`crm_lead_activities`, Customer 360, #80) | T3, T4b |
 
 **Consequências já decididas:** número de WhatsApp por departamento é a [#135](https://github.com/itConesul/CRMPI/issues/135),
@@ -1010,7 +1087,7 @@ create index if not exists idx_conversations_department
 > **Superada em um ponto (decisão C, 2026-11-25).** A função abaixo é a PROPOSTA de 2026-11-17 e dá ao
 > `viewer` visão total (`in ('viewer','manager','admin') then true`). O `viewer` passa a ver só os seus
 > departamentos; a T4b reescreve esse ramo: o `viewer` vê a conversa se `department_id` é nulo **ou** está entre os
-> seus departamentos (Q10: a conversa sem setor é visível a todo `viewer`; **a confirmar pelo dono**).
+> seus departamentos (Q10: a conversa sem setor é visível a todo `viewer`; **confirmada pelo dono em 2026-11-27**).
 ```sql
 create or replace function public.fn_can_view_conversation(
   p_org uuid, p_assigned_to_user_id uuid, p_department_id uuid
