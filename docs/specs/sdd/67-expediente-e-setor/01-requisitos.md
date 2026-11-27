@@ -87,7 +87,7 @@ divergir). Nenhuma está mais em aberto; N1 a N4 são decisões novas do mesmo d
    organização agora**.)* A evolução prevista é `departments.business_hours jsonb` nullable, com
    fallback para o expediente da organização — aditiva, sem backfill, não quebra o `update.sh`. Fica
    registrada em `02-design.md` §4.1 e **não** é implementada por esta spec.
-10. **Q10 — O `viewer` e a conversa SEM setor** *(✅ respondida em 2026-11-25 — instrução de Cauan em 2026-11-25, **não** uma decisão do dono registrada pelo Sciuba: **a confirmar**)*:
+10. **Q10 — O `viewer` e a conversa SEM setor** *(✅ respondida em 2026-11-25 por instrução de Cauan e **confirmada pelo dono em 2026-11-27**, registrada pelo Sciuba na [#67](https://github.com/itConesul/CRMPI/issues/67#issuecomment-7219537234): **sim**)*:
     **todo `viewer` vê a conversa sem setor**, como o `agent` (RF-7). A decisão C diz que o `viewer` vê só os
     departamentos dele, e não dizia nada sobre a conversa sem setor. Regra para a T4b: o `viewer` vê a conversa
     se `department_id` é nulo **ou** está entre os departamentos dele; o `visibility_mode` continua valendo só
