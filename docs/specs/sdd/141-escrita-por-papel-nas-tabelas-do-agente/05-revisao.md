@@ -30,9 +30,10 @@ Sciuba é autor e dono do produto: decide P1 a P3 acima, mas não aprova a próp
 **Aprovação confirmada em 2026-11-27:** review `APPROVED` de cMoreiraSul no PR #143, sobre `756cfbf`;
 merge `692e4d0`. Estado `implementando` a partir desta data.
 
-**Migration:** `0243`. A `0241` está no #145 e a `0242` no #147, os dois abertos.
+**Migration:** `0243`. A `0241` é do #145, que entrou na `develop` durante a implementação, e a
+`0242` é do #147, ainda aberto.
 
-**Relação com #145 e #147:** o #145 revoga todo o acesso da sessão a `outbound_copies` e
+**Relação com #145 e #147:** o #145 (já na `develop`) revoga todo o acesso da sessão a `outbound_copies` e
 `ai_invocations`; o #147 faz o mesmo com `lead_state_transitions`, `event_log` e
 `ai_router_decisions`. Esta mudança só revoga escrita, é idempotente e vale em qualquer ordem. Quem
 entrar depois resolve o conflito textual no fim do `baseline.sql` e no `MANIFEST.md` mantendo os
