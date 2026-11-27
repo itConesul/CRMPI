@@ -313,7 +313,7 @@ expediente da organização; rota ou tela `/app/fora-de-expediente`; erro `OUT_O
       (3) `job_queue.payload` e `before_send_traces.trace`; (4) o conteúdo de `ai_agent_runs`, `ai_invocations` e
       `ai_router_decisions` e o vínculo com conversa das 8 tabelas sem `conversation_id`. **Só os itens 5 e 6 viram
       issue própria:** os broadcasts `alerts-platform` e `tenant-health` (a #103 já existe) e a trava na tela da
-      T7 (**ainda sem issue**). Se a #103 achar conteúdo de conversa num broadcast, ela volta a bloquear a T4b.
+      T7 ([#148](https://github.com/itConesul/CRMPI/issues/148)). Se a #103 achar conteúdo de conversa num broadcast, ela volta a bloquear a T4b.
       (A primeira versão deste texto mandava push e Realtime para issue: estava errado, e o review do #144 pegou.)
     - **Mecanismo, do dono:** o banco garante e o app acompanha. Quatro tipos de tabela:
 
