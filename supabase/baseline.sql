@@ -23862,3 +23862,28 @@ create policy "contacts_delete_manager" on public.contacts
   for delete using (
     public.fn_is_platform_admin() or public.fn_role_at_least(organization_id, 'manager')
   );
+
+-- ---- tabelas internas sem acesso da sessão (migration 0241) ----
+--
+-- `outbound_copies` guarda em `normalized_text` o TEXTO das mensagens que a
+-- instalação enviou (anti-repetição do spinning), e `ai_invocations` é o histórico
+-- de chamadas de IA que a 0130 deixou SEM escritor. Nenhuma tela as lê com a
+-- sessão do usuário: quem lê e escreve é o servidor (`pg` direto e client admin),
+-- e ambos bypassam RLS e ignoram estes grants.
+--
+-- O baseline concede `ALL` a `authenticated` por `ALTER DEFAULT PRIVILEGES`, e a
+-- policy que elas têm é `for all` só por organização. Resultado medido na LEITURA
+-- do schema (sem executar como usuário): qualquer membro ativo, `viewer` inclusive,
+-- lia, alterava e apagava essas linhas pelo PostgREST — sem enxergar a conversa de
+-- origem e sem depender de setor. Decisão do dono em 2026-11-27 (#67, F6): tabela
+-- interna perde o acesso de `authenticated`; só o servidor lê.
+--
+-- NÃO entram aqui `ai_router_decisions` e `lead_state_transitions`: a tela
+-- Evolução as lê por SESSÃO (rota `ai/evolution`), e revogá-las agora a quebraria.
+-- Elas saem da sessão na T3.1, junto com a troca da rota.
+--
+-- A policy `tenant_isolation_*` é MANTIDA: é o segundo degrau, para o dia em que
+-- alguém devolver o grant. Idempotente: revogar privilégio que já não existe não
+-- erra, então o update.sh pode reaplicar.
+revoke all on table public.outbound_copies from anon, authenticated;
+revoke all on table public.ai_invocations from anon, authenticated;
