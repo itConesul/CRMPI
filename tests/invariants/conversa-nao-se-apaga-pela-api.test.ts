@@ -40,6 +40,8 @@ const OUTRO_AGENTE = "0240aaaa-1111-4000-8000-000000000003";
 const MANAGER = "0240aaaa-1111-4000-8000-000000000004";
 const ADMIN = "0240aaaa-1111-4000-8000-000000000005";
 const SUPORTE = "0240aaaa-1111-4000-8000-000000000006"; // platform admin, SEM membership na org
+const ORG_B = "0240aaaa-0000-4000-8000-0000000000b1"; // outra organização: prova que a regra é por tenant
+const MANAGER_B = "0240aaaa-1111-4000-8000-0000000000b4"; // manager SÓ da ORG_B
 const SESSAO_AUTH = "0240aaaa-3333-4000-8000-000000000001";
 const SESSAO_SUPORTE = "0240aaaa-3333-4000-8000-000000000002";
 
@@ -119,17 +121,20 @@ function semear(): void {
       ('${OUTRO_AGENTE}', 'cna-outro-agente@invariant.test'),
       ('${MANAGER}', 'cna-manager@invariant.test'),
       ('${ADMIN}', 'cna-admin@invariant.test'),
-      ('${SUPORTE}', 'cna-suporte@invariant.test')
+      ('${SUPORTE}', 'cna-suporte@invariant.test'),
+      ('${MANAGER_B}', 'cna-manager-b@invariant.test')
       on conflict do nothing;
     insert into public.organizations (id, slug, legal_name, display_name) values
-      ('${ORG}', 'cna-inv', 'Conversa Nao Se Apaga Inv', 'CNA Inv')
+      ('${ORG}', 'cna-inv', 'Conversa Nao Se Apaga Inv', 'CNA Inv'),
+      ('${ORG_B}', 'cna-inv-b', 'Conversa Nao Se Apaga Inv B', 'CNA Inv B')
       on conflict do nothing;
     insert into public.user_organizations (user_id, organization_id, role, accepted_at) values
       ('${VIEWER}', '${ORG}', 'viewer', now()),
       ('${AGENTE}', '${ORG}', 'agent', now()),
       ('${OUTRO_AGENTE}', '${ORG}', 'agent', now()),
       ('${MANAGER}', '${ORG}', 'manager', now()),
-      ('${ADMIN}', '${ORG}', 'admin', now())
+      ('${ADMIN}', '${ORG}', 'admin', now()),
+      ('${MANAGER_B}', '${ORG_B}', 'manager', now())
       on conflict do nothing;
     -- DO + exception (não ON CONFLICT): channel_sessions tem unique DEFERRABLE.
     do $cna$ begin
@@ -315,5 +320,80 @@ describe("CA-3b · o banco recusa apagar contato com histórico ou compromisso (
     sql(`insert into public.contacts (id, organization_id, display_name) values ('${contato}', '${ORG}', 'Livre')`);
     sql(`delete from public.contacts where id = '${contato}'`);
     expect(sql(`select count(*) from public.contacts where id = '${contato}'`)).toBe("0");
+  });
+});
+
+describe("CA-11 · só manager+ apaga contato TAMBÉM pelo banco (pedido do revisor no #140)", () => {
+  /** Contato NOVO, sem conversa e sem compromisso: o único que o banco deixa apagar. */
+  function contatoLivre(org = ORG): string {
+    const id = randomUUID();
+    sql(`insert into public.contacts (id, organization_id, display_name) values ('${id}', '${org}', 'Livre ${id.slice(0, 8)}')`);
+    return id;
+  }
+  const existe = (id: string) => sql(`select count(*) from public.contacts where id = '${id}'`) === "1";
+
+  it("a policy FOR ALL de contacts não existe mais, e há UMA policy de DELETE", () => {
+    expect(
+      sql(`select count(*) from pg_policies where schemaname='public' and tablename='contacts' and cmd='ALL'`),
+    ).toBe("0");
+    expect(
+      sql(`select count(*) from pg_policies
+            where schemaname='public' and tablename='contacts' and cmd='DELETE' and permissive='PERMISSIVE'`),
+    ).toBe("1");
+  });
+
+  it.each([
+    ["viewer", VIEWER],
+    ["agent", AGENTE],
+  ])("%s NÃO apaga nem contato livre pelo PostgREST (0 linhas) e o contato continua lá", (_papel, quem) => {
+    const id = contatoLivre();
+    expect(como(quem, `delete from public.contacts where id = '${id}'`)).toEqual({ linhas: 0 });
+    expect(existe(id)).toBe(true);
+  });
+
+  it.each([
+    ["manager", MANAGER, ""],
+    ["admin", ADMIN, ""],
+    ["sessão de suporte FULL (papel efetivo admin)", SUPORTE, SUPORTE_FULL],
+  ])("PAR: %s apaga contato livre (1 linha)", (_papel, quem, claims) => {
+    const id = contatoLivre();
+    expect(como(quem, `delete from public.contacts where id = '${id}'`, claims)).toEqual({ linhas: 1 });
+    expect(existe(id)).toBe(false);
+  });
+
+  it("PAR: o service_role (cron, workers, LGPD) apaga contato livre", () => {
+    const id = contatoLivre();
+    expect(comoServico(`delete from public.contacts where id = '${id}'`)).toBe(1);
+    expect(existe(id)).toBe(false);
+  });
+
+  it("isolamento: manager de OUTRA organização não apaga o contato (0 linhas)", () => {
+    const id = contatoLivre(ORG);
+    expect(como(MANAGER_B, `delete from public.contacts where id = '${id}'`)).toEqual({ linhas: 0 });
+    expect(existe(id)).toBe(true);
+  });
+
+  it("manager com contato que tem conversa: a policy deixa passar e a FK recusa (o 409 do handler)", () => {
+    const c = novaConversa(AGENTE);
+    let erro = "";
+    try {
+      sql(`set role authenticated;
+           select set_config('request.jwt.claims', '{"sub":"${MANAGER}"}', false);
+           delete from public.contacts where id = '${c.contato}';`);
+    } catch (e) {
+      erro = String((e as { stderr?: Buffer | string }).stderr ?? "");
+    }
+    expect(erro).toMatch(/violates foreign key constraint/);
+    expect(existe(c.contato)).toBe(true);
+  });
+
+  it("SEM regressão: a leitura, a criação e a edição de contato seguem como eram", () => {
+    const id = contatoLivre();
+    expect(countAs(VIEWER, `select count(*) from public.contacts where id = '${id}'`)).toBe(1);
+    expect(como(AGENTE, `update public.contacts set display_name = 'Renomeado' where id = '${id}'`)).toEqual({ linhas: 1 });
+    expect(
+      como(AGENTE, `insert into public.contacts (id, organization_id, display_name) values ('${randomUUID()}', '${ORG}', 'Novo')`),
+    ).toEqual({ linhas: 1 });
+    expect(countAs(MANAGER_B, `select count(*) from public.contacts where id = '${id}'`)).toBe(0);
   });
 });
