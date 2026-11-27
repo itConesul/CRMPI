@@ -170,14 +170,14 @@ MFA e a aba LGPD só aparece para `isAdmin`. Um `manager` que recebe o 409 não 
   `useActiveOrg()` e `ROLE_RANK`, como `ChatThread`. O diálogo troca o texto sobre "conversa associada".
 
 ## 4. Dados
-**Nenhuma coluna, tabela ou função nova.** Uma migration, `20261124140000_0239_conversa_nao_se_apaga_pela_api.sql`
-(o número é o próximo livre em `ls supabase/migrations`; confirmar na implementação), com os **cinco
+**Nenhuma coluna, tabela ou função nova.** Uma migration, `20261126190000_0240_conversa_nao_se_apaga_pela_api.sql`
+(o número é o próximo livre: a `0239` foi tomada pelo #131, T4a da #67; **0240 na implementação**, ver `05-revisao.md`), com os **cinco
 artefatos** declarados:
 
 | # | Artefato | Conteúdo |
 |---|---|---|
 | 1 | Migration versionada | `drop policy if exists conversations_agent_delete`; `revoke delete on conversations from authenticated, anon`; recria `messages_update` e `messages_delete` com papel `agent`+ e `exists` de conversa visível |
-| 2 | Apêndice no `baseline.sql` | O mesmo corpo, **no fim do arquivo**, com o rótulo `-- ---- … (migration 0239) ----` |
+| 2 | Apêndice no `baseline.sql` | O mesmo corpo, **no fim do arquivo**, com o rótulo `-- ---- … (migration 0240) ----` |
 | 3 | Linha no `MANIFEST.md` | versão, nome, o quê e por quê |
 | 4 | Invariante no `pnpm test:db` | `tests/invariants/conversa-nao-se-apaga-pela-api.test.ts`, com pares (quem não pode é barrado **e** quem pode passa) e sabotagem provada |
 | 5 | Revogar `EXECUTE` de função nova | **Não se aplica** (RNF-2): não há função nova |
@@ -232,5 +232,6 @@ Provado re-aplicando a migration duas vezes, e o baseline em install e update.
 | Janela no `update.sh` em que o `DELETE` volta | Mesma natureza dos outros blocos do apêndice; detalhada em §4. Não há como fechá-la sem editar o dump |
 | `UPDATE` direto em `conversations` segue aberto | Declarado em `01-requisitos.md` como fora de escopo; C e D |
 | Cliente com script que apaga conversa pelo PostgREST quebra | NÃO VERIFICADO (d). A janela de rollout é o `update.sh`; nota no fragmento |
+| **Janela do `update.sh` com o app ANTIGO e o banco NOVO** (achado na implementação, T6) | **Medido:** com o banco já na `0240` e a imagem ainda antiga, o `deleteContactHandler` antigo faz `DELETE` em `conversations` e o `authenticated` leva `permission denied for table conversations` **mesmo com zero linhas**; "Excluir contato" devolve erro para **todos** os contatos até a imagem trocar. O `update.sh` aplica o baseline (`setup-kit/update.sh:149`) antes de recriar a imagem (`:213` em diante). Transitório e só nessa ação; o fragmento avisa. Não há como inverter a ordem sem mexer no `update.sh`, fora desta spec |
 | UI e rota divergirem de novo no papel | O predicado é o **mesmo** (T0b), e o teste de 403 vigia a rota |
 | Mensagem já adulterada por um `viewer` antes da migration | Fora de alcance: a migration fecha a porta, não reverte dado já alterado. `messages.edited_at` existe e pode ajudar numa auditoria futura (NÃO VERIFICADO se é preenchido por esse caminho) |
