@@ -328,14 +328,14 @@ expediente da organização; rota ou tela `/app/fora-de-expediente`; erro `OUT_O
     **Classificação medida das tabelas (2026-11-27; lida no código, sem execução como usuário).** "Sessão" =
     rota com client de sessão ou hook Realtime (a RLS vale); "servidor" = client admin ou `pg` direto (a RLS **não**
     vale). A coluna do tipo é a **proposta** da medição, a confirmar na T3 com a leitura de cada chamador; onde o
-    arquivo recebe o client por parâmetro (`?`), a medição por `grep` **não decide**.
+    arquivo recebe o client por parâmetro (`?`), a medição por `grep` **não decide**. **Ponto cego achado ao implementar a T3.0:** a primeira varredura procurou `.from("tabela")` e **errou** duas tabelas (`ai_router_decisions` e `lead_state_transitions`, lidas pela rota `ai/evolution` por um helper que recebe o nome como string). A varredura certa procura o nome como **string em qualquer posição** e é **refeita antes de cada `revoke`**.
 
     | Tabela | Quem lê (medido) | Tipo proposto |
     |---|---|---|
-    | `outbound_copies` | só `lib/agent-engine/spinning/store.ts` (`pg`) | **Interna.** Revogar |
-    | `lead_state_transitions` | só `lib/agent-engine/agent/lead-state.ts` (`pg`) | **Interna.** Revogar |
-    | `ai_router_decisions` | só `inbound-turn.ts` (`pg`) | **Interna.** Revogar |
-    | `ai_invocations` | **sem escritor** desde a migration 0130; só contagem no painel de plataforma | **Interna.** Revogar |
+    | `outbound_copies` | só `lib/agent-engine/spinning/store.ts` (`pg`); varredura larga (string literal, não só `.from`) confirmou | **Interna.** Revogar (T3.0) |
+    | `lead_state_transitions` | `lead-state.ts` (`pg`) **e a rota `ai/evolution` por SESSÃO**, via helper `ler(tabela, …)` | **Lida pelas telas** (tela Evolução). Trocar a rota para client admin com `organization_id` e então revogar (T3.1) |
+    | `ai_router_decisions` | `inbound-turn.ts` (`pg`) **e a rota `ai/evolution` por SESSÃO**, mesmo helper | **Lida pelas telas** (tela Evolução). Mesma troca (T3.1) |
+    | `ai_invocations` | **sem escritor** desde a migration 0130; só contagem em rotas de plataforma (client admin); a rota `ai/usage` (sessão) só a cita em comentário | **Interna.** Revogar (T3.0) |
     | `agent_case_events`, `agent_cases`, `lead_checkpoints`, `demanda_conversas` | `pg`/admin; `continuidade.ts` e `retomada.ts` recebem o client por parâmetro (`?`) | **Interna, a confirmar** (ler quem chama) |
     | `job_queue` | `pg`/admin; **uma** leitura de `status` em `agenda/agendamentos/[id]/route.ts`; o payload do `inbound_turn` é só ids (`conversation_id`, `contact_id`, `channel_session_id`, `inbound_message_id`, `crm_event_id`) | **Interna.** Os outros produtores do payload (`scheduler`, `followup/engine`, `cases/[id]/reply`, `inbound-turn`) **não foram lidos** |
     | `conversation_notes` | rotas de sessão **e** Realtime (`useConversationNotes`) | Com `conversation_id`: **RLS herda** |
