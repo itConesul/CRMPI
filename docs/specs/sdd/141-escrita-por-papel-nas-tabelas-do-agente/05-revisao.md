@@ -25,3 +25,34 @@ aprovação, que a derrubaria. O primeiro commit da implementação marca o esta
 anota a data.
 
 Sciuba é autor e dono do produto: decide P1 a P3 acima, mas não aprova a própria spec.
+
+## Implementação
+**Aprovação confirmada em 2026-11-27:** review `APPROVED` de cMoreiraSul no PR #143, sobre `756cfbf`;
+merge `692e4d0`. Estado `implementando` a partir desta data.
+
+**Migration:** `0243`. A `0241` é do #145 e a `0242` é do #147; os dois entraram na `develop` durante
+a implementação.
+
+**Relação com #145 e #147:** o #145 revoga todo o acesso da sessão a `outbound_copies` e
+`ai_invocations`; o #147 faz o mesmo com `lead_state_transitions`, `event_log` e
+`ai_router_decisions`. Esta mudança só revoga escrita, é idempotente e vale em qualquer ordem. O
+conflito no fim do `baseline.sql` foi resolvido mantendo os blocos `0241`, `0242` e `0243`, nessa
+ordem. O caso "a leitura não mudou" do invariante declara as duas tabelas do laço que perderam também
+a leitura (`outbound_copies` e `lead_state_transitions`).
+
+### E2E dos quatro caminhos (T1)
+| Caminho | Spec e2e no CI | Como fica provado |
+|---|---|---|
+| Decidir a próxima ação (`leads/[id]/next-action`) | **nenhuma** | Invariante CA-2: o mesmo `update`, como `authenticated` com o JWT do papel |
+| Devolver ao automático (`conversations/[id]/reactivate-bot`) | `escalacao-ciclo.spec.ts` clica o botão, mas **não confere o checkpoint**: a recusa só iria para o log | Invariante CA-3: o mesmo `insert` |
+| Aceitar reativação (`leads/[id]/reactivation`) | **nenhuma** | Invariante CA-3 |
+| Aviso de proposta ambígua (`pipelines/[id]/board`) | **nenhuma** (`gatilho-de-etapa` lê o quadro sem proposta ambígua) | Invariante CA-3 e `tests/unit/quadro-aviso-recusado-vai-para-o-log.test.ts` |
+
+**Não provado:** nenhum dos quatro foi exercitado pela tela contra o banco já restrito conferindo a
+linha gravada. O invariante roda o SQL equivalente, sem passar pelo PostgREST.
+
+### Escritores além da busca textual
+Catálogo do banco instalado: nenhuma função sem `security definer` escreve nas tabelas do laço,
+nenhuma usa SQL dinâmico e nenhuma view sobre elas dá escrita a `authenticated`. No código, os
+`.from(variável)` que escrevem apontam para outras tabelas. O apagamento de contato continua
+cascateando para as tabelas do laço (caso próprio no invariante).
