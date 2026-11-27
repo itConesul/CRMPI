@@ -28,7 +28,7 @@ migra nenhuma rota** (isso é a T3.5) **e não toca banco, RLS, API nem tela.**
 - [ ] Fora de escopo está explícito
 - [ ] Impacto em schema, RLS, API e `.changes/` declarado (aqui: nenhum)
 - [ ] Living System Checklist respondido em `02-design.md`
-- [ ] As perguntas Q-1 a Q-7 respondidas e registradas em `05-revisao.md`
+- [x] As perguntas Q-1 a Q-7 respondidas e registradas em `05-revisao.md`
 - [ ] Revisor registrou a aprovação em `05-revisao.md`
 
 **Nenhum código é escrito antes da aprovação.** O PR de código cita esta spec e segue `04-tarefas.md`.
