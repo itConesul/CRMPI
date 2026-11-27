@@ -262,7 +262,7 @@ expediente da organização; rota ou tela `/app/fora-de-expediente`; erro `OUT_O
        `next_action`), `lead_state_transitions` (`reason`) e `event_log` (`payload.body_preview` guarda os
        **280 primeiros caracteres** do corpo de cada mensagem, gravados por `fn_emit_message_event`; a policy é
        `event_log_select`, só por organização, e `authenticated` tem `SELECT`).
-       São **18 tabelas** (as 13 acima menos as 3 que herdam, mais 8 sem a coluna); **10** têm `conversation_id`, e
+       São **18 tabelas** neste ponto da spec (**20 depois da T3.2**, mais abaixo) (as 13 acima menos as 3 que herdam, mais 8 sem a coluna); **10** têm `conversation_id`, e
        `agent_case_events`, `agent_inbox_items`, `demandas`, `lead_notes`, `outbound_copies`, `lead_state`,
        `lead_state_transitions` e `event_log` entram por terem texto ou serem da conversa, **sem coluna que as ligue
        a ela** (o vínculo destas oito com uma conversa **não foi medido**).
@@ -274,12 +274,17 @@ expediente da organização; rota ou tela `/app/fora-de-expediente`; erro `OUT_O
        **As duas tabelas do mesmo laço que estavam NÃO MEDIDAS foram medidas na T3.2 (2026-11-27):** `job_queue.payload`
        **carrega texto de conversa** em três produtores (`cases/[id]/reply`: `body`; `followup/engine`: `fixed_body` e
        `prompt_hint`; `cron_jobs.payload`: `reason` e `promise`), então **entra**; `before_send_traces.trace` **não**
-       carrega (os cinco produtores de `detail` gravam rótulos fechados e números), então **fica de fora**.
-       **Efeito na lista:** entram `job_queue` e `crm_lead_reactivations` (`draft`, achada no Realtime);
-       `ai_router_decisions` (colunas estruturadas) e `ai_invocations` (sem escritor, já revogada; o conteúdo de dois
-       jsonb **não foi conferido**) não mostraram texto livre e, pela regra do dono ("entra o que a medição mostrar
-       com texto de conversa"), não precisam entrar. A contagem de tabelas **com texto** segue **18** (18 − 2 + 2),
-       mas **não é a mesma lista**: nomeie-as, não conte.
+       carrega (os cinco produtores de `detail` gravam rótulos fechados e números), então **não é acrescentada** (ela não estava nas 18; a medição só acrescenta o que mostrar texto de conversa).
+       **Efeito na lista: ela PASSA A TER 20 TABELAS** (as 18 + `job_queue` + `crm_lead_reactivations`, a `draft` é
+       texto, está no Realtime e é só por organização). A decisão do dono
+       ([#67](https://github.com/itConesul/CRMPI/issues/67#issuecomment-7219537234)) é que **as 18 entram** e que a
+       medição **só acrescenta**: o que ela mostrar com texto de conversa entra **também**, sem nova decisão. Ela **não
+       tira** ninguém, e a primeira versão deste parágrafo tirava (errado; o review do #150 apontou).
+       `ai_router_decisions` e `ai_invocations` **continuam na lista**, e já estão atendidas pelo mecanismo do dono para
+       tabela interna: `authenticated` sem acesso, pelas migrations `0241` (`ai_invocations`) e `0242`
+       (`ai_router_decisions`). Que a medição não tenha achado texto livre nelas (colunas estruturadas; `ai_invocations`
+       sem escritor) explica por que **basta** a revogação, e não é motivo para sair da lista. O conteúdo de dois jsonb
+       de `ai_invocations` **não foi conferido**, e isso continua registrado como não medido (não muda a inclusão).
        Pela policy, **qualquer membro ativo da organização, `viewer` inclusive, lê estas linhas direto pelo
        PostgREST, hoje, sem enxergar a conversa que as originou**. Isso **não depende de setor**: vale com o
        `visibility_mode` de hoje. A regra do dono ("equipes distintas não veem as conversas umas das outras")
@@ -293,7 +298,7 @@ expediente da organização; rota ou tela `/app/fora-de-expediente`; erro `OUT_O
        `conversation_claimed`/`transferred`/`released`/`ai_paused` (só o `reason`). `evidence` guarda só ids, e
        `reason` é "sem PII" por contrato. **Não conferi** o `payload` dos demais tipos do vocabulário.
     4. **Questão de desenho em aberto, que a T3 não resolve sozinha:** `crm_lead_activities` **não tem
-       `conversation_id` nem `department_id`** (não está entre as 18 tabelas acima), então a RLS **não tem como
+       `conversation_id` nem `department_id`** (não está entre as tabelas acima), então a RLS **não tem como
        saber de qual conversa ou departamento uma atividade veio**. Opções, **sem escolha minha**: (a) gravar o
        `department_id` (ou o `conversation_id`) na atividade ao emiti-la e filtrar na policy, com backfill dos
        tipos já gravados; (b) esconder **categorias inteiras de tipo** (`ai_turn`, `note`, …) de quem não é do
@@ -307,7 +312,7 @@ expediente da organização; rota ou tela `/app/fora-de-expediente`; erro `OUT_O
     **Estado do F6 (2026-11-27, à tarde): DECIDIDO pelo dono ([#67](https://github.com/itConesul/CRMPI/issues/67#issuecomment-7219537234), registrado em `05-revisao.md`).**
     O que a T3 e a T4b herdam:
 
-    - **Item 2 (as 18 tabelas): (a), entram.** Qualquer tabela que a medição mostrar com texto de conversa entra
+    - **Item 2 (as 18 tabelas, que a T3.2 fez 20): (a), entram.** Qualquer tabela que a medição mostrar com texto de conversa entra
       também, sem nova decisão.
     - **Item 4 (a atividade): (a), grava o `conversation_id`** (e não o `department_id`: a visibilidade acompanha a
       transferência), com backfill. Atividade **conversacional** (`ai_turn`, `handoff_*`, `conversation_*`) sem

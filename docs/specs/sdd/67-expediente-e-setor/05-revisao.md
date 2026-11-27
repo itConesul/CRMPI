@@ -123,7 +123,7 @@ Medição de **só leitura** (`02-design.md` §1, "Resultado da T3.2"). Nada aqu
 | `ai_chunks`: "não tem `conversation_id`" | `metadata.conversation_id` **existe** (jsonb, `source_type: "conversas"`) |
 | `lead_checkpoints` sem `conversation_id` (minha 1ª leitura) | Tem, **nulável**. Eu li o `CREATE TABLE` do apêndice, que é o schema **original**; coluna só se afirma pelo `information_schema` |
 | `before_send_traces.detail`: "não conferi" | Cinco produtores, todos rótulo fechado ou número; o texto achado não é persistido |
-| A lista de 18 tabelas | Entram `job_queue` e `crm_lead_reactivations` (`draft`); `ai_router_decisions` e `ai_invocations` saem por não terem texto livre medido. **Continua 18, mas não é a mesma lista** |
+| A lista de 18 tabelas | **Passa a ter 20:** entram `job_queue` e `crm_lead_reactivations` (`draft`). `ai_router_decisions` e `ai_invocations` **continuam na lista**, já atendidas pela revogação (`0241` e `0242`). A decisão do dono é que as 18 entram e a medição **só acrescenta**, nunca tira (correção do review do #150: a primeira versão tirava as duas "pela regra do dono"). O conteúdo de dois jsonb de `ai_invocations` segue **não conferido** |
 
 **Ponto cego do inventário da T3 (o mesmo da T3.0, em outra escala).** O inventário de 2026-11-25 foi medido por *todo
 acesso direto a `conversations`* (46 arquivos, 72 chamadas). Por construção ele **não enxerga** rota que lê conteúdo de
