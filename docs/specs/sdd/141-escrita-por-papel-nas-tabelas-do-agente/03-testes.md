@@ -3,11 +3,11 @@
 ## Matriz de aceite
 | Critério | Prova | Tipo | Arquivo / comando | Evidência |
 |---|---|---|---|---|
-| CA-1 | `viewer` tenta `insert`, `update` e `delete`; tudo recusado ou sem linha afetada. Visto vermelho antes da migration | invariante | `tests/invariants/escrita-por-papel-tabelas-do-agente.test.ts` || Vermelho antes da `0243`, verde depois |
-| CA-2 | `agent` zera `next_action`; `viewer` não; outra coluna de `lead_state` é recusada | invariante | o mesmo arquivo || Verde; com `revoke`/`grant` invertidos, reprova |
-| CA-3 | `agent` faz os três `insert` permitidos; `viewer` não; `kind` fora da lista é recusado | invariante | o mesmo arquivo || Verde; sem a policy de `cron_jobs`, reprova |
-| CA-4 | install e update | invariante | `pnpm test:db` || 192 arquivos: 191 verdes e 1 estouro de tempo, verde sozinho |
-| CA-5 | A lista de tabelas é lida do laço no `baseline.sql`; nenhuma tem privilégio de escrita além das exceções declaradas | invariante | o mesmo arquivo || Verde; sem o `revoke` de uma tabela, reprova |
+| CA-1 | `viewer` tenta `insert`, `update` e `delete`; tudo recusado ou sem linha afetada. Visto vermelho antes da migration | invariante | `tests/invariants/escrita-por-papel-tabelas-do-agente.test.ts` | Vermelho antes da `0243`, verde depois |
+| CA-2 | `agent` zera `next_action`; `viewer` não; outra coluna de `lead_state` é recusada | invariante | o mesmo arquivo | Verde; com `revoke`/`grant` invertidos, reprova |
+| CA-3 | `agent` faz os três `insert` permitidos; `viewer` não; `kind` fora da lista é recusado | invariante | o mesmo arquivo | Verde; sem a policy de `cron_jobs`, reprova |
+| CA-4 | install e update | invariante | `pnpm test:db` | 192 arquivos: 191 verdes e 1 estouro de tempo, verde sozinho |
+| CA-5 | A lista de tabelas é lida do laço no `baseline.sql`; nenhuma tem privilégio de escrita além das exceções declaradas | invariante | o mesmo arquivo | Verde; sem o `revoke` de uma tabela, reprova |
 
 Sabotagem de controle: retirar um `revoke` e uma policy restritiva e ver o teste ficar vermelho; e
 inverter a ordem `revoke`/`grant update (next_action)`, que precisa reprovar o CA-2.
