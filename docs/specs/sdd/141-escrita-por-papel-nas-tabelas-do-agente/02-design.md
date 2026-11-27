@@ -40,7 +40,8 @@ Levantados em `app`, `components`, `hooks`, `lib` e `workers`. São os que uma r
 
 Os outros escritores encontrados usam client admin ou a conexão direta do motor
 (`SUPABASE_DB_URL`). `lib/escalacao/retomada.ts` também é chamado por `lib/mcp/tools/escalacao.ts`,
-com o client do contexto MCP.
+com o client do contexto MCP, que é o **client admin** nos pontos conferidos (`lib/mcp/server.ts`,
+`lib/ai/runtime/agent.ts`).
 
 **NÃO VERIFICADO**
 - Se um job inserido por um `viewer` chega a gerar **envio** pelo worker. Medido só o `insert`.
@@ -107,3 +108,4 @@ momento de abrir o PR de código**. Nenhum dado é alterado.
 | App escreve em `lead_state` uma coluna além de `next_action` | O grant é por coluna; CA-2 executa o `update` real |
 | `update.sh` aplica o banco antes de trocar a imagem | Os caminhos do app antigo seguem permitidos; só o aviso do quadro para `viewer` deixa de nascer |
 | `agent` ainda insere follow-up em `cron_jobs` | Aceito: é o que a reativação faz, e o `agent` já envia mensagem |
+| `agent` ainda insere direto em `agent_inbox_items` um aviso `next_action_ambiguous` com título e corpo próprios | Aceito: é o `insert` que o quadro faz com a sessão dele; a policy limita o `kind`, não o texto |

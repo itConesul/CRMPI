@@ -10,6 +10,8 @@
 ## Comentários de review
 | Data | Revisor | Comentário | Resolução |
 |---|---|---|---|
+| 2026-11-27 | Claude, a pedido de Sciuba | O "client do contexto MCP" não era nomeado | `02-design.md` §1: é o client admin nos pontos conferidos |
+| 2026-11-27 | Claude, a pedido de Sciuba | Faltava o par do risco de `cron_jobs` para `agent_inbox_items` | `02-design.md` §7 |
 
 ## Aprovação
-- [ ] **Aprovada por:** <nome> em <AAAA-MM-DD> — implementação liberada
+- [x] **Aprovada por:** Sciuba em 2026-11-27 — implementação liberada
