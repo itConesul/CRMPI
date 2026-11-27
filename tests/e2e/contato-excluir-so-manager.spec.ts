@@ -162,6 +162,20 @@ async function abrirLista(page: Page, nome: string): Promise<void> {
 const botaoExcluir = (page: Page, nome: string) =>
   page.getByRole("button", { name: `Excluir contato ${nome}` });
 
+/**
+ * Abre o diálogo de exclusão e devolve o diálogo. Clica de novo se ele não abriu: o clique pode cair antes
+ * de o componente hidratar (no CI, chunks de JS ainda pendentes; o diálogo nunca abriu e o teste esperou 30 s
+ * por um botão que não existia). Só reclica com o diálogo fechado, para não acertar o overlay.
+ */
+async function abrirDialogoExcluir(page: Page, nome: string) {
+  const dialogo = page.getByRole("alertdialog");
+  await expect(async () => {
+    if (!(await dialogo.isVisible())) await botaoExcluir(page, nome).click({ timeout: 5_000 });
+    await expect(dialogo).toBeVisible({ timeout: 3_000 });
+  }).toPass({ timeout: 20_000 });
+  return dialogo;
+}
+
 for (const papel of ["agent", "viewer"] as const) {
   test(`${papel}: vê o contato na lista, mas NÃO tem o botão Excluir contato (RF-6, CA-6)`, async ({ page }) => {
     await login(page, papel);
@@ -185,10 +199,7 @@ test("manager: o diálogo manda anonimizar e não promete apagar a conversa (RF-
   await login(page, "manager");
   await abrirLista(page, NOME_COM_CONVERSA);
   await expect(botaoExcluir(page, NOME_COM_CONVERSA)).toBeVisible();
-  await botaoExcluir(page, NOME_COM_CONVERSA).click();
-
-  const dialogo = page.getByRole("alertdialog");
-  await expect(dialogo).toBeVisible();
+  const dialogo = await abrirDialogoExcluir(page, NOME_COM_CONVERSA);
   await expect(dialogo).not.toContainText("conversa associada");
   await expect(dialogo).toContainText("administrador");
   await expect(dialogo).toContainText("anonimiz");
@@ -200,8 +211,8 @@ test("manager: o diálogo manda anonimizar e não promete apagar a conversa (RF-
 test("manager: excluir contato COM conversa dá 409 explicado e o histórico continua no banco (RF-3, CA-3)", async ({ page }) => {
   await login(page, "manager");
   await abrirLista(page, NOME_COM_CONVERSA);
-  await botaoExcluir(page, NOME_COM_CONVERSA).click();
-  await page.getByRole("alertdialog").getByRole("button", { name: "Excluir", exact: true }).click();
+  const dialogo = await abrirDialogoExcluir(page, NOME_COM_CONVERSA);
+  await dialogo.getByRole("button", { name: "Excluir", exact: true }).click();
 
   // O toast é o que o usuário lê. O diálogo também cita "administrador", então o filtro é pelo toast.
   const toast = page.locator("[data-sonner-toast]").filter({ hasText: "administrador" });
@@ -218,8 +229,8 @@ test("manager: excluir contato COM conversa dá 409 explicado e o histórico con
 test("manager: excluir contato SEM histórico remove da lista e do banco (RF-4, CA-4)", async ({ page }) => {
   await login(page, "manager");
   await abrirLista(page, NOME_LIVRE_2);
-  await botaoExcluir(page, NOME_LIVRE_2).click();
-  await page.getByRole("alertdialog").getByRole("button", { name: "Excluir", exact: true }).click();
+  const dialogo = await abrirDialogoExcluir(page, NOME_LIVRE_2);
+  await dialogo.getByRole("button", { name: "Excluir", exact: true }).click();
 
   await expect(page.locator("[data-sonner-toast]").filter({ hasText: /Contato excluído/ })).toBeVisible({
     timeout: 15_000,
