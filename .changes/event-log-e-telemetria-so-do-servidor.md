@@ -17,5 +17,6 @@ ação.
 Durante a atualização há um intervalo curto, entre aplicar a mudança no banco e
 trocar a imagem do app, em que o app antigo ainda tenta ler essas tabelas pelo
 navegador. Nesse intervalo as telas Evolução e Uso da IA mostram os números de
-transferência para humano zerados, as Métricas do operador e a reexecução de
-webhook respondem com erro, e tudo volta ao normal quando a imagem troca.
+transferência para humano menores do que são (ou zerados), e sem nenhuma mensagem
+de erro. As Métricas do operador e a reexecução de webhook respondem com erro. Tudo
+volta ao normal quando a imagem troca.
