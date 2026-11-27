@@ -344,7 +344,7 @@ expediente da organização; rota ou tela `/app/fora-de-expediente`; erro `OUT_O
     | `agent_inbox_items` | **Realtime** (`useCentralAlerts`) e o board por sessão | **Não revogar.** Sem `conversation_id`: gravar + RLS |
     | `lead_notes`, `demandas` | `crm-summary` por sessão | Sem `conversation_id`: gravar + RLS |
     | `lead_state` | `next-action` e o board por sessão | Dado de lead: **regra de lead**, sem inventar `conversation_id` |
-    | `event_log` | `operator-metrics` e `usage` leem **por sessão** (agregados); Realtime **não** assina | **Trocar as 2 rotas para client admin com `organization_id`** e então revogar (T3.1) |
+    | `event_log` | `operator-metrics`, `usage` e `automation-rules/runs/[runId]/resend` (esta lê o evento inteiro, `select *`) leem **por sessão**, e `ai/evolution` também (contagem); a quarta rota só apareceu na varredura larga da T3.1; Realtime **não** assina | **Trocar as 4 rotas para client admin com `organization_id`** e então revogar (T3.1) |
     | `before_send_traces` | `conversations/[id]/retention` por sessão; o `trace` leva rótulos e números ("NUNCA o corpo", comentário do contrato em `before-send.ts`) | Sem texto de conversa **por contrato do código, não provado por dado**. Fica fora do isolamento por conversa; a rota é de conversa |
     | `ai_chunks` | rota `trechos` por sessão; a ingestão de conversa **anonimiza** e tem guarda de PII, e o chunk não tem `conversation_id` | Tem texto de conversa **anonimizado**, sem vínculo por desenho: **só `manager`+**, que é a regra do dono para "o que não der para ligar" |
 
