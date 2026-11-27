@@ -18,7 +18,27 @@ async function start(page:Page,org:string,readonly=false){
  await page.getByRole("button",{name:"Confirmar e entrar"}).click();
  await page.waitForURL("**/app/inbox");
 }
-async function end(page:Page){await page.getByRole("button",{name:"Sair do acompanhamento"}).click();await page.waitForURL("**/app/inbox");await expect(page.getByRole("button",{name:"Sair do acompanhamento"})).toHaveCount(0);}
+/**
+ * Fecha os toasts abertos ANTES de clicar no botão do banner.
+ *
+ * O toast fica no canto superior direito, em cima do "Sair do acompanhamento", e o
+ * spec PROVOCA toasts de propósito (`Erro: forbidden` ao salvar com o escopo
+ * rebaixado). O sonner pausa o auto-fechamento quando o ponteiro está sobre o toast,
+ * e o clique do Playwright move o ponteiro justamente para lá: dentro dos ~4 s do
+ * toast, o clique ficava preso por 20 s ("<li data-sonner-toast> intercepts pointer
+ * events") e o teste caía. Intermitente: depende de o `end` cair dentro da janela do
+ * toast. Medido no CI do PR #144 (2026-11-27), 1 de 4 execuções; 2 de 4 passaram só
+ * no re-run.
+ *
+ * `dispatchEvent("click")` e não `.click()`: o botão de fechar só aparece no hover, e
+ * mover o ponteiro de novo é o que causa o problema.
+ */
+async function fecharToasts(page:Page){
+ const fechar=page.locator("[data-sonner-toast] [data-close-button]");
+ for(const botao of await fechar.all())await botao.dispatchEvent("click");
+ await expect(page.locator("[data-sonner-toast]")).toHaveCount(0);
+}
+async function end(page:Page){await fecharToasts(page);await page.getByRole("button",{name:"Sair do acompanhamento"}).click();await page.waitForURL("**/app/inbox");await expect(page.getByRole("button",{name:"Sair do acompanhamento"})).toHaveCount(0);}
 
 test("suporte mantém identidade, opera B e encerra sem misturar A; readonly/expiração/revogação são reais",async({page,browser})=>{
  test.setTimeout(240000);
