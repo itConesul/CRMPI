@@ -6,6 +6,12 @@ vi.mock('@/lib/auth/require-role', () => ({ requireRole: (...a: unknown[]) => re
 const from = vi.fn();
 vi.mock('@/lib/supabase/server', () => ({ createClient: async () => ({ from }) }));
 
+// O client ADMIN: `event_log`, `ai_router_decisions` e `lead_state_transitions` são só do
+// servidor (migration 0242, #67 T3.1). Os dois clients usam o MESMO fake, para o espião
+// ver todas as consultas, e `fromAdmin` separa quem passou por qual.
+const fromAdmin = vi.fn();
+vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ from: fromAdmin }) }));
+
 import { GET } from './route';
 import { NextRequest } from 'next/server';
 
@@ -34,7 +40,7 @@ function fakeDb(
   erros: Record<string, string> = {},
 ): Espiao {
   const espiao: Espiao = { eq: [], gte: [], lte: [], order: [], tabelas: [] };
-  from.mockImplementation((tabela: string) => {
+  const impl = (tabela: string) => {
     espiao.tabelas.push(tabela);
     const rows = porTabela[tabela] ?? [];
     let head = false;
@@ -67,13 +73,16 @@ function fakeDb(
           : { data: head ? null : rows, count: rows.length, error: null },
       );
     return b;
-  });
+  };
+  from.mockImplementation(impl);
+  fromAdmin.mockImplementation(impl);
   return espiao;
 }
 
 beforeEach(() => {
   requireRole.mockReset();
   from.mockReset();
+  fromAdmin.mockReset();
   requireRole.mockResolvedValue({ ok: true, org: { orgId: 'org-1' }, user: { idioma: 'pt-BR' } });
   fakeDb();
 });
@@ -102,6 +111,25 @@ describe('GET /api/v1/ai/evolution', () => {
     expect(body.data.range).toEqual({ from: '2026-07-01', to: '2026-07-03' });
     expect(body.data.data).toBeUndefined();
     expect(body.data.gaps).toBeDefined();
+  });
+
+  it('as três tabelas só-do-servidor vão pelo client ADMIN, e as demais pela sessão', async () => {
+    // Migration 0242 (#67 T3.1): `authenticated` perdeu o acesso a `event_log`,
+    // `ai_router_decisions` e `lead_state_transitions`. Uma leitura delas pela sessão
+    // volta a dar `permission denied` — e `ler` engole o erro e devolve um bloco ZERADO,
+    // então a tela ficaria muda em vez de quebrar. Este caso é o que a denuncia.
+    fakeDb();
+    await GET(req('?from=2026-07-01&to=2026-07-03'));
+
+    const porAdmin = new Set(fromAdmin.mock.calls.map(([t]) => t as string));
+    const porSessao = new Set(from.mock.calls.map(([t]) => t as string));
+    expect([...porAdmin].sort()).toEqual(['ai_router_decisions', 'event_log', 'lead_state_transitions']);
+    for (const t of ['event_log', 'ai_router_decisions', 'lead_state_transitions']) {
+      expect(porSessao.has(t), `${t} foi lida pela SESSÃO`).toBe(false);
+    }
+    // Controle positivo: o resto do painel continua pela sessão, com a RLS valendo.
+    expect(porSessao.has('llm_calls')).toBe(true);
+    expect(porSessao.has('messages')).toBe(true);
   });
 
   it('toda consulta filtra a organização do JWT', async () => {

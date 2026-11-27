@@ -270,7 +270,12 @@ export const TABLES = [
   "org_memory_entries",
   "skill_activations",
   "ai_routers",
-  "ai_router_decisions",
+  // ⚠️ `ai_router_decisions` SAIU desta lista na 0242 (#67, T3.1) e a saída é deliberada:
+  // `authenticated` perdeu o acesso à tabela (telemetria interna, só o servidor lê), então
+  // o controle positivo deste molde — o usuário semeado enxerga a PRÓPRIA linha — falharia
+  // por `permission denied`, e a "correção" natural seria devolver o grant para caber no
+  // molde. A prova dela é o inverso, e vive em
+  // `tests/invariants/tabelas-internas-sem-acesso-da-sessao.test.ts`.
   "knowledge_searches",
   // migration 0123 (spec 17 §4b) — guarda e-mail/telefone ditos na conversa.
   "contact_field_proposals",

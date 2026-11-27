@@ -65,7 +65,10 @@ export async function POST(_req: NextRequest, ctx: RouteCtx): Promise<Response> 
   if (ruleErr) return fail("internal_error", ruleErr.message, 500, { requestId });
   if (!rule) return fail("not_found", t("Regra do run não encontrada."), 404, { requestId });
 
-  const { data: eventRow, error: eventErr } = await supabase
+  // `event_log` é só do servidor (migration 0242, #67 T3.0/T3.1): o payload guarda um
+  // trecho do corpo das mensagens, e a sessão não alcança a tabela. O filtro de
+  // `organization_id` abaixo vem de `activeOrg` (cookie validado), nunca do body.
+  const { data: eventRow, error: eventErr } = await createAdminClient()
     .from("event_log")
     .select("*")
     .eq("id", run.event_id)
