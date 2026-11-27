@@ -365,9 +365,13 @@ expediente da organização; rota ou tela `/app/fora-de-expediente`; erro `OUT_O
     no backfill. A proporção real de linhas sem origem **não foi medida**: este ambiente não tem dado de produção.
     A consulta que mede (rodar em uma instalação real, só leitura) está em `04-tarefas.md`, T3.2.
 
-    **Regra proposta para o que a decisão não disse (a confirmar na T3.3; ninguém decidiu):** a atividade conversacional
-    exige a visibilidade do **lead E** a da **conversa** (as duas). É monótona: só restringe mais do que a regra de lead
-    de hoje, e nunca abre o que hoje está fechado.
+    **Regra adotada para o que a decisão do dono não disse (instrução de Cauan em 2026-11-27, opção 2; a confirmar pelo
+    dono, como foi a Q10):** a atividade conversacional exige a visibilidade do **lead E** a da **conversa** (as duas
+    fechaduras). É monótona: só restringe mais do que a regra de lead de hoje, e **nunca abre o que hoje está fechado**,
+    então confirmar ou trocar depois não deixa ninguém com acesso que não tinha. Exemplo: atendente dono do lead que
+    **não** vê a conversa (é de outro setor) não vê a atividade; atendente que vê a conversa mas **não** é dono do lead
+    segue sem ver (como hoje); `manager` e `admin` veem. A alternativa descartada, só a fechadura da conversa, **abriria**
+    atividades de leads de outros donos.
 
     **Onde mora o "desligado por padrão" (proposta, a confirmar na T4b):** dentro de `fn_can_view_conversation`, e
     não nas policies. Com o interruptor desligado a função responde como hoje (`visibility_mode`, sem setor); ligado,
