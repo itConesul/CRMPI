@@ -17,6 +17,7 @@ import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { aggregateUsage, type InvocationRow } from "@/lib/ai/usage/aggregate";
 import { traduzir } from "@/lib/i18n/dicionario";
 
@@ -146,7 +147,9 @@ export async function GET(req: NextRequest): Promise<Response> {
 
   // ---- 3. handoffs per day (event_log: ai.handoff_triggered) --------------
   const dailyHandoffs = new Map<string, number>();
-  const { data: handoffRows, error: handoffErr } = await supabase
+  // `event_log` é só do servidor (migration 0242, #67 T3.1): client admin, com o
+  // `organization_id` de `activeOrg` (cookie validado) no filtro logo abaixo.
+  const { data: handoffRows, error: handoffErr } = await createAdminClient()
     .from("event_log")
     .select("created_at")
     .eq("organization_id", activeOrg.orgId)

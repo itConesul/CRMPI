@@ -17,17 +17,28 @@
  * tabela errado devolveria NENHUM para todo mundo e os outros passariam por
  * acidente — e o servidor (`pg` e client admin) é quem usa estas tabelas.
  *
- * ## O que NÃO entra, de propósito
+ * ## Duas levas, e por que a segunda veio depois
  *
- * `ai_router_decisions` e `lead_state_transitions` ficam de fora: a tela Evolução
- * as lê por sessão. Elas saem na T3.1, com a troca da rota. Se alguém as
- * acrescentar aqui antes, a tela quebra — o e2e a pega, e este comentário diz por quê.
+ * T3.0 (0241): `outbound_copies` e `ai_invocations` — nenhuma tela as lia.
+ * T3.1 (0242): `event_log`, `ai_router_decisions` e `lead_state_transitions` — as
+ * telas Evolução, Uso da IA e Métricas do operador, e a reexecução de webhook, as
+ * liam por SESSÃO, e a 0242 viaja junto com a troca dessas rotas para o client
+ * admin. Quem acrescentar aqui uma tabela que ainda tem leitor de sessão quebra a
+ * tela; o `permission denied` só aparece em produção, então o que protege é
+ * conferir os leitores ANTES (a varredura por `.from("…")` já errou uma vez, no
+ * helper `ler(tabela, …)` da `ai/evolution`).
  */
 import { describe, expect, it } from "vitest";
 
 import { motivoDoErro, sql } from "./psql-transporte";
 
-const TABELAS = ["outbound_copies", "ai_invocations"] as const;
+const TABELAS = [
+  "outbound_copies",
+  "ai_invocations",
+  "event_log",
+  "ai_router_decisions",
+  "lead_state_transitions",
+] as const;
 
 function erroSob(papel: string, comando: string): string | null {
   try {
