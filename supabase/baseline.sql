@@ -15204,7 +15204,7 @@ create table if not exists public.calendar_appointments (
   owner_user_id uuid references auth.users(id) on delete set null,
 
   -- QUEM VAI SER ATENDIDO. `restrict` acompanha conversations.contact_id e
-  -- messages.contact_id — as duas únicas FKs RESTRICT do schema, e existem
+  -- messages.contact_id — FKs RESTRICT (com esta, as TRÊS que bloqueiam apagar contato), e existem
   -- pela mesma razão: apagar um contato não pode apagar o histórico dele. Na
   -- prática a LGPD deste produto anonimiza em vez de apagar (CLAUDE.md § LGPD),
   -- então o RESTRICT nunca é o caminho normal — é o cinto.
@@ -23797,6 +23797,71 @@ on conflict (model) do update set
   completion_cents_per_million_tokens = excluded.completion_cents_per_million_tokens,
   notes = excluded.notes,
   superseded_at = null;
+
+-- ---- conversa não se apaga pela API (migration 0240) ----
+-- Vai DEPOIS de tudo, de propósito: o dump re-concede `GRANT ALL` e recria `conversations_agent_delete`
+-- a cada re-aplicação, e a revogação precisa vencer. Corpo idêntico ao da migration (spec da #99, §4).
+drop policy if exists "conversations_agent_delete" on public.conversations;
+revoke delete on public.conversations from authenticated, anon;
+
+drop policy if exists "messages_update" on public.messages;
+drop policy if exists "messages_delete" on public.messages;
+
+create policy "messages_update" on public.messages
+  for update using (
+    public.fn_is_platform_admin()
+    or (public.fn_role_at_least(organization_id, 'agent')
+        and exists (select 1 from public.conversations c where c.id = messages.conversation_id))
+  ) with check (
+    public.fn_is_platform_admin()
+    or (public.fn_role_at_least(organization_id, 'agent')
+        and exists (select 1 from public.conversations c where c.id = messages.conversation_id))
+  );
+
+create policy "messages_delete" on public.messages
+  for delete using (
+    public.fn_is_platform_admin()
+    or (public.fn_role_at_least(organization_id, 'agent')
+        and exists (select 1 from public.conversations c where c.id = messages.conversation_id))
+  );
+
+-- 3. `contacts`: só `manager`+ apaga, TAMBÉM pelo banco (pedido do revisor no #140). Antes,
+--    `tenant_isolation_contacts_all` era `FOR ALL` só por organização e `authenticated` tem `GRANT ALL`:
+--    um `agent` ou `viewer` apagava contato sem conversa e sem compromisso direto pelo PostgREST (e a
+--    cascata leva notas, demandas e follow-ups), mesmo com a rota e o botão exigindo `manager`.
+--    A policy `FOR ALL` é separada POR COMANDO: `select`, `insert` e `update` ficam com a MESMA regra de
+--    antes (membro da organização, ou administrador de plataforma); só o `delete` muda. Policies
+--    permissivas somam por OU, então a `FOR ALL` TEM de sair — manter as duas deixaria o `delete` aberto.
+--    `fn_is_platform_admin()` segue passando, como em todas as policies do schema (suporte); a sessão de
+--    suporte `full` já chega aqui como papel efetivo `admin`. O nome `tenant_isolation_<t>_all` deixa de
+--    valer para esta tabela, de propósito: ela deixou de ser `all`.
+drop policy if exists "tenant_isolation_contacts_all" on public.contacts;
+drop policy if exists "tenant_isolation_contacts_select" on public.contacts;
+drop policy if exists "tenant_isolation_contacts_insert" on public.contacts;
+drop policy if exists "tenant_isolation_contacts_update" on public.contacts;
+drop policy if exists "contacts_delete_manager" on public.contacts;
+
+create policy "tenant_isolation_contacts_select" on public.contacts
+  for select using (
+    organization_id in (select public.fn_user_org_ids()) or public.fn_is_platform_admin()
+  );
+
+create policy "tenant_isolation_contacts_insert" on public.contacts
+  for insert with check (
+    organization_id in (select public.fn_user_org_ids()) or public.fn_is_platform_admin()
+  );
+
+create policy "tenant_isolation_contacts_update" on public.contacts
+  for update using (
+    organization_id in (select public.fn_user_org_ids()) or public.fn_is_platform_admin()
+  ) with check (
+    organization_id in (select public.fn_user_org_ids()) or public.fn_is_platform_admin()
+  );
+
+create policy "contacts_delete_manager" on public.contacts
+  for delete using (
+    public.fn_is_platform_admin() or public.fn_role_at_least(organization_id, 'manager')
+  );
 
 -- ---- tabelas internas sem acesso da sessão (migration 0241) ----
 --

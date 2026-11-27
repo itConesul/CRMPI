@@ -1,5 +1,6 @@
 /**
- * Fire-and-forget insert into `ai_invocations`.
+ * Fire-and-forget insert into `llm_calls` (desde a migration 0130; `ai_invocations`
+ * ficou como histórico, sem escritor, e desde a 0241 só o servidor a alcança).
  *
  * Caller should NOT await. We use `queueMicrotask` so the parent handler can
  * return without waiting for the audit insert; failures bubble to logger only.
