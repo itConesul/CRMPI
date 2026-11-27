@@ -235,29 +235,11 @@ test("A escolhe pessoas na lista de @: o servidor avisa só quem foi escolhido, 
 });
 
 /**
- * BLOQUEADO — dívida conhecida, issue #137. Enquanto ela existir, o CA-2 e o RF-6 da spec #69 NÃO estão
- * atendidos. A tabela já constava em `DIVIDA_CONHECIDA` de `tests/unit/realtime-assinatura-tem-publicacao.test.ts`;
- * este spec só a expôs, ao exigir o CA-2.
- *
- * O aviso in-app de menção (`useCrmAlerts.onNote`) e a nota aparecendo ao vivo (`useConversationNotes`)
- * assinam `postgres_changes` em `conversation_notes`, e essa tabela NÃO está na publicação
- * `supabase_realtime`: nem no `baseline.sql` (que publica messages, conversations, crm_leads, ai_agents,
- * ai_agent_runs, ai_knowledge_sources e crm_lead_activities) nem em nenhuma migration. Medido no banco
- * local montado só com o baseline: `select tablename from pg_publication_tables where
- * pubname='supabase_realtime'` não lista `conversation_notes`.
- *
- * Consequência: o CA-2 da spec #69 ("o mencionado recebe o aviso em tempo real, e o clique abre a
- * conversa") não vale hoje em nenhuma instalação. Consertar é mudança de schema (migration + apêndice do
- * baseline + MANIFEST), e a spec proíbe isso nesta issue (`02-design.md` §4, RNF/CA-8).
- *
- * A #137 detalha o conserto (opção B): apertar a política de leitura, separar a política `FOR ALL` (que
- * inclui SELECT) e só então publicar. Publicar sozinho faria o corpo das notas chegar por Realtime a quem
- * não vê a conversa. Medido num experimento local em 2026-11-25: publicar a tabela faz este teste passar, e
- * tirá-la da publicação o faz falhar de novo.
- *
- * Quando a #137 for resolvida, trocar `test.fixme` por `test` — o corpo já está pronto.
+ * CA-2 da spec #69, destravado pela #137: o aviso in-app (`useCrmAlerts.onNote`) e a nota ao vivo
+ * (`useConversationNotes`) assinam `postgres_changes` em `conversation_notes`, que só passou a estar na
+ * publicação `supabase_realtime` na migration 0244.
  */
-test.fixme("o mencionado recebe o aviso em tempo real e o clique abre a conversa (CA-2)", async ({ browser }, info) => {
+test("o mencionado recebe o aviso em tempo real e o clique abre a conversa (CA-2)", async ({ browser }, info) => {
   test.setTimeout(240_000);
 
   // Quem vai ser avisado já está logado numa tela do app ANTES de a nota existir, como na vida real.
@@ -359,4 +341,88 @@ test("a lista abre só em nota, não oferece a autora, e cabe na tela (medido)",
   await page.screenshot({ path: `${EVIDENCIA}/6-celular-390.png` });
 
   await ana.ctx.close();
+});
+
+/**
+ * #137 / CA-5 — a publicação não vaza nota de conversa alheia. A conversa é da Ana: o João (agent, sem
+ * acesso) é mencionado e NÃO recebe; a gerente é mencionada, recebe, e vê a nota aparecer sem recarregar.
+ *
+ * Fica por último: a gerente entra na organização aqui, e mudaria a lista de `@` dos cenários acima.
+ */
+test("quem não vê a conversa não recebe o aviso; a gerente recebe e vê a nota ao vivo (#137)", async ({ browser }) => {
+  test.setTimeout(240_000);
+  mkdirSync(EVIDENCIA, { recursive: true });
+
+  const email = `mencao-gerente-${randomUUID()}@invariant.test`;
+  const { data, error } = await db.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+    user_metadata: { full_name: "Gerente Rosa" },
+  });
+  if (error || !data.user) throw error;
+  const gerenteId = data.user.id;
+  (users as Record<string, { id: string; email: string }>).gerente = { id: gerenteId, email };
+  await inserir("user_organizations", {
+    organization_id: orgId,
+    user_id: gerenteId,
+    role: "manager",
+    accepted_at: new Date().toISOString(),
+  });
+
+  const { data: base, error: erroBase } = await db
+    .from("conversations")
+    .select("channel_session_id")
+    .eq("id", conversationId)
+    .single();
+  if (erroBase) throw erroBase;
+  const contato = await inserir("contacts", {
+    organization_id: orgId,
+    display_name: "Cliente da Ana",
+    phone_number: "+5511999990137",
+  });
+  // Com dono e `own_and_unassigned`: dos atendentes, só a Ana a enxerga.
+  const daAna = await inserir("conversations", {
+    organization_id: orgId,
+    contact_id: contato,
+    channel_session_id: base.channel_session_id,
+    status: "open",
+    assigned_to_user_id: users.ana.id,
+  });
+
+  const joao = await atendente(browser, "joao");
+  const gerente = await atendente(browser, "gerente" as Papel);
+  await joao.page.goto("/app/inbox");
+  await gerente.page.goto(`/app/inbox?id=${daAna}`);
+  // Espera os canais Realtime assinarem, como no cenário do CA-2.
+  await joao.page.waitForTimeout(4_000);
+
+  const ana = await atendente(browser, "ana");
+  const escrever = async (conversa: string, texto: string, mencionados: string[]) => {
+    const r = await ana.page.request.post(`/api/v1/conversations/${conversa}/notes`, {
+      data: { body: `${mencionados.map((id) => `@${id}`).join(" ")} ${texto}` },
+    });
+    expect(r.status()).toBe(201);
+  };
+
+  await escrever(daAna, "assunto reservado da Ana", [users.joao.id, gerenteId]);
+  await expect(gerente.page.getByText("Você foi mencionado").first()).toBeVisible({ timeout: 30_000 });
+  await expect(gerente.page.getByText("assunto reservado da Ana").first()).toBeVisible({ timeout: 30_000 });
+  await gerente.page.screenshot({ path: `${EVIDENCIA}/7-gerente-recebe.png` });
+
+  // Controle: o canal do João está vivo. Ele recebe a menção da conversa que enxerga, e SÓ ela.
+  await escrever(conversationId, "esta o João pode ver", [users.joao.id]);
+  await expect.poll(() => avisosDe(joao.page), { timeout: 30_000 }).toContain("Você foi mencionado");
+  const destinos = await joao.page.evaluate(() =>
+    (window as unknown as JanelaComAvisos).__avisos
+      .filter((a) => a.title === "Você foi mencionado")
+      .map((a) => a.options?.data?.href ?? ""),
+  );
+  // O `href` do aviso é absoluto; o que importa é para qual conversa ele leva.
+  expect(destinos).toHaveLength(1);
+  expect(destinos[0]).toContain(`/app/inbox?id=${conversationId}`);
+  await expect(joao.page.getByText("assunto reservado da Ana")).toHaveCount(0);
+  await joao.page.screenshot({ path: `${EVIDENCIA}/8-sem-acesso-nao-recebe.png` });
+
+  for (const { ctx } of [ana, joao, gerente]) await ctx.close();
 });

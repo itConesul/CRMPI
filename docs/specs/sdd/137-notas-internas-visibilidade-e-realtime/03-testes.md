@@ -3,12 +3,12 @@
 ## Matriz de aceite
 | Critério | Prova | Tipo | Arquivo / comando | Evidência |
 |---|---|---|---|---|
-| CA-1 | Os quatro papéis da medição, mais outra organização, lendo a nota. Visto vermelho antes da migration | invariante | `tests/invariants/notas-internas-visibilidade-e-realtime.test.ts` | |
-| CA-2 | Tabela na publicação e `relrowsecurity` ligada | invariante | o mesmo arquivo | |
-| CA-3 | Dono insere com `RETURNING` e apaga; `viewer` não insere nem apaga | invariante | o mesmo arquivo | |
-| CA-4 | Agente sem acesso: `insert` recusado com e sem `RETURNING`; `update` e `delete`, com e sem filtro, não afetam linha | invariante | o mesmo arquivo | |
-| CA-5 | `test.fixme` vira `test`; cenário novo "sem acesso não recebe, gerente recebe" | e2e | `tests/e2e/nota-mencao.spec.ts` | |
-| CA-6 | install e update; reverter cada política e a publicação faz o invariante falhar | invariante | `pnpm test:db` | |
+| CA-1 | Os quatro papéis da medição, mais outra organização, lendo a nota. Visto vermelho antes da migration | invariante | `tests/invariants/notas-internas-visibilidade-e-realtime.test.ts` | [#156](https://github.com/itConesul/CRMPI/pull/156): vermelho antes da migration, verde depois (job `invariants`) |
+| CA-2 | Tabela na publicação e `relrowsecurity` ligada | invariante | o mesmo arquivo | [#156](https://github.com/itConesul/CRMPI/pull/156): vermelho antes da migration, verde depois (job `invariants`) |
+| CA-3 | Dono insere com `RETURNING` e apaga; `viewer` não insere nem apaga | invariante | o mesmo arquivo | [#156](https://github.com/itConesul/CRMPI/pull/156): vermelho antes da migration, verde depois (job `invariants`) |
+| CA-4 | Agente sem acesso: `insert` recusado com e sem `RETURNING`; `update` e `delete`, com e sem filtro, não afetam linha | invariante | o mesmo arquivo | [#156](https://github.com/itConesul/CRMPI/pull/156): vermelho antes da migration, verde depois (job `invariants`) |
+| CA-5 | `test.fixme` vira `test`; cenário novo "sem acesso não recebe, gerente recebe" | e2e | `tests/e2e/nota-mencao.spec.ts` | #156, job `e2e` verde: os cenários do CA-2 da #69 e do sem acesso passam |
+| CA-6 | install e update; reverter cada política e a publicação faz o invariante falhar | invariante | `pnpm test:db` | install e update verdes; tirar o `exists` de cada política, ou a publicação, reprova o invariante (5 de 5, local) |
 
 Também: `visibility_mode` `all` e `none` e a sessão de suporte no invariante (não medidos até aqui).
 
