@@ -633,11 +633,36 @@ jobs:
       # tabela que ainda não existe) — está no CLAUDE.md e foi confirmado neste
       # CI. O que o self-hoster aplica é o `baseline.sql`, então é ele que o
       # e2e aplica: o banco do teste fica igual ao de quem instalou o produto.
+      #
+      # ⚠️ ATÉ 3 TENTATIVAS, E SÓ PARA ESTE PASSO. O Docker do runner às vezes
+      # falha ao publicar a porta de um contêiner (`failed to set up container
+      # networking: driver failed programming external connectivity on endpoint
+      # supabase_db_…`), sempre ANTES de qualquer spec rodar: não é código do
+      # produto. Medido no PR #144 (2026-11-27): a parte 2 caiu aqui na primeira
+      # tentativa e passou no re-run, sem nenhuma mudança. Cada falha custava um
+      # `gh run rerun` à mão (~15 min de relógio) e treinava quem lê o vermelho a
+      # reexecutar sem olhar.
+      #
+      # O que NÃO muda: se as 3 falharem, o passo FALHA ALTO (a primeira versão
+      # deste workflow reportou verde com o Supabase quebrado e zero spec rodado,
+      # ver o cabeçalho). Tentar de novo aqui não esconde defeito de produto — o
+      # passo só sobe contêineres. Os specs seguem sem retry (`retries` do
+      # playwright não mexeu), porque lá uma repetição esconderia flakiness real.
       - name: Subir Supabase local (sem a cadeia de migrations)
         run: |
           mv supabase/migrations /tmp/migrations-off
           mkdir -p supabase/migrations
-          supabase start
+          for tentativa in 1 2 3; do
+            if supabase start; then
+              exit 0
+            fi
+            echo "::warning::supabase start falhou (tentativa ${tentativa} de 3)"
+            # Limpa o que a tentativa deixou pela metade (contêineres e volume),
+            # senão a seguinte esbarra no nome e na porta da anterior.
+            supabase stop --no-backup || true
+          done
+          echo "::error::supabase start falhou 3 vezes seguidas"
+          exit 1
 
       # O baseline é um dump `--schema-only`: ele USA os tipos das extensões
       # (public.vector, citext, gin_trgm_ops) mas não as cria. O stack local do

@@ -21,15 +21,17 @@
  * responsável. Medir "quitadas" seria publicar um número que nenhuma linha apura,
  * que é o mesmo defeito do aviso que dizia "ninguém cumpriu ainda".
  *
- * ═══ CLIENT DE SESSÃO ═══
+ * ═══ CLIENT ADMIN, COM O FILTRO DE ORGANIZAÇÃO NA MÃO ═══
  *
- * `event_log` tem isolamento por organização, e a RLS faz a tenancy. O filtro
- * explícito por `organization_id` continua no SQL porque um usuário pode
- * pertencer a mais de uma organização — a RLS deixaria passar as duas.
+ * `event_log` é só do servidor (migration 0242, #67 T3.1): o `payload` guarda um
+ * trecho do corpo das mensagens, e a sessão do navegador não a alcança mais. O
+ * papel (`manager`) é conferido por `requireRole` com a sessão; a leitura usa o
+ * client admin, que bypassa a RLS — por isso o `organization_id` vem de
+ * `authz.org` (cookie validado, nunca do body) e está em TODA consulta.
  */
 import { fail, ok } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { traduzir } from "@/lib/i18n/dicionario";
 
 export const dynamic = "force-dynamic";
@@ -43,7 +45,7 @@ export async function GET(): Promise<Response> {
   const t = (texto: string) => traduzir(texto, authz.user.idioma);
   const { org } = authz;
 
-  const db = await createClient();
+  const db = createAdminClient();
   const desde = new Date(Date.now() - DIAS * 24 * 60 * 60 * 1000).toISOString();
 
   /** Uma contagem, sem trazer linha nenhuma (`head: true`). */

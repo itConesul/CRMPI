@@ -22,10 +22,18 @@ import { requestIdDe } from "@/lib/api/request-id";
 import { ok, fail } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { aggregateEvolution, type EvolutionInput } from "@/lib/ai/evolution/aggregate";
 import { traduzir } from "@/lib/i18n/dicionario";
 
 export const dynamic = "force-dynamic";
+
+/**
+ * Tabelas que a sessão do navegador NÃO alcança (migration 0242, #67 T3.1): `event_log`
+ * guarda um trecho do corpo das mensagens, e as outras duas são telemetria interna. Esta
+ * rota as lê com o client admin, filtrando `organization_id` na mão.
+ */
+const TABELAS_SO_DO_SERVIDOR = new Set(["event_log", "ai_router_decisions", "lead_state_transitions"]);
 
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_RANGE_DAYS = 90;
@@ -76,6 +84,7 @@ export async function GET(req: NextRequest): Promise<Response> {
   const fromIso = range.from.toISOString();
   const toIso = endOfUtcDay(range.to).toISOString();
   const supabase = await createClient();
+  const admin = createAdminClient();
 
   /**
    * Uma fonte fora do ar não pode apagar o painel inteiro: o bloco dela aparece
@@ -98,7 +107,12 @@ export async function GET(req: NextRequest): Promise<Response> {
    * card, duas respostas diferentes para a mesma pergunta na mesma tela.
    */
   function janela(tabela: string, colunas: string, colunaData: string, apenasContagem = false) {
-    return supabase
+    // Só estas três vão pelo client admin (migration 0242, #67 T3.1): a sessão não as
+    // alcança mais. As demais seguem pela sessão, com a RLS valendo. O filtro de
+    // `organization_id` logo abaixo é o que mantém a tenancy no caso admin, e `orgId`
+    // vem de `requireRole` (cookie validado), nunca do body.
+    const cliente = TABELAS_SO_DO_SERVIDOR.has(tabela) ? admin : supabase;
+    return cliente
       .from(tabela)
       .select(colunas, apenasContagem ? { count: "exact", head: true } : undefined)
       .eq("organization_id", orgId)
