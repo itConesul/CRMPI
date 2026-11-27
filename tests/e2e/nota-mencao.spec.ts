@@ -418,7 +418,9 @@ test("quem não vê a conversa não recebe o aviso; a gerente recebe e vê a not
       .filter((a) => a.title === "Você foi mencionado")
       .map((a) => a.options?.data?.href ?? ""),
   );
-  expect(destinos).toEqual([`/app/inbox?id=${conversationId}`]);
+  // O `href` do aviso é absoluto; o que importa é para qual conversa ele leva.
+  expect(destinos).toHaveLength(1);
+  expect(destinos[0]).toContain(`/app/inbox?id=${conversationId}`);
   await expect(joao.page.getByText("assunto reservado da Ana")).toHaveCount(0);
   await joao.page.screenshot({ path: `${EVIDENCIA}/8-sem-acesso-nao-recebe.png` });
 
